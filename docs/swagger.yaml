@@ -1,0 +1,474 @@
+basePath: /
+definitions:
+  model.GroupRight:
+    properties:
+      administrate:
+        type: boolean
+      execute:
+        type: boolean
+      group_name:
+        type: string
+      read:
+        type: boolean
+      write:
+        type: boolean
+    type: object
+  model.Resource:
+    properties:
+      group_rights:
+        additionalProperties:
+          $ref: '#/definitions/model.Right'
+        type: object
+      id:
+        type: string
+      topic_id:
+        type: string
+      user_rights:
+        additionalProperties:
+          $ref: '#/definitions/model.Right'
+        type: object
+    type: object
+  model.ResourceRights:
+    properties:
+      group_rights:
+        additionalProperties:
+          $ref: '#/definitions/model.Right'
+        type: object
+      user_rights:
+        additionalProperties:
+          $ref: '#/definitions/model.Right'
+        type: object
+    type: object
+  model.Right:
+    properties:
+      administrate:
+        type: boolean
+      execute:
+        type: boolean
+      read:
+        type: boolean
+      write:
+        type: boolean
+    type: object
+  model.Topic:
+    properties:
+      id:
+        description: at least one of Id and KafkaTopic must be set
+        type: string
+      initial_group_rights:
+        items:
+          $ref: '#/definitions/model.GroupRight'
+        type: array
+      kafka_consumer_group:
+        description: defaults to configured kafka consumer group
+        type: string
+      kafka_topic:
+        description: changeable, defaults to Id
+        type: string
+    type: object
+info:
+  contact: {}
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Permissions API
+  version: "0.1"
+paths:
+  /:
+    get:
+      description: checks health and reachability of the service
+      responses:
+        "200":
+          description: OK
+      summary: health check
+      tags:
+      - health
+  /accessible/{topic}:
+    get:
+      description: list accessible resource ids
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: checked rights in the form of 'rwxa', defaults to 'r'
+        in: query
+        name: rights
+        type: string
+      - description: limits size of result; 0 means unlimited
+        in: query
+        name: limit
+        type: integer
+      - description: offset to be used in combination with limit
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      summary: list accessible resource ids
+      tags:
+      - accessible
+      - resource
+  /admin/topics:
+    get:
+      description: lists topics with their configuration, requesting user must be
+        admin
+      parameters:
+      - description: limits size of result; 0 means unlimited
+        in: query
+        name: limit
+        type: integer
+      - description: offset to be used in combination with limit
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Topic'
+            type: array
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      summary: lists topics with their configuration
+      tags:
+      - topics
+    post:
+      consumes:
+      - application/json
+      description: set topic config, requesting user must be admin
+      parameters:
+      - description: Topic
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/model.Topic'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Topic'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: set topic config
+      tags:
+      - topics
+  /admin/topics/{id}:
+    delete:
+      description: remove topic config, requesting user must be admin
+      parameters:
+      - description: Topic Id
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: remove topic config
+      tags:
+      - topics
+    get:
+      description: get topic config, requesting user must be admin
+      parameters:
+      - description: Topic Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Topic'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: get topic config
+      tags:
+      - topics
+    put:
+      consumes:
+      - application/json
+      description: set topic config, requesting user must be admin
+      parameters:
+      - description: Topic Id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Topic
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/model.Topic'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Topic'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: set topic config
+      tags:
+      - topics
+  /check/{topic}:
+    get:
+      description: check multiple permissions
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: Resource Ids, comma seperated
+        in: query
+        name: ids
+        required: true
+        type: string
+      - description: checked rights in the form of 'rwxa', defaults to 'r'
+        in: query
+        name: rights
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      summary: check multiple permissions
+      tags:
+      - check
+  /check/{topic}/{id}:
+    get:
+      description: check permission
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: Resource Id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: checked rights in the form of 'rwxa', defaults to 'r'
+        in: query
+        name: rights
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      summary: check permission
+      tags:
+      - check
+  /health:
+    get:
+      description: checks health and reachability of the service
+      responses:
+        "200":
+          description: OK
+      summary: health check
+      tags:
+      - health
+  /manage/{topic}:
+    get:
+      description: lists resources the user has admin rights to
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: limits size of result; 0 means unlimited
+        in: query
+        name: limit
+        type: integer
+      - description: offset to be used in combination with limit
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Resource'
+            type: array
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      summary: lists resources the user has admin rights to
+      tags:
+      - manage
+      - resource
+  /manage/{topic}/{id}:
+    get:
+      description: get resource, requesting user must have admin right
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: Resource Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Resource'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      summary: get resource
+      tags:
+      - manage
+      - resource
+    put:
+      consumes:
+      - application/json
+      description: get resource rights, requesting user must have admin right
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: Resource Id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Topic
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/model.ResourceRights'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ResourceRights'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      summary: set resource rights
+      tags:
+      - manage
+      - resource-rights
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

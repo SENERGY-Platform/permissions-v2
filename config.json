@@ -1,0 +1,7 @@
+{
+    "port": "8080",
+    "debug": false,
+    "enable_swagger_ui": false,
+
+    "edit_forward": ""
+}
