@@ -173,7 +173,7 @@ func TestSetResourcePermissions(t *testing.T) {
 				},
 				t:                   getTestTime(50),
 				preventOlderUpdates: false,
-				expectUpdateIgnored: true,
+				expectUpdateIgnored: false,
 			},
 			{
 				r: model.Resource{
@@ -215,14 +215,14 @@ func TestSetResourcePermissions(t *testing.T) {
 			},
 		}
 
-		for _, update := range updates {
+		for i, update := range updates {
 			updateIgnored, err := db.SetResourcePermissions(update.r, update.t, update.preventOlderUpdates)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			if update.expectUpdateIgnored != updateIgnored {
-				t.Error(update.expectUpdateIgnored, updateIgnored)
+				t.Errorf("%v SetResourcePermissions(%#v,%#v%#v) = %#v \nexpectUpdateIgnored=%#v\n", i, update.r, update.t, update.preventOlderUpdates, updateIgnored, update.expectUpdateIgnored)
 				return
 			}
 		}
@@ -405,7 +405,7 @@ func TestSetResourcePermissions(t *testing.T) {
 			{
 				topic:   "device",
 				user:    "u3",
-				rights:  "a",
+				rights:  "r",
 				options: model.ListOptions{Limit: 2, Offset: 1},
 				expectedResult: []model.Resource{
 					{
@@ -798,16 +798,68 @@ func TestSetResourcePermissions(t *testing.T) {
 					},
 				},
 			},
+			{
+				topic:  "device",
+				user:   "u1",
+				group:  "g3",
+				rights: "ra",
+				expectedResult: []model.Resource{
+					{
+						Id:      "a",
+						TopicId: "device",
+						ResourceRights: model.ResourceRights{
+							UserRights: map[string]model.Right{
+								"u1": {Read: true, Write: true, Execute: true, Administrate: true},
+								"u3": {Read: true, Write: false, Execute: false, Administrate: false},
+							},
+							GroupRights: map[string]model.Right{
+								"g1": {Read: true, Write: true, Execute: true, Administrate: true},
+								"g3": {Read: true, Write: false, Execute: false, Administrate: false},
+							},
+						},
+					},
+					{
+						Id:      "b",
+						TopicId: "device",
+						ResourceRights: model.ResourceRights{
+							UserRights: map[string]model.Right{
+								"u1": {Read: true, Write: true, Execute: true, Administrate: true},
+								"u2": {Read: true, Write: true, Execute: true, Administrate: true},
+								"u3": {Read: true, Write: false, Execute: false, Administrate: false},
+							},
+							GroupRights: map[string]model.Right{
+								"g1": {Read: true, Write: true, Execute: true, Administrate: true},
+								"g3": {Read: true, Write: false, Execute: false, Administrate: false},
+							},
+						},
+					},
+					{
+						Id:      "c",
+						TopicId: "device",
+						ResourceRights: model.ResourceRights{
+							UserRights: map[string]model.Right{
+								"u1": {Read: true, Write: true, Execute: true, Administrate: true},
+								"u2": {Read: true, Write: true, Execute: true, Administrate: true},
+								"u3": {Read: true, Write: false, Execute: false, Administrate: false},
+							},
+							GroupRights: map[string]model.Right{
+								"g1": {Read: true, Write: true, Execute: true, Administrate: true},
+								"g3": {Read: true, Write: false, Execute: false, Administrate: false},
+							},
+						},
+					},
+				},
+			},
 		}
 
-		for _, q := range listQueries {
+		for i, q := range listQueries {
 			result, err := db.ListByRights(q.topic, q.user, q.group, q.rights, q.options)
 			if err != nil {
-				t.Error(err)
+				t.Error(i, err)
 				return
 			}
 			if !reflect.DeepEqual(result, q.expectedResult) {
-				t.Errorf("ListByRights(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", q.topic, q.user, q.group, q.rights, q.options, result, q.expectedResult)
+				t.Errorf("%v ListByRights(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", i, q.topic, q.user, q.group, q.rights, q.options, result, q.expectedResult)
 				return
 			}
 		}

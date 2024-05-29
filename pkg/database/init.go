@@ -24,6 +24,7 @@ const SqlCreateTopicsTable = `CREATE TABLE IF NOT EXISTS Topics (
 );`
 
 const SqlCreatePermissionsTable = `CREATE TABLE IF NOT EXISTS Permissions (
+    _sid 			SERIAL PRIMARY KEY,
 	TopicId 		TEXT NOT NULL,
 	Id      		TEXT NOT NULL,
 	UserId 			TEXT,
@@ -32,7 +33,7 @@ const SqlCreatePermissionsTable = `CREATE TABLE IF NOT EXISTS Permissions (
 	Write       	BOOLEAN,
 	Execute      	BOOLEAN,
 	Administrate 	BOOLEAN,
-	PRIMARY KEY (TopicId, Id, UserId, GroupId),
+	CONSTRAINT PermissionsAllowNullPrimaryPart UNIQUE NULLS NOT DISTINCT (TopicId, Id, UserId, GroupId),
 	constraint PermissionsUserGroupXorConstraint 
         check (        (UserId is null or GroupId is null) 
                and not (UserId is null and GroupId is null) )

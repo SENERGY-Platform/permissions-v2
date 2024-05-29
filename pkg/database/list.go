@@ -27,6 +27,7 @@ import (
 )
 
 func (this *Database) ListByRights(topicId string, userId string, groupId string, rights string, options model.ListOptions) (result []model.Resource, err error) {
+	result = []model.Resource{}
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	tx, err := this.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
@@ -89,16 +90,16 @@ func listIdsByRights(ctx context.Context, db DbTxAbstract, topicId string, userI
 		}
 	}
 
-	listQuery := ""
+	listQuery := " ORDER BY Id"
 	if options.Limit > 0 {
 		listQuery = listQuery + " LIMIT " + strconv.FormatInt(options.Limit, 10)
 	}
 	if options.Offset > 0 {
 		listQuery = listQuery + " OFFSET " + strconv.FormatInt(options.Offset, 10)
 	}
-	listQuery = listQuery + " ORDER BY Id"
 
-	rows, err := db.QueryContext(ctx, `SELECT DISTINCT Id FROM Permissions WHERE TopicId = $1 AND (UserId = $2 OR GroupId = $3)`+rightsQuery+listQuery, topicId, userId, groupId)
+	query := `SELECT DISTINCT Id FROM Permissions WHERE TopicId = $1 AND (UserId = $2 OR GroupId = $3)` + rightsQuery + listQuery
+	rows, err := db.QueryContext(ctx, query, topicId, userId, groupId)
 	if err != nil {
 		return []string{}, err
 	}
