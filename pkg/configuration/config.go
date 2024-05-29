@@ -32,8 +32,10 @@ type Config struct {
 	EnableSwaggerUi bool   `json:"enable_swagger_ui"`
 	EditForward     string `json:"edit_forward"`
 
-	KafkaUrl           string `json:"kafka_url"`
-	KafkaConsumerGroup string `json:"kafka_consumer_group"`
+	KafkaUrl                  string `json:"kafka_url"`
+	DefaultKafkaConsumerGroup string `json:"default_kafka_consumer_group"`
+
+	PostgresConnStr string `json:"postgres_conn_str"` //e.g. "postgres://user:pw@localhost/dbname?sslmode=disable"
 }
 
 // loads config from json in location and used environment variables (e.g KafkaUrl --> KAFKA_URL)

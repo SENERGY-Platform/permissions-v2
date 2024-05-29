@@ -14,32 +14,6 @@
  * limitations under the License.
  */
 
-package model
+package producer
 
-import (
-	"net/url"
-	"strconv"
-)
-
-type ListOptions struct {
-	Limit  int64 // 0 -> unlimited
-	Offset int64
-}
-
-func ListOptionsFromQuery(q url.Values) (result ListOptions, err error) {
-	limit := q.Get("limit")
-	if limit != "" {
-		result.Limit, err = strconv.ParseInt(limit, 10, 64)
-		if err != nil {
-			return result, err
-		}
-	}
-	offset := q.Get("offset")
-	if offset != "" {
-		result.Offset, err = strconv.ParseInt(offset, 10, 64)
-		if err != nil {
-			return result, err
-		}
-	}
-	return result, err
-}
+type Producer struct{}
