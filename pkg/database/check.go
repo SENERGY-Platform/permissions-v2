@@ -32,7 +32,15 @@ func getResourceRights(ctx context.Context, db DbTxAbstract, topicId string, id 
 		return result, err
 	}
 	defer rows.Close()
+	err = rows.Err()
+	if err != nil {
+		return result, err
+	}
 	for rows.Next() {
+		err = rows.Err()
+		if err != nil {
+			return result, err
+		}
 		var right model.Right
 		var userId sql.NullString
 		var groupId sql.NullString

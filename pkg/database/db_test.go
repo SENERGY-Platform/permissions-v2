@@ -852,18 +852,19 @@ func TestSetResourcePermissions(t *testing.T) {
 			},
 		}
 
-		for i, q := range listQueries {
-			result, err := db.ListByRights(q.topic, q.user, q.group, q.rights, q.options)
-			if err != nil {
-				t.Error(i, err)
-				return
+		t.Run("ListByRights", func(t *testing.T) {
+			for i, q := range listQueries {
+				result, err := db.ListByRights(q.topic, q.user, q.group, q.rights, q.options)
+				if err != nil {
+					t.Error(i, err)
+					return
+				}
+				if !reflect.DeepEqual(result, q.expectedResult) {
+					t.Errorf("%v ListByRights(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", i, q.topic, q.user, q.group, q.rights, q.options, result, q.expectedResult)
+					return
+				}
 			}
-			if !reflect.DeepEqual(result, q.expectedResult) {
-				t.Errorf("%v ListByRights(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", i, q.topic, q.user, q.group, q.rights, q.options, result, q.expectedResult)
-				return
-			}
-		}
-
+		})
 	})
 
 }

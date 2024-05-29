@@ -21,8 +21,11 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"github.com/lib/pq"
 	"log"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -51,18 +54,74 @@ func (this *Database) ListByRights(topicId string, userId string, groupId string
 	if err != nil {
 		return nil, err
 	}
-	for _, id := range ids {
-		resource := model.Resource{
-			Id:      id,
-			TopicId: topicId,
-		}
-		resource.ResourceRights, err = getResourceRights(ctx, tx, topicId, id)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, resource)
+
+	query := `SELECT Id,UserId,GroupId,Read,Write,Execute,Administrate FROM Permissions WHERE TopicId = $1 AND Id = any($2)`
+	rows, err := tx.QueryContext(ctx, query, topicId, pq.Array(ids))
+	if err != nil {
+		return nil, err
 	}
+
+	return rowsToResources(rows, topicId)
+}
+
+func rowsToResources(rows *sql.Rows, topicId string) (result []model.Resource, err error) {
+	result = []model.Resource{}
+	defer rows.Close()
+	err = rows.Err()
+	if err != nil {
+		return result, err
+	}
+	for rows.Next() {
+		err = rows.Err()
+		if err != nil {
+			return result, err
+		}
+		resource := model.Resource{
+			TopicId: topicId,
+			ResourceRights: model.ResourceRights{
+				UserRights:  map[string]model.Right{},
+				GroupRights: map[string]model.Right{},
+			},
+		}
+		var right model.Right
+		var userId sql.NullString
+		var groupId sql.NullString
+		err = rows.Scan(&resource.Id, &userId, &groupId, &right.Read, &right.Write, &right.Execute, &right.Administrate)
+		if err != nil {
+			return result, err
+		}
+		if userId.Valid {
+			resource.UserRights[userId.String] = right
+		}
+		if groupId.Valid {
+			resource.GroupRights[groupId.String] = right
+		}
+		result = mergeResourceList(result, resource)
+	}
+	slices.SortFunc(result, func(a, b model.Resource) int {
+		return strings.Compare(a.Id, b.Id)
+	})
 	return result, err
+}
+
+func mergeResourceList(list []model.Resource, element model.Resource) (result []model.Resource) {
+	found := false
+	for _, e := range list {
+		if e.Id == element.Id {
+			found = true
+			for g, r := range element.GroupRights {
+				e.GroupRights[g] = r
+			}
+			for u, r := range element.UserRights {
+				e.UserRights[u] = r
+			}
+		}
+		result = append(result, e)
+	}
+	if !found {
+		result = append(result, element)
+	}
+	return result
 }
 
 func (this *Database) ListIdsByRights(topicId string, userId string, groupId string, rights string, options model.ListOptions) ([]string, error) {
