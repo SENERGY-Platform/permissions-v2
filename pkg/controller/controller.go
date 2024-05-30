@@ -52,11 +52,13 @@ func (this *Controller) SetTopic(token jwt.Token, topic model.Topic) (result mod
 }
 
 func (this *Controller) CheckPermission(token jwt.Token, topicId string, id string, rights string) (access bool, err error, code int) {
+	//must handle id-modifiers
 	//TODO implement me
 	panic("implement me")
 }
 
 func (this *Controller) CheckMultiplePermissions(token jwt.Token, topicId string, ids []string, rights string) (access map[string]bool, err error, code int) {
+	//must handle id-modifiers
 	//TODO implement me
 	panic("implement me")
 }
@@ -72,31 +74,12 @@ func (this *Controller) ListResourcesWithAdminPermission(token jwt.Token, topicI
 }
 
 func (this *Controller) GetResource(token jwt.Token, topicId string, id string) (result model.Resource, err error, code int) {
+	//must handle id-modifiers
 	//TODO implement me
 	panic("implement me")
 }
 
 func (this *Controller) SetPermission(token jwt.Token, topicId string, id string, rights model.ResourceRights) (result model.ResourceRights, err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) SetUserPermission(token jwt.Token, topicId string, id string, userId string, right model.Right) (result model.ResourceRights, err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) RemoveUserPermission(token jwt.Token, topicId string, id string, userId string) (result model.ResourceRights, err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) SetGroupPermission(token jwt.Token, topicId string, id string, groupId string, right model.Right) (result model.ResourceRights, err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) RemoveGroupPermission(token jwt.Token, topicId string, id string, groupId string) (result model.ResourceRights, err error, code int) {
 	//TODO implement me
 	panic("implement me")
 }

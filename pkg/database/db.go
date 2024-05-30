@@ -17,27 +17,13 @@
 package database
 
 import (
-	"context"
-	"database/sql"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	_ "github.com/lib/pq"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"time"
 )
 
-func New(config configuration.Config) (*Database, error) {
-	db, err := sql.Open("postgres", config.PostgresConnStr)
-	if err != nil {
-		return nil, err
-	}
-	result := &Database{db: db, config: config}
-	return result, result.init()
-}
-
-type Database struct {
-	db     *sql.DB
-	config configuration.Config
-}
-
-type DbTxAbstract interface {
-	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+type Database interface {
+	SetResourcePermissions(r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error)
+	ListByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []model.Resource, err error)
+	ListIdsByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error)
+	CheckMultiple(topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error)
 }

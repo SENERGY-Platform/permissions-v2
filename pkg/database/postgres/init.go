@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package database
+package postgres
 
 const SqlCreateTopicsTable = `CREATE TABLE IF NOT EXISTS Topics (
 	Id 						TEXT NOT NULL PRIMARY KEY,

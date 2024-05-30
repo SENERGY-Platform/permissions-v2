@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package database
+package postgres
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"time"
 )
 
-func (this *Database) ListByRights(topicId string, userId string, groupId string, rights string, options model.ListOptions) (result []model.Resource, err error) {
+func (this *Database) ListByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []model.Resource, err error) {
 	result = []model.Resource{}
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	tx, err := this.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -50,13 +50,17 @@ func (this *Database) ListByRights(topicId string, userId string, groupId string
 		}
 	}()
 	var ids []string
-	ids, err = listIdsByRights(ctx, tx, topicId, userId, groupId, rights, options)
+	ids, err = listIdsByRights(ctx, tx, topicId, userId, groupIds, rights, options)
 	if err != nil {
 		return nil, err
 	}
 
+	return listByIds(ctx, tx, topicId, ids)
+}
+
+func listByIds(ctx context.Context, db DbTxAbstract, topicId string, ids []string) (result []model.Resource, err error) {
 	query := `SELECT Id,UserId,GroupId,Read,Write,Execute,Administrate FROM Permissions WHERE TopicId = $1 AND Id = any($2)`
-	rows, err := tx.QueryContext(ctx, query, topicId, pq.Array(ids))
+	rows, err := db.QueryContext(ctx, query, topicId, pq.Array(ids))
 	if err != nil {
 		return nil, err
 	}
@@ -124,12 +128,12 @@ func mergeResourceList(list []model.Resource, element model.Resource) (result []
 	return result
 }
 
-func (this *Database) ListIdsByRights(topicId string, userId string, groupId string, rights string, options model.ListOptions) ([]string, error) {
+func (this *Database) ListIdsByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error) {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	return listIdsByRights(ctx, this.db, topicId, userId, groupId, rights, options)
+	return listIdsByRights(ctx, this.db, topicId, userId, groupIds, rights, options)
 }
 
-func listIdsByRights(ctx context.Context, db DbTxAbstract, topicId string, userId string, groupId string, rights string, options model.ListOptions) (result []string, err error) {
+func listIdsByRights(ctx context.Context, db DbTxAbstract, topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []string, err error) {
 	if rights == "" {
 		return []string{}, errors.New("invalid rights parameter")
 	}
@@ -157,8 +161,8 @@ func listIdsByRights(ctx context.Context, db DbTxAbstract, topicId string, userI
 		listQuery = listQuery + " OFFSET " + strconv.FormatInt(options.Offset, 10)
 	}
 
-	query := `SELECT DISTINCT Id FROM Permissions WHERE TopicId = $1 AND (UserId = $2 OR GroupId = $3)` + rightsQuery + listQuery
-	rows, err := db.QueryContext(ctx, query, topicId, userId, groupId)
+	query := `SELECT DISTINCT Id FROM Permissions WHERE TopicId = $1 AND (UserId = $2 OR GroupId = any($3))` + rightsQuery + listQuery
+	rows, err := db.QueryContext(ctx, query, topicId, userId, pq.Array(groupIds))
 	if err != nil {
 		return []string{}, err
 	}

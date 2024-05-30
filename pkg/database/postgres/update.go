@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package database
+package postgres
 
 import (
 	"context"
@@ -24,10 +24,12 @@ import (
 	"time"
 )
 
+const TxIsolation = sql.LevelSerializable
+
 func (this *Database) SetResourcePermissions(r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error) {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	var tx *sql.Tx
-	tx, err = this.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	tx, err = this.db.BeginTx(ctx, &sql.TxOptions{Isolation: TxIsolation})
 	if err != nil {
 		return false, err
 	}

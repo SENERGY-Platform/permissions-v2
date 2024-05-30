@@ -3,5 +3,8 @@
     "debug": false,
     "enable_swagger_ui": false,
 
-    "edit_forward": ""
+    "edit_forward": "",
+
+    "mongo_permissions_collection": "permissions",
+    "mongo_table": "permissions"
 }
