@@ -167,6 +167,13 @@ func fillObjectWithItsBsonFieldNames(ptr interface{}, prefix []string) error {
 			}
 			objval.Field(i).SetString(strings.Join(append(prefix, tags.Name), "."))
 		}
+		if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.String {
+			tags, err := bsoncodec.DefaultStructTagParser.ParseStructTags(field)
+			if err != nil {
+				return err
+			}
+			objval.Field(i).Set(reflect.ValueOf([]string{strings.Join(append(prefix, tags.Name), ".")}))
+		}
 		if field.Type.Kind() == reflect.Struct {
 			tags, err := bsoncodec.DefaultStructTagParser.ParseStructTags(field)
 			if err != nil {
