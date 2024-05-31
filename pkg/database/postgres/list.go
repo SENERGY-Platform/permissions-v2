@@ -138,20 +138,12 @@ func listIdsByRights(ctx context.Context, db DbTxAbstract, topicId string, userI
 	if rights == "" {
 		return []string{}, errors.New("invalid rights parameter")
 	}
-	rightsQuery := ""
-	for _, r := range rights {
-		switch r {
-		case 'r':
-			rightsQuery = rightsQuery + " AND Read = true"
-		case 'w':
-			rightsQuery = rightsQuery + " AND Write = true"
-		case 'x':
-			rightsQuery = rightsQuery + " AND Execute = true"
-		case 'a':
-			rightsQuery = rightsQuery + " AND Administrate = true"
-		default:
-			return []string{}, errors.New("invalid rights parameter")
-		}
+	rightsQuery, err := getRightsQuery(rights)
+	if err != nil {
+		return []string{}, err
+	}
+	if rightsQuery != "" {
+		rightsQuery = " AND (" + rightsQuery + ")"
 	}
 
 	listQuery := " ORDER BY Id"
@@ -177,4 +169,23 @@ func listIdsByRights(ctx context.Context, db DbTxAbstract, topicId string, userI
 		result = append(result, id)
 	}
 	return result, err
+}
+
+func getRightsQuery(rights string) (string, error) {
+	rightsQueries := []string{}
+	for _, r := range rights {
+		switch r {
+		case 'r':
+			rightsQueries = append(rightsQueries, "Read = true")
+		case 'w':
+			rightsQueries = append(rightsQueries, "Write = true")
+		case 'x':
+			rightsQueries = append(rightsQueries, "Execute = true")
+		case 'a':
+			rightsQueries = append(rightsQueries, "Administrate = true")
+		default:
+			return "", errors.New("invalid rights parameter")
+		}
+	}
+	return strings.Join(rightsQueries, " AND "), nil
 }

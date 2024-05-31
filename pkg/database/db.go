@@ -28,6 +28,7 @@ type Database interface {
 	ListByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []model.Resource, err error)
 	ListIdsByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error)
 	CheckMultiple(topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error)
+	Check(topicId string, id string, userId string, groupIds []string, rights string) (result bool, err error)
 }
 
 func New(config configuration.Config) (Database, error) {

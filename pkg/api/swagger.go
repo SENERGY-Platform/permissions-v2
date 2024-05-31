@@ -17,10 +17,10 @@
 package api
 
 import (
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
 	"net/http"
-	"permissions/pkg/configuration"
 	"strings"
 )
 

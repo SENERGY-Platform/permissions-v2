@@ -17,8 +17,8 @@
 package api
 
 import (
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"net/http"
-	"permissions/pkg/configuration"
 )
 
 func init() {

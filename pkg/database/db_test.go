@@ -880,6 +880,58 @@ func TestResourcePermissions(t *testing.T) {
 	})
 
 	t.Run("check", func(t *testing.T) {
+		result, err := db.Check("device", "a", "u1", []string{}, "rwxa")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if !result {
+			t.Errorf("%#v", result)
+			return
+		}
+
+		result, err = db.Check("device", "d", "u1", []string{}, "rwxa")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if result {
+			t.Errorf("%#v", result)
+			return
+		}
+
+		result, err = db.Check("device", "d", "u1", []string{"g1"}, "rwxa")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if result {
+			t.Errorf("%#v", result)
+			return
+		}
+
+		result, err = db.Check("device", "d", "u1", []string{"g1"}, "r")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if result {
+			t.Errorf("%#v", result)
+			return
+		}
+
+		result, err = db.Check("device", "d", "u1", []string{"g1", "g3"}, "r")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if !result {
+			t.Errorf("%#v", result)
+			return
+		}
+	})
+
+	t.Run("check multiple", func(t *testing.T) {
 		result, err := db.CheckMultiple("device", []string{"a", "b", "c", "d", "e", "x", "y"}, "u1", []string{}, "rwxa")
 		if err != nil {
 			t.Error(err)
@@ -895,6 +947,129 @@ func TestResourcePermissions(t *testing.T) {
 			return
 		}
 	})
+}
+
+func TestDistributedRights(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	config, err := configuration.Load("../../config.json")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	config.PostgresConnStr, err = docker.Postgres(ctx, wg, "permissions")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	db, err := New(config)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	_, err = db.SetResourcePermissions(model.Resource{
+		Id:      "a",
+		TopicId: "device",
+		ResourceRights: model.ResourceRights{
+			UserRights:  map[string]model.Right{"u1": {Read: true}},
+			GroupRights: map[string]model.Right{"g1": {Write: true}, "g2": {Administrate: true}, "g3": {Execute: true}},
+		},
+	}, getTestTime(0), false)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Run("check", func(t *testing.T) {
+		result, err := db.Check("device", "a", "u1", []string{}, "r")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if !result {
+			t.Errorf("%#v", result)
+			return
+		}
+
+		result, err = db.Check("device", "a", "u2", []string{"g1"}, "w")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if !result {
+			t.Errorf("%#v", result)
+			return
+		}
+
+		result, err = db.Check("device", "a", "u1", []string{}, "rwxa")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if result {
+			t.Errorf("%#v", result)
+			return
+		}
+
+		result, err = db.Check("device", "a", "u1", []string{"g1", "g2", "g3"}, "rwxa")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if !result {
+			t.Errorf("%#v", result)
+			return
+		}
+	})
+
+	t.Run("list", func(t *testing.T) {
+		result, err := db.ListIdsByRights("device", "u1", []string{}, "rwxa", model.ListOptions{})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(result) != 0 {
+			t.Errorf("%#v", result)
+			return
+		}
+
+		result, err = db.ListIdsByRights("device", "u1", []string{"g1", "g2", "g3"}, "rwxa", model.ListOptions{})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if !reflect.DeepEqual(result, []string{"a"}) {
+			t.Errorf("%#v", result)
+			return
+		}
+
+		result2, err := db.ListByRights("device", "u1", []string{"g1", "g2", "g3"}, "rwxa", model.ListOptions{})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if !reflect.DeepEqual(result2, []model.Resource{
+			{
+				Id:      "a",
+				TopicId: "device",
+				ResourceRights: model.ResourceRights{
+					UserRights:  map[string]model.Right{"u1": {Read: true}},
+					GroupRights: map[string]model.Right{"g1": {Write: true}, "g2": {Administrate: true}, "g3": {Execute: true}},
+				},
+			},
+		}) {
+			t.Errorf("%#v", result)
+			return
+		}
+	})
+
 }
 
 func getTestTime(secDelta int) time.Time {
