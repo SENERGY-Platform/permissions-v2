@@ -39,11 +39,11 @@ func (this *Database) SetResourcePermissions(ctx context.Context, r model.Resour
 			return updateIgnored, nil
 		}
 	}
-	return false, this.SetRights(ctx, r.TopicId, r.Id, r.ResourceRights, t)
+	return false, this.SetPermissions(ctx, r.TopicId, r.Id, r.ResourcePermissions, t)
 }
 
 func (this *Database) newerResourceExists(ctx context.Context, topicId string, id string, t time.Time) (exists bool, err error) {
-	err = this.rightsCollection().FindOne(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: id, PermissionsEntryTimestampBson: bson.M{"$gt": t.Unix()}}).Err()
+	err = this.permissionsCollection().FindOne(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: id, PermissionsEntryTimestampBson: bson.M{"$gt": t.Unix()}}).Err()
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return false, nil
 	}
@@ -53,7 +53,7 @@ func (this *Database) newerResourceExists(ctx context.Context, topicId string, i
 	return true, nil
 }
 
-func (this *Database) SetRights(ctx context.Context, topic string, id string, rights model.ResourceRights, t time.Time) (err error) {
+func (this *Database) SetPermissions(ctx context.Context, topic string, id string, permissions model.ResourcePermissions, t time.Time) (err error) {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
@@ -70,37 +70,37 @@ func (this *Database) SetRights(ctx context.Context, topic string, id string, ri
 		ExecuteUsers:  []string{},
 		ExecuteGroups: []string{},
 	}
-	element.setResourceRights(rights)
-	_, err = this.rightsCollection().ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
+	element.setResourcePermissions(permissions)
+	_, err = this.permissionsCollection().ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
 	return err
 }
 
-func (this *PermissionsEntry) setResourceRights(rights model.ResourceRights) {
-	for group, right := range rights.GroupRights {
-		if right.Administrate {
+func (this *PermissionsEntry) setResourcePermissions(permissions model.ResourcePermissions) {
+	for group, permission := range permissions.GroupPermissions {
+		if permission.Administrate {
 			this.AdminGroups = append(this.AdminGroups, group)
 		}
-		if right.Execute {
+		if permission.Execute {
 			this.ExecuteGroups = append(this.ExecuteGroups, group)
 		}
-		if right.Write {
+		if permission.Write {
 			this.WriteGroups = append(this.WriteGroups, group)
 		}
-		if right.Read {
+		if permission.Read {
 			this.ReadGroups = append(this.ReadGroups, group)
 		}
 	}
-	for user, right := range rights.UserRights {
-		if right.Administrate {
+	for user, permission := range permissions.UserPermissions {
+		if permission.Administrate {
 			this.AdminUsers = append(this.AdminUsers, user)
 		}
-		if right.Execute {
+		if permission.Execute {
 			this.ExecuteUsers = append(this.ExecuteUsers, user)
 		}
-		if right.Write {
+		if permission.Write {
 			this.WriteUsers = append(this.WriteUsers, user)
 		}
-		if right.Read {
+		if permission.Read {
 			this.ReadUsers = append(this.ReadUsers, user)
 		}
 	}

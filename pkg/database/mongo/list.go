@@ -24,8 +24,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error) {
-	temp, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, rights, options)
+func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) ([]string, error) {
+	temp, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, permissions, options)
 	if err != nil {
 		return nil, err
 	}
@@ -36,24 +36,24 @@ func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId 
 	return result, err
 }
 
-func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, rights string, listOptions model.ListOptions) (result []model.Resource, err error) {
+func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, listOptions model.ListOptions) (result []model.Resource, err error) {
 	result = []model.Resource{}
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
-	rightsFilter := bson.A{}
-	for _, r := range rights {
+	permissionsFilter := bson.A{}
+	for _, r := range permissions {
 		switch r {
 		case 'r':
-			rightsFilter = append(rightsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.ReadUsers[0]: userId}, bson.M{PermissionsEntryBson.ReadGroups[0]: bson.M{"$in": groupIds}}}})
+			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.ReadUsers[0]: userId}, bson.M{PermissionsEntryBson.ReadGroups[0]: bson.M{"$in": groupIds}}}})
 		case 'w':
-			rightsFilter = append(rightsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.WriteUsers[0]: userId}, bson.M{PermissionsEntryBson.WriteGroups[0]: bson.M{"$in": groupIds}}}})
+			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.WriteUsers[0]: userId}, bson.M{PermissionsEntryBson.WriteGroups[0]: bson.M{"$in": groupIds}}}})
 		case 'x':
-			rightsFilter = append(rightsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.ExecuteUsers[0]: userId}, bson.M{PermissionsEntryBson.ExecuteGroups[0]: bson.M{"$in": groupIds}}}})
+			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.ExecuteUsers[0]: userId}, bson.M{PermissionsEntryBson.ExecuteGroups[0]: bson.M{"$in": groupIds}}}})
 		case 'a':
-			rightsFilter = append(rightsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.AdminUsers[0]: userId}, bson.M{PermissionsEntryBson.AdminGroups[0]: bson.M{"$in": groupIds}}}})
+			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.AdminUsers[0]: userId}, bson.M{PermissionsEntryBson.AdminGroups[0]: bson.M{"$in": groupIds}}}})
 		default:
-			return []model.Resource{}, errors.New("invalid rights parameter")
+			return []model.Resource{}, errors.New("invalid permissions parameter")
 		}
 	}
 
@@ -66,8 +66,8 @@ func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId st
 	}
 	opt.SetSort(bson.D{{PermissionsEntryBson.Id, 1}})
 
-	filter := bson.M{PermissionsEntryBson.TopicId: topicId, "$and": rightsFilter}
-	cursor, err := this.rightsCollection().Find(ctx, filter, opt)
+	filter := bson.M{PermissionsEntryBson.TopicId: topicId, "$and": permissionsFilter}
+	cursor, err := this.permissionsCollection().Find(ctx, filter, opt)
 	if err != nil {
 		return result, err
 	}

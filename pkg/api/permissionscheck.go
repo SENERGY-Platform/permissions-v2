@@ -38,7 +38,7 @@ type PermissionsCheckEndpoints struct{}
 // @Tags         check
 // @Param        topic path string true "Topic Id"
 // @Param        id path string true "Resource Id"
-// @Param        rights query string false "checked rights in the form of 'rwxa', defaults to 'r'"
+// @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
 // @Produce      json
 // @Success      200 {object} bool
 // @Failure      400
@@ -62,11 +62,11 @@ func (this *PermissionsCheckEndpoints) CheckPermission(config configuration.Conf
 			http.Error(w, "missing id", http.StatusBadRequest)
 			return
 		}
-		rights := req.URL.Query().Get("rights")
-		if rights == "" {
-			rights = "r"
+		permissions := req.URL.Query().Get("permissions")
+		if permissions == "" {
+			permissions = "r"
 		}
-		result, err, code := ctrl.CheckPermission(token, topic, id, rights)
+		result, err, code := ctrl.CheckPermission(token, topic, id, permissions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -85,7 +85,7 @@ func (this *PermissionsCheckEndpoints) CheckPermission(config configuration.Conf
 // @Tags         check
 // @Param        topic path string true "Topic Id"
 // @Param        ids query string true "Resource Ids, comma seperated"
-// @Param        rights query string false "checked rights in the form of 'rwxa', defaults to 'r'"
+// @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
 // @Produce      json
 // @Success      200 {object} map[string]bool
 // @Failure      400
@@ -111,11 +111,11 @@ func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configura
 			idList = append(idList, strings.TrimSpace(id))
 		}
 
-		rights := req.URL.Query().Get("rights")
-		if rights == "" {
-			rights = "r"
+		permissions := req.URL.Query().Get("permissions")
+		if permissions == "" {
+			permissions = "r"
 		}
-		result, err, code := ctrl.CheckMultiplePermissions(token, topic, idList, rights)
+		result, err, code := ctrl.CheckMultiplePermissions(token, topic, idList, permissions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -133,7 +133,7 @@ func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configura
 // @Description  list accessible resource ids
 // @Tags         accessible, resource
 // @Param        topic path string true "Topic Id"
-// @Param        rights query string false "checked rights in the form of 'rwxa', defaults to 'r'"
+// @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
 // @Param        limit query integer false "limits size of result; 0 means unlimited"
 // @Param        offset query integer false "offset to be used in combination with limit"
 // @Produce      json
@@ -155,9 +155,9 @@ func (this *PermissionsCheckEndpoints) ListAccessibleResourceIds(config configur
 			return
 		}
 
-		rights := req.URL.Query().Get("rights")
-		if rights == "" {
-			rights = "r"
+		permissions := req.URL.Query().Get("permissions")
+		if permissions == "" {
+			permissions = "r"
 		}
 
 		listOptions, err := model.ListOptionsFromQuery(req.URL.Query())
@@ -166,7 +166,7 @@ func (this *PermissionsCheckEndpoints) ListAccessibleResourceIds(config configur
 			return
 		}
 
-		result, err, code := ctrl.ListAccessibleResourceIds(token, topic, rights, listOptions)
+		result, err, code := ctrl.ListAccessibleResourceIds(token, topic, permissions, listOptions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return

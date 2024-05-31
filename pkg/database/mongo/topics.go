@@ -38,7 +38,7 @@ func init() {
 	})
 }
 
-func (this *Database) topicCollection() *mongo.Collection {
+func (this *Database) topicsCollection() *mongo.Collection {
 	return this.client.Database(this.config.MongoDatabase).Collection(this.config.MongoTopicsCollection)
 }
 
@@ -46,7 +46,7 @@ func (this *Database) SetTopic(ctx context.Context, topic model.Topic) error {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
-	_, err := this.topicCollection().ReplaceOne(ctx, bson.M{TopicBson.Id: topic.Id}, topic, options.Replace().SetUpsert(true))
+	_, err := this.topicsCollection().ReplaceOne(ctx, bson.M{TopicBson.Id: topic.Id}, topic, options.Replace().SetUpsert(true))
 	return err
 }
 
@@ -54,7 +54,7 @@ func (this *Database) GetTopic(ctx context.Context, id string) (result model.Top
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
-	temp := this.topicCollection().FindOne(ctx, bson.M{TopicBson.Id: id})
+	temp := this.topicsCollection().FindOne(ctx, bson.M{TopicBson.Id: id})
 	err = temp.Err()
 	if err == mongo.ErrNoDocuments {
 		return result, false, nil
@@ -81,7 +81,7 @@ func (this *Database) ListTopics(ctx context.Context, listOptions model.ListOpti
 		opt.SetSkip(listOptions.Offset)
 	}
 	opt.SetSort(bson.D{{TopicBson.Id, 1}})
-	cursor, err := this.rightsCollection().Find(ctx, bson.M{}, opt)
+	cursor, err := this.topicsCollection().Find(ctx, bson.M{}, opt)
 	if err != nil {
 		return result, err
 	}
@@ -101,6 +101,6 @@ func (this *Database) DeleteTopic(ctx context.Context, id string) error {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
-	_, err := this.topicCollection().DeleteMany(ctx, bson.M{TopicBson.Id: id})
+	_, err := this.topicsCollection().DeleteMany(ctx, bson.M{TopicBson.Id: id})
 	return err
 }

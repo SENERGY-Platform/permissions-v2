@@ -27,8 +27,8 @@ import (
 type Database interface {
 	SetResourcePermissions(ctx context.Context, r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error)
 
-	ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []model.Resource, err error)
-	ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error)
+	ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) (result []model.Resource, err error)
+	ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) ([]string, error)
 
 	CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error)
 	CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, rights string) (result bool, err error)

@@ -51,19 +51,19 @@ func (this *Controller) SetTopic(token jwt.Token, topic model.Topic) (result mod
 	panic("implement me")
 }
 
-func (this *Controller) CheckPermission(token jwt.Token, topicId string, id string, rights string) (access bool, err error, code int) {
+func (this *Controller) CheckPermission(token jwt.Token, topicId string, id string, permissions string) (access bool, err error, code int) {
 	//must handle id-modifiers
 	//TODO implement me
 	panic("implement me")
 }
 
-func (this *Controller) CheckMultiplePermissions(token jwt.Token, topicId string, ids []string, rights string) (access map[string]bool, err error, code int) {
+func (this *Controller) CheckMultiplePermissions(token jwt.Token, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int) {
 	//must handle id-modifiers
 	//TODO implement me
 	panic("implement me")
 }
 
-func (this *Controller) ListAccessibleResourceIds(token jwt.Token, topicId string, rights string, options model.ListOptions) (ids []string, err error, code int) {
+func (this *Controller) ListAccessibleResourceIds(token jwt.Token, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -79,7 +79,7 @@ func (this *Controller) GetResource(token jwt.Token, topicId string, id string) 
 	panic("implement me")
 }
 
-func (this *Controller) SetPermission(token jwt.Token, topicId string, id string, rights model.ResourceRights) (result model.ResourceRights, err error, code int) {
+func (this *Controller) SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int) {
 	//TODO implement me
 	panic("implement me")
 }

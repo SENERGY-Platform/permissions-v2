@@ -581,7 +581,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.ResourceRights"
+                            "$ref": "#/definitions/model.ResourcePermissions"
                         }
                     }
                 ],
@@ -589,7 +589,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.ResourceRights"
+                            "$ref": "#/definitions/model.ResourcePermissions"
                         }
                     },
                     "400": {
@@ -629,47 +629,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Resource": {
-            "type": "object",
-            "properties": {
-                "group_rights": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/model.Right"
-                    }
-                },
-                "id": {
-                    "type": "string"
-                },
-                "topic_id": {
-                    "type": "string"
-                },
-                "user_rights": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/model.Right"
-                    }
-                }
-            }
-        },
-        "model.ResourceRights": {
-            "type": "object",
-            "properties": {
-                "group_rights": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/model.Right"
-                    }
-                },
-                "user_rights": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/model.Right"
-                    }
-                }
-            }
-        },
-        "model.Right": {
+        "model.Permissions": {
             "type": "object",
             "properties": {
                 "administrate": {
@@ -683,6 +643,46 @@ const docTemplate = `{
                 },
                 "write": {
                     "type": "boolean"
+                }
+            }
+        },
+        "model.Resource": {
+            "type": "object",
+            "properties": {
+                "group_permissions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/model.Permissions"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "topic_id": {
+                    "type": "string"
+                },
+                "user_permissions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/model.Permissions"
+                    }
+                }
+            }
+        },
+        "model.ResourcePermissions": {
+            "type": "object",
+            "properties": {
+                "group_permissions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/model.Permissions"
+                    }
+                },
+                "user_permissions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/model.Permissions"
+                    }
                 }
             }
         },

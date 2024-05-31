@@ -127,10 +127,10 @@ func (this *PermissionsManagementEndpoints) GetResource(config configuration.Con
 // @Tags         manage, resource-rights
 // @Param        topic path string true "Topic Id"
 // @Param        id path string true "Resource Id"
-// @Param        message body model.ResourceRights true "Topic"
+// @Param        message body model.ResourcePermissions true "Topic"
 // @Accept       json
 // @Produce      json
-// @Success      200 {object}  model.ResourceRights
+// @Success      200 {object}  model.ResourcePermissions
 // @Failure      400
 // @Failure      401
 // @Failure      403
@@ -154,14 +154,14 @@ func (this *PermissionsManagementEndpoints) SetPermission(config configuration.C
 			return
 		}
 
-		rights := model.ResourceRights{}
-		err = json.NewDecoder(req.Body).Decode(&rights)
+		permissions := model.ResourcePermissions{}
+		err = json.NewDecoder(req.Body).Decode(&permissions)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		result, err, code := ctrl.SetPermission(token, topic, id, rights)
+		result, err, code := ctrl.SetPermission(token, topic, id, permissions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return

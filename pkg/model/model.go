@@ -28,21 +28,21 @@ type Topic struct {
 
 type GroupRight struct {
 	GroupName string `json:"group_name"`
-	Right
+	Permissions
 }
 
 type Resource struct {
 	Id      string `json:"id"`
 	TopicId string `json:"topic_id"`
-	ResourceRights
+	ResourcePermissions
 }
 
-type ResourceRights struct {
-	UserRights  map[string]Right `json:"user_rights"`
-	GroupRights map[string]Right `json:"group_rights"`
+type ResourcePermissions struct {
+	UserPermissions  map[string]Permissions `json:"user_permissions"`
+	GroupPermissions map[string]Permissions `json:"group_permissions"`
 }
 
-type Right struct {
+type Permissions struct {
 	Read         bool `json:"read"`
 	Write        bool `json:"write"`
 	Execute      bool `json:"execute"`

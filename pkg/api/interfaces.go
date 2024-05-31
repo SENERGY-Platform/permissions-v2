@@ -35,13 +35,13 @@ type AdminInterface interface {
 }
 
 type PermissionsCheckInterface interface {
-	CheckPermission(token jwt.Token, topicId string, id string, rights string) (access bool, err error, code int)
-	CheckMultiplePermissions(token jwt.Token, topicId string, ids []string, rights string) (access map[string]bool, err error, code int)
-	ListAccessibleResourceIds(token jwt.Token, topicId string, rights string, options model.ListOptions) (ids []string, err error, code int)
+	CheckPermission(token jwt.Token, topicId string, id string, permissions string) (access bool, err error, code int)
+	CheckMultiplePermissions(token jwt.Token, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int)
+	ListAccessibleResourceIds(token jwt.Token, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int)
 }
 
 type PermissionsManagementInterface interface {
 	ListResourcesWithAdminPermission(token jwt.Token, topicId string, options model.ListOptions) (result []model.Resource, err error, code int)
 	GetResource(token jwt.Token, topicId string, id string) (result model.Resource, err error, code int)
-	SetPermission(token jwt.Token, topicId string, id string, rights model.ResourceRights) (result model.ResourceRights, err error, code int)
+	SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int)
 }

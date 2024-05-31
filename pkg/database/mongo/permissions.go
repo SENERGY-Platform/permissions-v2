@@ -51,7 +51,7 @@ type PermissionsEntry struct {
 	ExecuteGroups []string `json:"execute_groups" bson:"execute_groups"`
 }
 
-func (this *Database) rightsCollection() *mongo.Collection {
+func (this *Database) permissionsCollection() *mongo.Collection {
 	return this.client.Database(this.config.MongoDatabase).Collection(this.config.MongoPermissionsCollection)
 }
 
@@ -59,76 +59,76 @@ func (this *PermissionsEntry) ToResource() model.Resource {
 	result := model.Resource{
 		Id:      this.Id,
 		TopicId: this.TopicId,
-		ResourceRights: model.ResourceRights{
-			UserRights:  map[string]model.Right{},
-			GroupRights: map[string]model.Right{},
+		ResourcePermissions: model.ResourcePermissions{
+			UserPermissions:  map[string]model.Permissions{},
+			GroupPermissions: map[string]model.Permissions{},
 		},
 	}
 	for _, user := range this.AdminUsers {
-		if _, ok := result.UserRights[user]; !ok {
-			result.UserRights[user] = model.Right{}
+		if _, ok := result.UserPermissions[user]; !ok {
+			result.UserPermissions[user] = model.Permissions{}
 		}
-		right := result.UserRights[user]
-		right.Administrate = true
-		result.UserRights[user] = right
+		permissions := result.UserPermissions[user]
+		permissions.Administrate = true
+		result.UserPermissions[user] = permissions
 	}
 	for _, user := range this.ReadUsers {
-		if _, ok := result.UserRights[user]; !ok {
-			result.UserRights[user] = model.Right{}
+		if _, ok := result.UserPermissions[user]; !ok {
+			result.UserPermissions[user] = model.Permissions{}
 		}
-		right := result.UserRights[user]
-		right.Read = true
-		result.UserRights[user] = right
+		permissions := result.UserPermissions[user]
+		permissions.Read = true
+		result.UserPermissions[user] = permissions
 	}
 	for _, user := range this.WriteUsers {
-		if _, ok := result.UserRights[user]; !ok {
-			result.UserRights[user] = model.Right{}
+		if _, ok := result.UserPermissions[user]; !ok {
+			result.UserPermissions[user] = model.Permissions{}
 		}
-		right := result.UserRights[user]
-		right.Write = true
-		result.UserRights[user] = right
+		permissions := result.UserPermissions[user]
+		permissions.Write = true
+		result.UserPermissions[user] = permissions
 	}
 	for _, user := range this.ExecuteUsers {
-		if _, ok := result.UserRights[user]; !ok {
-			result.UserRights[user] = model.Right{}
+		if _, ok := result.UserPermissions[user]; !ok {
+			result.UserPermissions[user] = model.Permissions{}
 		}
-		right := result.UserRights[user]
-		right.Execute = true
-		result.UserRights[user] = right
+		permissions := result.UserPermissions[user]
+		permissions.Execute = true
+		result.UserPermissions[user] = permissions
 	}
 
-	result.GroupRights = map[string]model.Right{}
+	result.GroupPermissions = map[string]model.Permissions{}
 	for _, group := range this.AdminGroups {
-		if _, ok := result.GroupRights[group]; !ok {
-			result.GroupRights[group] = model.Right{}
+		if _, ok := result.GroupPermissions[group]; !ok {
+			result.GroupPermissions[group] = model.Permissions{}
 		}
-		right := result.GroupRights[group]
-		right.Administrate = true
-		result.GroupRights[group] = right
+		permissions := result.GroupPermissions[group]
+		permissions.Administrate = true
+		result.GroupPermissions[group] = permissions
 	}
 	for _, group := range this.ReadGroups {
-		if _, ok := result.GroupRights[group]; !ok {
-			result.GroupRights[group] = model.Right{}
+		if _, ok := result.GroupPermissions[group]; !ok {
+			result.GroupPermissions[group] = model.Permissions{}
 		}
-		right := result.GroupRights[group]
-		right.Read = true
-		result.GroupRights[group] = right
+		permissions := result.GroupPermissions[group]
+		permissions.Read = true
+		result.GroupPermissions[group] = permissions
 	}
 	for _, group := range this.WriteGroups {
-		if _, ok := result.GroupRights[group]; !ok {
-			result.GroupRights[group] = model.Right{}
+		if _, ok := result.GroupPermissions[group]; !ok {
+			result.GroupPermissions[group] = model.Permissions{}
 		}
-		right := result.GroupRights[group]
-		right.Write = true
-		result.GroupRights[group] = right
+		permissions := result.GroupPermissions[group]
+		permissions.Write = true
+		result.GroupPermissions[group] = permissions
 	}
 	for _, group := range this.ExecuteGroups {
-		if _, ok := result.GroupRights[group]; !ok {
-			result.GroupRights[group] = model.Right{}
+		if _, ok := result.GroupPermissions[group]; !ok {
+			result.GroupPermissions[group] = model.Permissions{}
 		}
-		right := result.GroupRights[group]
-		right.Execute = true
-		result.GroupRights[group] = right
+		permissions := result.GroupPermissions[group]
+		permissions.Execute = true
+		result.GroupPermissions[group] = permissions
 	}
 	return result
 }

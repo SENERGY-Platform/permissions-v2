@@ -13,33 +13,7 @@ definitions:
       write:
         type: boolean
     type: object
-  model.Resource:
-    properties:
-      group_rights:
-        additionalProperties:
-          $ref: '#/definitions/model.Right'
-        type: object
-      id:
-        type: string
-      topic_id:
-        type: string
-      user_rights:
-        additionalProperties:
-          $ref: '#/definitions/model.Right'
-        type: object
-    type: object
-  model.ResourceRights:
-    properties:
-      group_rights:
-        additionalProperties:
-          $ref: '#/definitions/model.Right'
-        type: object
-      user_rights:
-        additionalProperties:
-          $ref: '#/definitions/model.Right'
-        type: object
-    type: object
-  model.Right:
+  model.Permissions:
     properties:
       administrate:
         type: boolean
@@ -49,6 +23,32 @@ definitions:
         type: boolean
       write:
         type: boolean
+    type: object
+  model.Resource:
+    properties:
+      group_permissions:
+        additionalProperties:
+          $ref: '#/definitions/model.Permissions'
+        type: object
+      id:
+        type: string
+      topic_id:
+        type: string
+      user_permissions:
+        additionalProperties:
+          $ref: '#/definitions/model.Permissions'
+        type: object
+    type: object
+  model.ResourcePermissions:
+    properties:
+      group_permissions:
+        additionalProperties:
+          $ref: '#/definitions/model.Permissions'
+        type: object
+      user_permissions:
+        additionalProperties:
+          $ref: '#/definitions/model.Permissions'
+        type: object
     type: object
   model.Topic:
     properties:
@@ -446,14 +446,14 @@ paths:
         name: message
         required: true
         schema:
-          $ref: '#/definitions/model.ResourceRights'
+          $ref: '#/definitions/model.ResourcePermissions'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.ResourceRights'
+            $ref: '#/definitions/model.ResourcePermissions'
         "400":
           description: Bad Request
         "401":

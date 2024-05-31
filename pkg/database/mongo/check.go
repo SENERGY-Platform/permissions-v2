@@ -22,19 +22,19 @@ import (
 	"slices"
 )
 
-func (this *Database) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, rights string) (bool, error) {
-	m, err := this.CheckMultipleResourcePermissions(ctx, topicId, []string{id}, userId, groupIds, rights)
+func (this *Database) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, permissions string) (bool, error) {
+	m, err := this.CheckMultipleResourcePermissions(ctx, topicId, []string{id}, userId, groupIds, permissions)
 	if err != nil {
 		return false, err
 	}
 	return m[id], nil
 }
 
-func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error) {
+func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, permissions string) (result map[string]bool, err error) {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
-	cursor, err := this.rightsCollection().Find(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: bson.M{"$in": ids}})
+	cursor, err := this.permissionsCollection().Find(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: bson.M{"$in": ids}})
 	if err != nil {
 		return result, err
 	}
@@ -45,16 +45,16 @@ func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topi
 		if err != nil {
 			return nil, err
 		}
-		result[element.Id] = checkRights(userId, groupIds, element, rights)
+		result[element.Id] = checkPermissions(userId, groupIds, element, permissions)
 	}
 
 	err = cursor.Err()
 	return result, err
 }
 
-func checkRights(userId string, groupIds []string, element PermissionsEntry, rights string) bool {
-	for _, r := range rights {
-		switch r {
+func checkPermissions(userId string, groupIds []string, element PermissionsEntry, permissions string) bool {
+	for _, p := range permissions {
+		switch p {
 		case 'a':
 			if !slices.Contains(element.AdminUsers, userId) && !containsAny(element.AdminGroups, groupIds) {
 				return false
