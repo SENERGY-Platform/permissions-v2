@@ -54,8 +54,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "checked rights in the form of 'rwxa', defaults to 'r'",
-                        "name": "rights",
+                        "description": "checked permissions in the form of 'rwxa', defaults to 'r'",
+                        "name": "permissions",
                         "in": "query"
                     },
                     {
@@ -350,8 +350,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "checked rights in the form of 'rwxa', defaults to 'r'",
-                        "name": "rights",
+                        "description": "checked permissions in the form of 'rwxa', defaults to 'r'",
+                        "name": "permissions",
                         "in": "query"
                     }
                 ],
@@ -404,8 +404,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "checked rights in the form of 'rwxa', defaults to 'r'",
-                        "name": "rights",
+                        "description": "checked permissions in the form of 'rwxa', defaults to 'r'",
+                        "name": "permissions",
                         "in": "query"
                     }
                 ],

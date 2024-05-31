@@ -92,9 +92,9 @@ paths:
         name: topic
         required: true
         type: string
-      - description: checked rights in the form of 'rwxa', defaults to 'r'
+      - description: checked permissions in the form of 'rwxa', defaults to 'r'
         in: query
-        name: rights
+        name: permissions
         type: string
       - description: limits size of result; 0 means unlimited
         in: query
@@ -290,9 +290,9 @@ paths:
         name: ids
         required: true
         type: string
-      - description: checked rights in the form of 'rwxa', defaults to 'r'
+      - description: checked permissions in the form of 'rwxa', defaults to 'r'
         in: query
-        name: rights
+        name: permissions
         type: string
       produces:
       - application/json
@@ -326,9 +326,9 @@ paths:
         name: id
         required: true
         type: string
-      - description: checked rights in the form of 'rwxa', defaults to 'r'
+      - description: checked permissions in the form of 'rwxa', defaults to 'r'
         in: query
-        name: rights
+        name: permissions
         type: string
       produces:
       - application/json
