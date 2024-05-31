@@ -39,6 +39,9 @@ type Config struct {
 	MongoDatabase              string `json:"mongo_database"`
 	MongoPermissionsCollection string `json:"mongo_permissions_collection"`
 	MongoTopicsCollection      string `json:"mongo_topics_collection"`
+
+	//TODO: use
+	DisabledTopicConsumers []string `json:"disabled_topic_consumers"` //may be needed to fix service with broken topic consumer
 }
 
 // loads config from json in location and used environment variables (e.g KafkaUrl --> KAFKA_URL)

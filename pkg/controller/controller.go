@@ -17,18 +17,34 @@
 package controller
 
 import (
+	"context"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
+	"github.com/segmentio/kafka-go"
+	"log"
+	"sync"
 )
 
 type Controller struct {
-	config configuration.Config
-	db     DB
+	config    configuration.Config
+	db        DB
+	topics    map[string]TopicWrapper
+	topicsMux sync.Mutex
 }
 
-func NewWithDependencies(config configuration.Config, db DB) *Controller {
-	return &Controller{config: config, db: db}
+func NewWithDependencies(ctx context.Context, config configuration.Config, db DB) *Controller {
+	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}}
+	go func() {
+		<-ctx.Done()
+		result.topicsMux.Lock()
+		defer result.topicsMux.Unlock()
+		for _, topic := range result.topics {
+			log.Printf("close %v %v producer %v", topic.Id, topic.KafkaTopic, topic.Close())
+		}
+		result.topics = map[string]TopicWrapper{}
+	}()
+	return result
 }
 
 func (this *Controller) ListTopics(token jwt.Token, options model.ListOptions) (result []model.Topic, err error, code int) {
@@ -82,4 +98,14 @@ func (this *Controller) GetResource(token jwt.Token, topicId string, id string) 
 func (this *Controller) SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (this *Controller) handleReceivedCommand(topic model.Topic, m kafka.Message) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (this *Controller) handleReaderError(topic model.Topic, err error) {
+	//TODO: try to reconnect
+	log.Fatalf("ERROR: while consuming topic %v: %v\ntopic-config = %#v\n", topic.KafkaTopic, err, topic)
 }

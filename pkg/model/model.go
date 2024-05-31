@@ -21,6 +21,9 @@ type Topic struct {
 	Id         string `json:"id"`          //unchangeable, defaults to KafkaTopic
 	KafkaTopic string `json:"kafka_topic"` //changeable, defaults to Id
 
+	EnsureTopicInit                bool `json:"ensure_topic_init"`
+	EnsureTopicInitPartitionNumber int  `json:"ensure_topic_init_partition_number"`
+
 	KafkaConsumerGroup string `json:"kafka_consumer_group"` //defaults to configured kafka consumer group
 
 	InitialGroupRights []GroupRight `json:"initial_group_rights"`

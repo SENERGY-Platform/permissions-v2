@@ -14,31 +14,58 @@
  * limitations under the License.
  */
 
-package producer
+package controller
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/segmentio/kafka-go"
 	"io"
 	"log"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
-func New(config configuration.Config, ctx context.Context) *Producer {
-	return &Producer{ctx: ctx, config: config, writers: map[string]*kafka.Writer{}}
+func (this *Controller) newKafkaWriter(topic model.Topic) *kafka.Writer {
+	var logger *log.Logger
+	if this.config.Debug {
+		logger = log.New(os.Stdout, "[KAFKA-PRODUCER] ", 0)
+	} else {
+		logger = log.New(io.Discard, "", 0)
+	}
+	writer := &kafka.Writer{
+		Addr:        kafka.TCP(this.config.KafkaUrl),
+		Topic:       topic.KafkaTopic,
+		MaxAttempts: 10,
+		Logger:      logger,
+		BatchSize:   1,
+		Balancer:    &KeySeparationBalancer{SubBalancer: &kafka.Hash{}, Seperator: "/"},
+	}
+	return writer
 }
 
-type Producer struct {
-	config  configuration.Config
-	writers map[string]*kafka.Writer
-	ctx     context.Context
-	mux     sync.Mutex
+func (this *TopicWrapper) SendPermissions(ctx context.Context, id string, permissions model.ResourcePermissions) (err error) {
+	cmd := Command{
+		Command: "RIGHTS",
+		Id:      id,
+		Rights:  permissionsToRights(permissions),
+	}
+	var temp []byte
+	temp, err = json.Marshal(cmd)
+	if err != nil {
+		return err
+	}
+	key := id + "/rights"
+	if this.debug {
+		log.Println("produce:", this.Id, this.KafkaTopic, key, string(temp))
+	}
+	return this.writer.WriteMessages(ctx, kafka.Message{
+		Key:   []byte(key),
+		Value: temp,
+		Time:  time.Now(),
+	})
 }
 
 type Command struct {
@@ -57,32 +84,6 @@ type Right struct {
 	Write        bool `json:"write"`
 	Execute      bool `json:"execute"`
 	Administrate bool `json:"administrate"`
-}
-
-func (this *Producer) Produce(ctx context.Context, topic string, id string, permissions model.ResourcePermissions) error {
-	writer, err := this.getWriter(topic)
-	if err != nil {
-		return err
-	}
-	cmd := Command{
-		Command: "RIGHTS",
-		Id:      id,
-		Rights:  permissionsToRights(permissions),
-	}
-	var temp []byte
-	temp, err = json.Marshal(cmd)
-	if err != nil {
-		return err
-	}
-	key := id + "/rights"
-	if this.config.Debug {
-		log.Println("produce:", topic, key, string(temp))
-	}
-	return writer.WriteMessages(this.ctx, kafka.Message{
-		Key:   []byte(key),
-		Value: temp,
-		Time:  time.Now(),
-	})
 }
 
 func permissionsToRights(permissions model.ResourcePermissions) *ResourcePermissions {
@@ -107,39 +108,6 @@ func permissionsToRights(permissions model.ResourcePermissions) *ResourcePermiss
 		}
 	}
 	return &result
-}
-
-func (this *Producer) getWriter(topic string) (*kafka.Writer, error) {
-	this.mux.Lock()
-	defer this.mux.Unlock()
-
-	if writer, ok := this.writers[topic]; ok {
-		return writer, nil
-	}
-
-	var logger *log.Logger
-	if this.config.Debug {
-		logger = log.New(os.Stdout, "[KAFKA-PRODUCER] ", 0)
-	} else {
-		logger = log.New(io.Discard, "", 0)
-	}
-	writer := &kafka.Writer{
-		Addr:        kafka.TCP(this.config.KafkaUrl),
-		Topic:       topic,
-		MaxAttempts: 10,
-		Logger:      logger,
-		BatchSize:   1,
-		Balancer:    &KeySeparationBalancer{SubBalancer: &kafka.Hash{}, Seperator: "/"},
-	}
-	go func() {
-		<-this.ctx.Done()
-		err := writer.Close()
-		if err != nil {
-			log.Println("ERROR: unable to close producer for", topic, err)
-		}
-	}()
-	this.writers[topic] = writer
-	return writer, nil
 }
 
 type KeySeparationBalancer struct {
