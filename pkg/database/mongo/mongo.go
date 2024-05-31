@@ -32,20 +32,20 @@ import (
 	"time"
 )
 
-type Mongo struct {
+type Database struct {
 	config configuration.Config
 	client *mongo.Client
 }
 
-var CreateCollections = []func(db *Mongo) error{}
+var CreateCollections = []func(db *Database) error{}
 
-func New(conf configuration.Config) (*Mongo, error) {
+func New(conf configuration.Config) (*Database, error) {
 	ctx, _ := getTimeoutContext()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.MongoUrl))
 	if err != nil {
 		return nil, err
 	}
-	db := &Mongo{config: conf, client: client}
+	db := &Database{config: conf, client: client}
 	for _, creators := range CreateCollections {
 		err = creators(db)
 		if err != nil {
@@ -56,45 +56,11 @@ func New(conf configuration.Config) (*Mongo, error) {
 	return db, nil
 }
 
-func (this *Mongo) CreateId() string {
+func (this *Database) CreateId() string {
 	return uuid.NewString()
 }
 
-func (this *Mongo) Transaction(ctx context.Context) (resultCtx context.Context, close func(success bool) error, err error) {
-	if !this.config.MongoReplSet {
-		return ctx, func(bool) error { return nil }, nil
-	}
-	session, err := this.client.StartSession()
-	if err != nil {
-		return nil, nil, err
-	}
-	err = session.StartTransaction()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	//create session context; callback is executed synchronously and the error is passed on as error of WithSession
-	_ = mongo.WithSession(ctx, session, func(sessionContext mongo.SessionContext) error {
-		resultCtx = sessionContext
-		return nil
-	})
-
-	return resultCtx, func(success bool) error {
-		defer session.EndSession(context.Background())
-		var err error
-		if success {
-			err = session.CommitTransaction(resultCtx)
-		} else {
-			err = session.AbortTransaction(resultCtx)
-		}
-		if err != nil {
-			log.Println("ERROR: unable to finish mongo transaction", err)
-		}
-		return err
-	}, nil
-}
-
-func (this *Mongo) ensureIndex(collection *mongo.Collection, indexname string, indexKey string, asc bool, unique bool) error {
+func (this *Database) ensureIndex(collection *mongo.Collection, indexname string, indexKey string, asc bool, unique bool) error {
 	ctx, _ := getTimeoutContext()
 	var direction int32 = -1
 	if asc {
@@ -110,7 +76,7 @@ func (this *Mongo) ensureIndex(collection *mongo.Collection, indexname string, i
 	return err
 }
 
-func (this *Mongo) ensureCompoundIndex(collection *mongo.Collection, indexname string, asc bool, unique bool, indexKeys ...string) error {
+func (this *Database) ensureCompoundIndex(collection *mongo.Collection, indexname string, asc bool, unique bool, indexKeys ...string) error {
 	ctx, _ := getTimeoutContext()
 	var direction int32 = -1
 	if asc {
@@ -127,7 +93,7 @@ func (this *Mongo) ensureCompoundIndex(collection *mongo.Collection, indexname s
 	return err
 }
 
-func (this *Mongo) Disconnect() {
+func (this *Database) Disconnect() {
 	timeout, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	log.Println(this.client.Disconnect(timeout))
 }

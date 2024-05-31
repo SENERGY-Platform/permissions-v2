@@ -217,7 +217,7 @@ func TestResourcePermissions(t *testing.T) {
 
 	t.Run("set", func(t *testing.T) {
 		for i, update := range updates {
-			updateIgnored, err := db.SetResourcePermissions(update.r, update.t, update.preventOlderUpdates)
+			updateIgnored, err := db.SetResourcePermissions(nil, update.r, update.t, update.preventOlderUpdates)
 			if err != nil {
 				t.Error(i, err)
 				return
@@ -854,13 +854,13 @@ func TestResourcePermissions(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		for i, q := range listQueries {
-			result, err := db.ListByRights(q.topic, q.user, []string{q.group}, q.rights, q.options)
+			result, err := db.ListResourcesByPermissions(nil, q.topic, q.user, []string{q.group}, q.rights, q.options)
 			if err != nil {
 				t.Error(i, err)
 				return
 			}
 			if !reflect.DeepEqual(result, q.expectedResult) {
-				t.Errorf("%v ListByRights(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", i, q.topic, q.user, q.group, q.rights, q.options, result, q.expectedResult)
+				t.Errorf("%v ListResourcesByPermissions(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", i, q.topic, q.user, q.group, q.rights, q.options, result, q.expectedResult)
 				return
 			}
 
@@ -868,20 +868,20 @@ func TestResourcePermissions(t *testing.T) {
 			for _, e := range q.expectedResult {
 				expectedIds = append(expectedIds, e.Id)
 			}
-			actualIds, err := db.ListIdsByRights(q.topic, q.user, []string{q.group}, q.rights, q.options)
+			actualIds, err := db.ListResourceIdsByPermissions(nil, q.topic, q.user, []string{q.group}, q.rights, q.options)
 			if err != nil {
 				t.Error(i, err)
 				return
 			}
 			if !reflect.DeepEqual(actualIds, expectedIds) {
-				t.Errorf("%v ListIdsByRights(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", i, q.topic, q.user, q.group, q.rights, q.options, actualIds, expectedIds)
+				t.Errorf("%v ListResourceIdsByPermissions(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", i, q.topic, q.user, q.group, q.rights, q.options, actualIds, expectedIds)
 				return
 			}
 		}
 	})
 
 	t.Run("check", func(t *testing.T) {
-		result, err := db.Check("device", "a", "u1", []string{}, "rwxa")
+		result, err := db.CheckResourcePermissions(nil, "device", "a", "u1", []string{}, "rwxa")
 		if err != nil {
 			t.Error(err)
 			return
@@ -891,7 +891,7 @@ func TestResourcePermissions(t *testing.T) {
 			return
 		}
 
-		result, err = db.Check("device", "d", "u1", []string{}, "rwxa")
+		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{}, "rwxa")
 		if err != nil {
 			t.Error(err)
 			return
@@ -901,7 +901,7 @@ func TestResourcePermissions(t *testing.T) {
 			return
 		}
 
-		result, err = db.Check("device", "d", "u1", []string{"g1"}, "rwxa")
+		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{"g1"}, "rwxa")
 		if err != nil {
 			t.Error(err)
 			return
@@ -911,7 +911,7 @@ func TestResourcePermissions(t *testing.T) {
 			return
 		}
 
-		result, err = db.Check("device", "d", "u1", []string{"g1"}, "r")
+		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{"g1"}, "r")
 		if err != nil {
 			t.Error(err)
 			return
@@ -921,7 +921,7 @@ func TestResourcePermissions(t *testing.T) {
 			return
 		}
 
-		result, err = db.Check("device", "d", "u1", []string{"g1", "g3"}, "r")
+		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{"g1", "g3"}, "r")
 		if err != nil {
 			t.Error(err)
 			return
@@ -933,7 +933,7 @@ func TestResourcePermissions(t *testing.T) {
 	})
 
 	t.Run("check multiple", func(t *testing.T) {
-		result, err := db.CheckMultiple("device", []string{"a", "b", "c", "d", "e", "x", "y"}, "u1", []string{}, "rwxa")
+		result, err := db.CheckMultipleResourcePermissions(nil, "device", []string{"a", "b", "c", "d", "e", "x", "y"}, "u1", []string{}, "rwxa")
 		if err != nil {
 			t.Error(err)
 			return
@@ -975,7 +975,7 @@ func TestDistributedRights(t *testing.T) {
 		return
 	}
 
-	_, err = db.SetResourcePermissions(model.Resource{
+	_, err = db.SetResourcePermissions(nil, model.Resource{
 		Id:      "a",
 		TopicId: "device",
 		ResourceRights: model.ResourceRights{
@@ -990,7 +990,7 @@ func TestDistributedRights(t *testing.T) {
 	}
 
 	t.Run("check", func(t *testing.T) {
-		result, err := db.Check("device", "a", "u1", []string{}, "r")
+		result, err := db.CheckResourcePermissions(nil, "device", "a", "u1", []string{}, "r")
 		if err != nil {
 			t.Error(err)
 			return
@@ -1000,7 +1000,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result, err = db.Check("device", "a", "u2", []string{"g1"}, "w")
+		result, err = db.CheckResourcePermissions(nil, "device", "a", "u2", []string{"g1"}, "w")
 		if err != nil {
 			t.Error(err)
 			return
@@ -1010,7 +1010,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result, err = db.Check("device", "a", "u1", []string{}, "rwxa")
+		result, err = db.CheckResourcePermissions(nil, "device", "a", "u1", []string{}, "rwxa")
 		if err != nil {
 			t.Error(err)
 			return
@@ -1020,7 +1020,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result, err = db.Check("device", "a", "u1", []string{"g1", "g2", "g3"}, "rwxa")
+		result, err = db.CheckResourcePermissions(nil, "device", "a", "u1", []string{"g1", "g2", "g3"}, "rwxa")
 		if err != nil {
 			t.Error(err)
 			return
@@ -1032,7 +1032,7 @@ func TestDistributedRights(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		result, err := db.ListIdsByRights("device", "u1", []string{}, "rwxa", model.ListOptions{})
+		result, err := db.ListResourceIdsByPermissions(nil, "device", "u1", []string{}, "rwxa", model.ListOptions{})
 		if err != nil {
 			t.Error(err)
 			return
@@ -1042,7 +1042,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result, err = db.ListIdsByRights("device", "u1", []string{"g1", "g2", "g3"}, "rwxa", model.ListOptions{})
+		result, err = db.ListResourceIdsByPermissions(nil, "device", "u1", []string{"g1", "g2", "g3"}, "rwxa", model.ListOptions{})
 		if err != nil {
 			t.Error(err)
 			return
@@ -1052,7 +1052,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result2, err := db.ListByRights("device", "u1", []string{"g1", "g2", "g3"}, "rwxa", model.ListOptions{})
+		result2, err := db.ListResourcesByPermissions(nil, "device", "u1", []string{"g1", "g2", "g3"}, "rwxa", model.ListOptions{})
 		if err != nil {
 			t.Error(err)
 			return

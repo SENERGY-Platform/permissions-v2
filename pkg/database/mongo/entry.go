@@ -26,9 +26,9 @@ var PermissionsEntryBson = getBsonFieldObject[PermissionsEntry]()
 const PermissionsEntryTimestampBson = "timestamp"
 
 func init() {
-	CreateCollections = append(CreateCollections, func(db *Mongo) error {
+	CreateCollections = append(CreateCollections, func(db *Database) error {
 		var err error
-		collection := db.client.Database(db.config.MongoTable).Collection(db.config.MongoPermissionsCollection)
+		collection := db.client.Database(db.config.MongoDatabase).Collection(db.config.MongoPermissionsCollection)
 		err = db.ensureCompoundIndex(collection, "permissionsbytopicandid", true, true, PermissionsEntryBson.TopicId, PermissionsEntryBson.Id)
 		if err != nil {
 			return err
@@ -51,8 +51,8 @@ type PermissionsEntry struct {
 	ExecuteGroups []string `json:"execute_groups" bson:"execute_groups"`
 }
 
-func (this *Mongo) rightsCollection() *mongo.Collection {
-	return this.client.Database(this.config.MongoTable).Collection(this.config.MongoPermissionsCollection)
+func (this *Database) rightsCollection() *mongo.Collection {
+	return this.client.Database(this.config.MongoDatabase).Collection(this.config.MongoPermissionsCollection)
 }
 
 func (this *PermissionsEntry) ToResource() model.Resource {

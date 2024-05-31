@@ -5,6 +5,8 @@
 
     "edit_forward": "",
 
+    "mongo_url": "mongodb://localhost:27017",
+    "mongo_database": "permissions",
     "mongo_permissions_collection": "permissions",
-    "mongo_table": "permissions"
+    "mongo_topics_collection": "topics"
 }

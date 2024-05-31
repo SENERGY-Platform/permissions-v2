@@ -26,9 +26,11 @@ import (
 	"time"
 )
 
-func (this *Mongo) SetResourcePermissions(r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error) {
+func (this *Database) SetResourcePermissions(ctx context.Context, r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error) {
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
+	}
 	if preventOlderUpdates {
-		ctx, _ := getTimeoutContext()
 		updateIgnored, err = this.newerResourceExists(ctx, r.TopicId, r.Id, t)
 		if err != nil {
 			return updateIgnored, err
@@ -37,10 +39,10 @@ func (this *Mongo) SetResourcePermissions(r model.Resource, t time.Time, prevent
 			return updateIgnored, nil
 		}
 	}
-	return false, this.SetRights(r.TopicId, r.Id, r.ResourceRights, t)
+	return false, this.SetRights(ctx, r.TopicId, r.Id, r.ResourceRights, t)
 }
 
-func (this *Mongo) newerResourceExists(ctx context.Context, topicId string, id string, t time.Time) (exists bool, err error) {
+func (this *Database) newerResourceExists(ctx context.Context, topicId string, id string, t time.Time) (exists bool, err error) {
 	err = this.rightsCollection().FindOne(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: id, PermissionsEntryTimestampBson: bson.M{"$gt": t.Unix()}}).Err()
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return false, nil
@@ -51,7 +53,10 @@ func (this *Mongo) newerResourceExists(ctx context.Context, topicId string, id s
 	return true, nil
 }
 
-func (this *Mongo) SetRights(topic string, id string, rights model.ResourceRights, t time.Time) (err error) {
+func (this *Database) SetRights(ctx context.Context, topic string, id string, rights model.ResourceRights, t time.Time) (err error) {
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
+	}
 	element := PermissionsEntry{
 		Timestamp:     t.Unix(),
 		TopicId:       topic,
@@ -66,11 +71,7 @@ func (this *Mongo) SetRights(topic string, id string, rights model.ResourceRight
 		ExecuteGroups: []string{},
 	}
 	element.setResourceRights(rights)
-
-	ctx, _ := getTimeoutContext()
-
 	_, err = this.rightsCollection().ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
-
 	return err
 }
 

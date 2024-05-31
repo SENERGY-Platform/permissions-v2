@@ -22,16 +22,18 @@ import (
 	"slices"
 )
 
-func (this *Mongo) Check(topicId string, id string, userId string, groupIds []string, rights string) (bool, error) {
-	m, err := this.CheckMultiple(topicId, []string{id}, userId, groupIds, rights)
+func (this *Database) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, rights string) (bool, error) {
+	m, err := this.CheckMultipleResourcePermissions(ctx, topicId, []string{id}, userId, groupIds, rights)
 	if err != nil {
 		return false, err
 	}
 	return m[id], nil
 }
 
-func (this *Mongo) CheckMultiple(topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error) {
-	ctx, _ := getTimeoutContext()
+func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error) {
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
+	}
 	cursor, err := this.rightsCollection().Find(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: bson.M{"$in": ids}})
 	if err != nil {
 		return result, err

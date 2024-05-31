@@ -24,8 +24,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (this *Mongo) ListIdsByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error) {
-	temp, err := this.ListByRights(topicId, userId, groupIds, rights, options)
+func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error) {
+	temp, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, rights, options)
 	if err != nil {
 		return nil, err
 	}
@@ -36,9 +36,11 @@ func (this *Mongo) ListIdsByRights(topicId string, userId string, groupIds []str
 	return result, err
 }
 
-func (this *Mongo) ListByRights(topicId string, userId string, groupIds []string, rights string, listOptions model.ListOptions) (result []model.Resource, err error) {
+func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, rights string, listOptions model.ListOptions) (result []model.Resource, err error) {
 	result = []model.Resource{}
-	ctx, _ := getTimeoutContext()
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
+	}
 	rightsFilter := bson.A{}
 	for _, r := range rights {
 		switch r {

@@ -17,6 +17,7 @@
 package database
 
 import (
+	"context"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/database/mongo"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
@@ -24,11 +25,18 @@ import (
 )
 
 type Database interface {
-	SetResourcePermissions(r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error)
-	ListByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []model.Resource, err error)
-	ListIdsByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error)
-	CheckMultiple(topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error)
-	Check(topicId string, id string, userId string, groupIds []string, rights string) (result bool, err error)
+	SetResourcePermissions(ctx context.Context, r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error)
+
+	ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []model.Resource, err error)
+	ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error)
+
+	CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error)
+	CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, rights string) (result bool, err error)
+
+	SetTopic(ctx context.Context, topic model.Topic) error
+	GetTopic(ctx context.Context, id string) (result model.Topic, exists bool, err error)
+	ListTopics(ctx context.Context, listOptions model.ListOptions) (result []model.Topic, err error)
+	DeleteTopic(ctx context.Context, id string) error
 }
 
 func New(config configuration.Config) (Database, error) {

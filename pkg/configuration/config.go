@@ -35,12 +35,10 @@ type Config struct {
 	KafkaUrl                  string `json:"kafka_url"`
 	DefaultKafkaConsumerGroup string `json:"default_kafka_consumer_group"`
 
-	PostgresConnStr string `json:"postgres_conn_str"` //e.g. "postgres://user:pw@localhost/dbname?sslmode=disable"
-
 	MongoUrl                   string `json:"mongo_url"`
-	MongoReplSet               bool   `json:"mongo_repl_set"` //set true if mongodb is configured as replication set or mongos and is able to handle transactions
-	MongoTable                 string `json:"mongo_table"`
+	MongoDatabase              string `json:"mongo_database"`
 	MongoPermissionsCollection string `json:"mongo_permissions_collection"`
+	MongoTopicsCollection      string `json:"mongo_topics_collection"`
 }
 
 // loads config from json in location and used environment variables (e.g KafkaUrl --> KAFKA_URL)
