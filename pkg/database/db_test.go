@@ -39,11 +39,12 @@ func TestResourcePermissions(t *testing.T) {
 		return
 	}
 
-	config.PostgresConnStr, err = docker.Postgres(ctx, wg, "permissions")
+	port, _, err := docker.MongoDB(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
 	}
+	config.MongoUrl = "mongodb://localhost:" + port
 
 	db, err := New(config)
 	if err != nil {
@@ -961,11 +962,12 @@ func TestDistributedRights(t *testing.T) {
 		return
 	}
 
-	config.PostgresConnStr, err = docker.Postgres(ctx, wg, "permissions")
+	port, _, err := docker.MongoDB(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
 	}
+	config.MongoUrl = "mongodb://localhost:" + port
 
 	db, err := New(config)
 	if err != nil {

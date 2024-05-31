@@ -18,7 +18,7 @@ package database
 
 import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/database/postgres"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/database/mongo"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"time"
 )
@@ -32,5 +32,5 @@ type Database interface {
 }
 
 func New(config configuration.Config) (Database, error) {
-	return postgres.New(config)
+	return mongo.New(config)
 }
