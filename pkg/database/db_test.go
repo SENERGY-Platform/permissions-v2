@@ -19,8 +19,6 @@ package database
 import (
 	"context"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/database/mongo"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/database/postgres"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/tests/docker"
 	"reflect"
@@ -29,14 +27,7 @@ import (
 	"time"
 )
 
-type TestDatabase interface {
-	SetResourcePermissions(r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error)
-	ListByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []model.Resource, err error)
-	CheckMultiple(topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error)
-	Reset() error //TODO: remove this test interface
-}
-
-func BenchmarkResourcePermissions(b *testing.B) {
+func TestResourcePermissions(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -44,38 +35,21 @@ func BenchmarkResourcePermissions(b *testing.B) {
 
 	config, err := configuration.Load("../../config.json")
 	if err != nil {
-		b.Error(err)
+		t.Error(err)
 		return
 	}
 
 	config.PostgresConnStr, err = docker.Postgres(ctx, wg, "permissions")
 	if err != nil {
-		b.Error(err)
+		t.Error(err)
 		return
 	}
 
-	port, _, err := docker.MongoDB(ctx, wg)
+	db, err := New(config)
 	if err != nil {
-		b.Error(err)
+		t.Error(err)
 		return
 	}
-	config.MongoUrl = "mongodb://localhost:" + port
-
-	pg, err := postgres.New(config)
-	if err != nil {
-		b.Error(err)
-		return
-	}
-
-	m, err := mongo.New(config)
-	if err != nil {
-		b.Error(err)
-		return
-	}
-
-	time.Sleep(time.Second)
-
-	compared := map[string]TestDatabase{"warmup_mongo": m, "warmup_postgres": pg, "mongo": m, "postgres": pg}
 
 	updates := []struct {
 		r                   model.Resource
@@ -240,31 +214,19 @@ func BenchmarkResourcePermissions(b *testing.B) {
 		},
 	}
 
-	getSetTest := func(implName string, impl TestDatabase) func(b *testing.B) {
-		return func(b *testing.B) {
-			err = impl.Reset()
+	t.Run("set", func(t *testing.T) {
+		for i, update := range updates {
+			updateIgnored, err := db.SetResourcePermissions(update.r, update.t, update.preventOlderUpdates)
 			if err != nil {
-				b.Error(implName, err)
+				t.Error(i, err)
 				return
 			}
-			b.ResetTimer()
-			for i, update := range updates {
-				updateIgnored, err := impl.SetResourcePermissions(update.r, update.t, update.preventOlderUpdates)
-				if err != nil {
-					b.Error(implName, err)
-					return
-				}
-				if update.expectUpdateIgnored != updateIgnored {
-					b.Errorf("%v %v SetResourcePermissions(%#v,%#v%#v) = %#v \nexpectUpdateIgnored=%#v\n", implName, i, update.r, update.t, update.preventOlderUpdates, updateIgnored, update.expectUpdateIgnored)
-					return
-				}
+			if update.expectUpdateIgnored != updateIgnored {
+				t.Errorf("%v SetResourcePermissions(%#v,%#v%#v) = %#v \nexpectUpdateIgnored=%#v\n", i, update.r, update.t, update.preventOlderUpdates, updateIgnored, update.expectUpdateIgnored)
+				return
 			}
 		}
-	}
-
-	for implName, impl := range compared {
-		b.Run("set "+implName, getSetTest(implName, impl))
-	}
+	})
 
 	listQueries := []struct {
 		topic          string
@@ -889,48 +851,50 @@ func BenchmarkResourcePermissions(b *testing.B) {
 		},
 	}
 
-	getListTest := func(implName string, impl TestDatabase) func(b *testing.B) {
-		return func(b *testing.B) {
-			for i, q := range listQueries {
-				result, err := impl.ListByRights(q.topic, q.user, []string{q.group}, q.rights, q.options)
-				if err != nil {
-					b.Error(i, err)
-					return
-				}
-				if !reflect.DeepEqual(result, q.expectedResult) {
-					b.Errorf("%v %v ListByRights(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", implName, i, q.topic, q.user, q.group, q.rights, q.options, result, q.expectedResult)
-					return
-				}
-			}
-		}
-	}
-
-	for implName, impl := range compared {
-		b.Run("list "+implName, getListTest(implName, impl))
-	}
-
-	checkMultipleTest := func(implName string, impl TestDatabase) func(b *testing.B) {
-		return func(b *testing.B) {
-			result, err := impl.CheckMultiple("device", []string{"a", "b", "c", "d", "e", "x", "y"}, "u1", []string{}, "rwxa")
+	t.Run("list", func(t *testing.T) {
+		for i, q := range listQueries {
+			result, err := db.ListByRights(q.topic, q.user, []string{q.group}, q.rights, q.options)
 			if err != nil {
-				b.Error(err)
+				t.Error(i, err)
 				return
 			}
-			if !reflect.DeepEqual(result, map[string]bool{
-				"a": true,
-				"b": true,
-				"c": true,
-				"d": false,
-			}) {
-				b.Errorf("%#v", result)
+			if !reflect.DeepEqual(result, q.expectedResult) {
+				t.Errorf("%v ListByRights(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", i, q.topic, q.user, q.group, q.rights, q.options, result, q.expectedResult)
+				return
+			}
+
+			expectedIds := []string{}
+			for _, e := range q.expectedResult {
+				expectedIds = append(expectedIds, e.Id)
+			}
+			actualIds, err := db.ListIdsByRights(q.topic, q.user, []string{q.group}, q.rights, q.options)
+			if err != nil {
+				t.Error(i, err)
+				return
+			}
+			if !reflect.DeepEqual(actualIds, expectedIds) {
+				t.Errorf("%v ListIdsByRights(topic=%#v,user=%#v,group=%#v,rights=%#v,options=%#v) != expected\n%#v\n%#v\n", i, q.topic, q.user, q.group, q.rights, q.options, actualIds, expectedIds)
 				return
 			}
 		}
-	}
+	})
 
-	for implName, impl := range compared {
-		b.Run("check "+implName, checkMultipleTest(implName, impl))
-	}
+	t.Run("check", func(t *testing.T) {
+		result, err := db.CheckMultiple("device", []string{"a", "b", "c", "d", "e", "x", "y"}, "u1", []string{}, "rwxa")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if !reflect.DeepEqual(result, map[string]bool{
+			"a": true,
+			"b": true,
+			"c": true,
+			"d": false,
+		}) {
+			t.Errorf("%#v", result)
+			return
+		}
+	})
 }
 
 func getTestTime(secDelta int) time.Time {

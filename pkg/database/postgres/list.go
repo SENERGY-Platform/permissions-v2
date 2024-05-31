@@ -134,6 +134,7 @@ func (this *Database) ListIdsByRights(topicId string, userId string, groupIds []
 }
 
 func listIdsByRights(ctx context.Context, db DbTxAbstract, topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []string, err error) {
+	result = []string{}
 	if rights == "" {
 		return []string{}, errors.New("invalid rights parameter")
 	}

@@ -17,6 +17,8 @@
 package database
 
 import (
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/database/postgres"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"time"
 )
@@ -26,4 +28,8 @@ type Database interface {
 	ListByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) (result []model.Resource, err error)
 	ListIdsByRights(topicId string, userId string, groupIds []string, rights string, options model.ListOptions) ([]string, error)
 	CheckMultiple(topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error)
+}
+
+func New(config configuration.Config) (Database, error) {
+	return postgres.New(config)
 }
