@@ -43,5 +43,5 @@ type PermissionsCheckInterface interface {
 type PermissionsManagementInterface interface {
 	ListResourcesWithAdminPermission(token jwt.Token, topicId string, options model.ListOptions) (result []model.Resource, err error, code int)
 	GetResource(token jwt.Token, topicId string, id string) (result model.Resource, err error, code int)
-	SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int)
+	SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int)
 }

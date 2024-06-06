@@ -65,7 +65,7 @@ func (this *Controller) GetResource(token jwt.Token, topicId string, id string) 
 	return result, nil, http.StatusOK
 }
 
-func (this *Controller) SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int) {
+func (this *Controller) SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int) {
 	pureId, _ := idmodifier.SplitModifier(id)
 	if !token.IsAdmin() {
 		access, err, code := this.CheckPermission(token, topicId, pureId, "a")
@@ -77,16 +77,29 @@ func (this *Controller) SetPermission(token jwt.Token, topicId string, id string
 		}
 	}
 
-	this.topicsMux.RLock()
-	defer this.topicsMux.RUnlock()
-	wrapper, ok := this.topics[pureId]
-	if !ok {
-		return result, errors.New("unknown topic id"), http.StatusBadRequest
-	}
-	err = wrapper.SendPermissions(this.getTimeoutContext(), pureId, permissions)
+	wait := func() error { return nil }
+
+	err, code = func() (err error, code int) {
+		this.topicsMux.RLock()
+		defer this.topicsMux.RUnlock()
+		wrapper, ok := this.topics[pureId]
+		if !ok {
+			return errors.New("unknown topic id"), http.StatusBadRequest
+		}
+
+		wait = this.optionalWait(options.Wait, wrapper.KafkaTopic, pureId)
+
+		err = wrapper.SendPermissions(this.getTimeoutContext(), pureId, permissions)
+		if err != nil {
+			return err, http.StatusInternalServerError
+		}
+		return nil, http.StatusOK
+	}()
+
+	err = wait()
 	if err != nil {
-		return result, err, http.StatusInternalServerError
+		return permissions, err, http.StatusInternalServerError
 	}
-	//TODO: optional done signal handling
-	return permissions, nil, http.StatusOK
+
+	return permissions, err, code
 }

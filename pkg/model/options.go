@@ -50,3 +50,7 @@ type GetOptions struct {
 	GroupIds        []string
 	Permission      string
 }
+
+type SetPermissionOptions struct {
+	Wait bool
+}

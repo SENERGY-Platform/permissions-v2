@@ -41,12 +41,18 @@ type Controller struct {
 type DB = database.Database
 
 func NewWithDependencies(ctx context.Context, config configuration.Config, db DB, disableKafka bool) (*Controller, error) {
+	if disableKafka {
+		config.HandleDoneWait = false
+	}
 	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}}
 	if config.DevNotifierUrl != "" {
 		result.notifier = client.New(config.DevNotifierUrl)
 	}
 	if !disableKafka {
-		result.initDoneProducer()
+		err := result.initDoneHandling(ctx)
+		if err != nil {
+			return nil, err
+		}
 		go func() {
 			<-ctx.Done()
 			result.topicsMux.Lock()
@@ -61,7 +67,7 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 			}
 		}()
 		result.startTopicUpdateWatcher(ctx)
-		err := result.refreshTopics()
+		err = result.refreshTopics()
 		if err != nil {
 			return nil, err
 		}
