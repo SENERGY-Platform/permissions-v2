@@ -21,8 +21,34 @@ import (
 	"errors"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+func (this *Database) GetResource(ctx context.Context, topicId string, id string, options model.GetOptions) (resource model.Resource, err error) {
+	result := this.permissionsCollection().FindOne(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: id})
+	err = result.Err()
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return resource, model.ErrNotFound
+	}
+	if err != nil {
+		return resource, err
+	}
+	entry := PermissionsEntry{}
+	err = result.Decode(&entry)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return resource, model.ErrNotFound
+	}
+	if err != nil {
+		return resource, err
+	}
+	if options.CheckPermission {
+		if !checkPermissions(options.UserId, options.GroupIds, entry, options.Permission) {
+			return resource, model.PermissionCheckFailed
+		}
+	}
+	return entry.ToResource(), nil
+}
 
 func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) ([]string, error) {
 	temp, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, permissions, options)

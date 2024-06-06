@@ -2,11 +2,14 @@
     "port": "8080",
     "debug": false,
     "enable_swagger_ui": false,
+    "dev_notifier_url": "http://api.developer-notifications:8080",
 
     "edit_forward": "",
 
     "mongo_url": "mongodb://localhost:27017",
     "mongo_database": "permissions",
     "mongo_permissions_collection": "permissions",
-    "mongo_topics_collection": "topics"
+    "mongo_topics_collection": "topics",
+
+    "check_db_topic_changes_interval": "10m"
 }

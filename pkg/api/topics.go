@@ -183,6 +183,7 @@ func (this *TopicsEndpoints) SetTopic(config configuration.Config, router *http.
 // @Produce      json
 // @Param        message body model.Topic true "Topic"
 // @Success      200 {object}  model.Topic
+// @Success      202 {object}  model.Topic
 // @Failure      400
 // @Failure      401
 // @Failure      403
@@ -205,11 +206,6 @@ func (this *TopicsEndpoints) SetTopicByPost(config configuration.Config, router 
 		err = json.NewDecoder(req.Body).Decode(&topic)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if topic.Id == "" {
-			http.Error(w, "missing topic id", http.StatusBadRequest)
 			return
 		}
 

@@ -43,3 +43,10 @@ func ListOptionsFromQuery(q url.Values) (result ListOptions, err error) {
 	}
 	return result, err
 }
+
+type GetOptions struct {
+	CheckPermission bool
+	UserId          string
+	GroupIds        []string
+	Permission      string
+}

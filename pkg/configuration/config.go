@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -31,6 +32,7 @@ type Config struct {
 	Debug           bool   `json:"debug"`
 	EnableSwaggerUi bool   `json:"enable_swagger_ui"`
 	EditForward     string `json:"edit_forward"`
+	DevNotifierUrl  string `json:"dev_notifier_url"`
 
 	KafkaUrl                  string `json:"kafka_url"`
 	DefaultKafkaConsumerGroup string `json:"default_kafka_consumer_group"`
@@ -42,6 +44,8 @@ type Config struct {
 
 	//TODO: use
 	DisabledTopicConsumers []string `json:"disabled_topic_consumers"` //may be needed to fix service with broken topic consumer
+
+	CheckDbTopicChangesInterval Duration `json:"check_db_topic_changes_interval"`
 }
 
 // loads config from json in location and used environment variables (e.g KafkaUrl --> KAFKA_URL)
@@ -54,8 +58,8 @@ func Load(location string) (config Config, err error) {
 	if err != nil {
 		return config, err
 	}
-	handleEnvironmentVars(&config)
-	return config, nil
+	err = handleEnvironmentVars(&config, os.Getenv)
+	return config, err
 }
 
 var camel = regexp.MustCompile("(^[^A-Z]*|[A-Z]*)([A-Z][^A-Z]+|$)")
@@ -74,33 +78,56 @@ func fieldNameToEnvName(s string) string {
 }
 
 // preparations for docker
-func handleEnvironmentVars(config *Config) {
+func handleEnvironmentVars(config *Config, getEnv func(key string) string) (err error) {
 	configValue := reflect.Indirect(reflect.ValueOf(config))
 	configType := configValue.Type()
 	for index := 0; index < configType.NumField(); index++ {
 		fieldName := configType.Field(index).Name
 		fieldConfig := configType.Field(index).Tag.Get("config")
 		envName := fieldNameToEnvName(fieldName)
-		envValue := os.Getenv(envName)
+		envValue := getEnv(envName)
 		if envValue != "" {
 			loggedEnvValue := envValue
 			if strings.Contains(fieldConfig, "secret") {
 				loggedEnvValue = "***"
 			}
 			fmt.Println("use environment variable: ", envName, " = ", loggedEnvValue)
+			if field := configValue.FieldByName(fieldName); field.Kind() == reflect.Struct && field.CanInterface() {
+				fieldPtrInterface := field.Addr().Interface()
+				setter, setterOk := fieldPtrInterface.(interface{ SetString(string) })
+				errSetter, errSetterOk := fieldPtrInterface.(interface{ SetString(string) error })
+				if setterOk {
+					setter.SetString(envValue)
+				}
+				if errSetterOk {
+					err = errSetter.SetString(envValue)
+					if err != nil {
+						return fmt.Errorf("invalid env variable %v=%v: %w", envName, envValue, err)
+					}
+				}
+			}
 			if configValue.FieldByName(fieldName).Kind() == reflect.Int64 || configValue.FieldByName(fieldName).Kind() == reflect.Int {
-				i, _ := strconv.ParseInt(envValue, 10, 64)
+				i, err := strconv.ParseInt(envValue, 10, 64)
+				if err != nil {
+					return fmt.Errorf("invalid env variable %v=%v: %w", envName, envValue, err)
+				}
 				configValue.FieldByName(fieldName).SetInt(i)
 			}
 			if configValue.FieldByName(fieldName).Kind() == reflect.String {
 				configValue.FieldByName(fieldName).SetString(envValue)
 			}
 			if configValue.FieldByName(fieldName).Kind() == reflect.Bool {
-				b, _ := strconv.ParseBool(envValue)
+				b, err := strconv.ParseBool(envValue)
+				if err != nil {
+					return fmt.Errorf("invalid env variable %v=%v: %w", envName, envValue, err)
+				}
 				configValue.FieldByName(fieldName).SetBool(b)
 			}
 			if configValue.FieldByName(fieldName).Kind() == reflect.Float64 {
-				f, _ := strconv.ParseFloat(envValue, 64)
+				f, err := strconv.ParseFloat(envValue, 64)
+				if err != nil {
+					return fmt.Errorf("invalid env variable %v=%v: %w", envName, envValue, err)
+				}
 				configValue.FieldByName(fieldName).SetFloat(f)
 			}
 			if configValue.FieldByName(fieldName).Kind() == reflect.Slice {
@@ -122,4 +149,38 @@ func handleEnvironmentVars(config *Config) {
 			}
 		}
 	}
+	return nil
+}
+
+type Duration struct {
+	dur time.Duration
+}
+
+func (this *Duration) GetDuration() time.Duration {
+	return this.dur
+}
+
+func (this *Duration) SetDuration(dur time.Duration) {
+	this.dur = dur
+}
+
+func (this *Duration) SetString(str string) error {
+	if str == "" {
+		return nil
+	}
+	duration, err := time.ParseDuration(str)
+	if err != nil {
+		return err
+	}
+	this.SetDuration(duration)
+	return nil
+}
+
+func (this *Duration) UnmarshalJSON(bytes []byte) (err error) {
+	var str string
+	err = json.Unmarshal(bytes, &str)
+	if err != nil {
+		return err
+	}
+	return this.SetString(str)
 }

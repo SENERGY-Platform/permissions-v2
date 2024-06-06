@@ -16,6 +16,14 @@
 
 package model
 
+import (
+	"errors"
+	"fmt"
+	"reflect"
+	"slices"
+	"strings"
+)
+
 type Topic struct {
 	//at least one of Id and KafkaTopic must be set
 	Id         string `json:"id"`          //unchangeable, defaults to KafkaTopic
@@ -27,6 +35,53 @@ type Topic struct {
 	KafkaConsumerGroup string `json:"kafka_consumer_group"` //defaults to configured kafka consumer group
 
 	InitialGroupRights []GroupRight `json:"initial_group_rights"`
+
+	LastUpdateUnixTimestamp int64 `json:"last_update_unix_timestamp"`
+}
+
+func (this Topic) Validate() error {
+	if this.Id == "" {
+		return errors.New("id is required")
+	}
+	if this.KafkaTopic == "" {
+		return errors.New("kafka topic is required")
+	}
+	usedGroupName := map[string]bool{}
+	for _, g := range this.InitialGroupRights {
+		if _, ok := usedGroupName[g.GroupName]; ok {
+			return fmt.Errorf("duplicated initial group name '%v'", g.GroupName)
+		}
+		usedGroupName[g.GroupName] = true
+	}
+	return nil
+}
+
+func (this Topic) Equal(topic Topic) bool {
+	if this.Id != topic.Id {
+		return false
+	}
+	if this.KafkaTopic != topic.KafkaTopic {
+		return false
+	}
+	if this.EnsureTopicInit != topic.EnsureTopicInit {
+		return false
+	}
+	if this.EnsureTopicInitPartitionNumber != topic.EnsureTopicInitPartitionNumber {
+		return false
+	}
+	if this.KafkaConsumerGroup != topic.KafkaConsumerGroup {
+		return false
+	}
+	slices.SortFunc(this.InitialGroupRights, func(a, b GroupRight) int {
+		return strings.Compare(a.GroupName, b.GroupName)
+	})
+	slices.SortFunc(topic.InitialGroupRights, func(a, b GroupRight) int {
+		return strings.Compare(a.GroupName, b.GroupName)
+	})
+	if !reflect.DeepEqual(this.InitialGroupRights, topic.InitialGroupRights) {
+		return false
+	}
+	return true
 }
 
 type GroupRight struct {

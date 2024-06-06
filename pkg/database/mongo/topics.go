@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 var TopicBson = getBsonFieldObject[model.Topic]()
@@ -46,6 +47,7 @@ func (this *Database) SetTopic(ctx context.Context, topic model.Topic) error {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
+	topic.LastUpdateUnixTimestamp = time.Now().Unix()
 	_, err := this.topicsCollection().ReplaceOne(ctx, bson.M{TopicBson.Id: topic.Id}, topic, options.Replace().SetUpsert(true))
 	return err
 }

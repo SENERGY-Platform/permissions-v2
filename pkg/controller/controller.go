@@ -18,23 +18,28 @@ package controller
 
 import (
 	"context"
+	"github.com/SENERGY-Platform/developer-notifications/pkg/client"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"github.com/segmentio/kafka-go"
 	"log"
 	"sync"
+	"time"
 )
 
 type Controller struct {
 	config    configuration.Config
 	db        DB
 	topics    map[string]TopicWrapper
-	topicsMux sync.Mutex
+	topicsMux sync.RWMutex
+	notifier  client.Client
 }
 
-func NewWithDependencies(ctx context.Context, config configuration.Config, db DB) *Controller {
-	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}}
+type DB = database.Database
+
+func NewWithDependencies(ctx context.Context, config configuration.Config, db DB) (*Controller, error) {
+	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}, notifier: client.New(config.DevNotifierUrl)}
 	go func() {
 		<-ctx.Done()
 		result.topicsMux.Lock()
@@ -44,60 +49,8 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 		}
 		result.topics = map[string]TopicWrapper{}
 	}()
-	return result
-}
-
-func (this *Controller) ListTopics(token jwt.Token, options model.ListOptions) (result []model.Topic, err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) GetTopic(token jwt.Token, id string) (result model.Topic, err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) RemoveTopic(token jwt.Token, id string) (err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) SetTopic(token jwt.Token, topic model.Topic) (result model.Topic, err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) CheckPermission(token jwt.Token, topicId string, id string, permissions string) (access bool, err error, code int) {
-	//must handle id-modifiers
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) CheckMultiplePermissions(token jwt.Token, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int) {
-	//must handle id-modifiers
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) ListAccessibleResourceIds(token jwt.Token, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) ListResourcesWithAdminPermission(token jwt.Token, topicId string, options model.ListOptions) (result []model.Resource, err error, code int) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) GetResource(token jwt.Token, topicId string, id string) (result model.Resource, err error, code int) {
-	//must handle id-modifiers
-	//TODO implement me
-	panic("implement me")
-}
-
-func (this *Controller) SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int) {
-	//TODO implement me
-	panic("implement me")
+	result.startTopicUpdateWatcher(ctx)
+	return result, result.refreshTopics()
 }
 
 func (this *Controller) handleReceivedCommand(topic model.Topic, m kafka.Message) error {
@@ -108,4 +61,21 @@ func (this *Controller) handleReceivedCommand(topic model.Topic, m kafka.Message
 func (this *Controller) handleReaderError(topic model.Topic, err error) {
 	//TODO: try to reconnect
 	log.Fatalf("ERROR: while consuming topic %v: %v\ntopic-config = %#v\n", topic.KafkaTopic, err, topic)
+}
+
+func (this *Controller) getTimeoutContext() context.Context {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	return ctx
+}
+
+func (this *Controller) notifyError(info error) {
+	if this.notifier != nil && this.config.DevNotifierUrl != "" {
+		err := this.notifier.SendMessage(client.Message{
+			Sender: "github.com/SENERGY-Platform/permissions-v2",
+			Title:  "PermissionsV2 Error",
+			Tags:   []string{"error", "permissions"},
+			Body:   info.Error(),
+		})
+		log.Println("ERROR: unable to send notification", err)
+	}
 }

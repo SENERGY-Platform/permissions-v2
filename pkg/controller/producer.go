@@ -47,6 +47,10 @@ func (this *Controller) newKafkaWriter(topic model.Topic) *kafka.Writer {
 }
 
 func (this *TopicWrapper) SendPermissions(ctx context.Context, id string, permissions model.ResourcePermissions) (err error) {
+	if this.writer == nil {
+		log.Println("WARNING: unable to send message to nil topic kafka writer (topic may be disabled by config.DisabledTopicConsumers)")
+		return nil
+	}
 	cmd := Command{
 		Command: "RIGHTS",
 		Id:      id,

@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package controller
+package model
 
-type DB interface {
-}
+import "errors"
+
+var PermissionCheckFailed = errors.New("permission check failed")
+var ErrNotFound = errors.New("not found")
