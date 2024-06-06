@@ -104,8 +104,11 @@ func (this *Controller) handleReceivedCommand(topic model.Topic, m kafka.Message
 }
 
 func (this *Controller) handleReaderError(topic model.Topic, err error) {
-	//TODO: try to reconnect
-	log.Fatalf("ERROR: while consuming topic %v: %v\ntopic-config = %#v\n", topic.KafkaTopic, err, topic)
+	log.Printf("ERROR: while consuming topic %v: %v\ntopic-config = %#v\ntry updateTopicHandling()\n", topic.KafkaTopic, err, topic)
+	err = this.updateTopicHandling(topic)
+	if err != nil {
+		log.Fatal("FATAL:", err)
+	}
 }
 
 func (this *Controller) getTimeoutContext() context.Context {
