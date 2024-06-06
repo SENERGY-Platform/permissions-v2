@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/SENERGY-Platform/developer-notifications/pkg/client"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"github.com/segmentio/kafka-go"
@@ -68,6 +69,17 @@ func (this *Controller) RemoveTopic(token jwt.Token, id string) (err error, code
 	if !token.IsAdmin() {
 		return errors.New("only admins may manage topics"), http.StatusUnauthorized
 	}
+
+	err = this.notifier.SendMessage(client.Message{
+		Sender: "github.com/SENERGY-Platform/permissions-v2",
+		Title:  "PermissionsV2 Remove Topic Config",
+		Tags:   []string{"permissions", "topic"},
+		Body:   fmt.Sprintf("update topic config for %v", id),
+	})
+	if err != nil {
+		log.Println("ERROR: unable to send notification", err)
+	}
+
 	timeout := this.getTimeoutContext()
 	err = this.db.DeleteTopic(timeout, id)
 	if err != nil {
@@ -107,6 +119,16 @@ func (this *Controller) SetTopic(token jwt.Token, topic model.Topic) (result mod
 	}
 	if exists && old.Equal(topic) {
 		return old, nil, http.StatusAccepted
+	}
+
+	err = this.notifier.SendMessage(client.Message{
+		Sender: "github.com/SENERGY-Platform/permissions-v2",
+		Title:  "PermissionsV2 Update Topic Config",
+		Tags:   []string{"permissions", "topic"},
+		Body:   fmt.Sprintf("update topic config for %v %v", topic.Id, topic.KafkaTopic),
+	})
+	if err != nil {
+		log.Println("ERROR: unable to send notification", err)
 	}
 
 	err = this.db.SetTopic(timeout, topic)
@@ -226,6 +248,12 @@ func (this *Controller) stopTopicHandling(id string) error {
 }
 
 func (this *Controller) newTopicWrapper(topic model.Topic) (result TopicWrapper, err error) {
+	if topic.EnsureTopicInit {
+		err = initTopic(this.config.KafkaUrl, topic.EnsureTopicInitPartitionNumber, topic.KafkaTopic)
+		if err != nil {
+			log.Println("WARNING: unable to create topic", topic.Id, topic.KafkaTopic, err)
+		}
+	}
 	result = TopicWrapper{writer: this.newKafkaWriter(topic), debug: this.config.Debug, Topic: topic}
 	if slices.Contains(this.config.DisabledTopicConsumers, topic.Id) || slices.Contains(this.config.DisabledTopicConsumers, topic.KafkaTopic) {
 		result.reader, err = this.newKafkaReader(topic)

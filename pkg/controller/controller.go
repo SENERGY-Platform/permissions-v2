@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/SENERGY-Platform/developer-notifications/pkg/client"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
@@ -34,28 +35,72 @@ type Controller struct {
 	topics    map[string]TopicWrapper
 	topicsMux sync.RWMutex
 	notifier  client.Client
+	done      *kafka.Writer
 }
 
 type DB = database.Database
 
-func NewWithDependencies(ctx context.Context, config configuration.Config, db DB) (*Controller, error) {
-	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}, notifier: client.New(config.DevNotifierUrl)}
-	go func() {
-		<-ctx.Done()
-		result.topicsMux.Lock()
-		defer result.topicsMux.Unlock()
-		for _, topic := range result.topics {
-			log.Printf("close %v %v producer %v", topic.Id, topic.KafkaTopic, topic.Close())
+func NewWithDependencies(ctx context.Context, config configuration.Config, db DB, disableKafka bool) (*Controller, error) {
+	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}}
+	if config.DevNotifierUrl != "" {
+		result.notifier = client.New(config.DevNotifierUrl)
+	}
+	if !disableKafka {
+		result.initDoneProducer()
+		go func() {
+			<-ctx.Done()
+			result.topicsMux.Lock()
+			defer result.topicsMux.Unlock()
+			for _, topic := range result.topics {
+				log.Printf("close %v %v producer %v", topic.Id, topic.KafkaTopic, topic.Close())
+			}
+			result.topics = map[string]TopicWrapper{}
+			if result.done != nil {
+				log.Printf("close done (%v) producer %v", config.DoneTopic, result.done.Close())
+
+			}
+		}()
+		result.startTopicUpdateWatcher(ctx)
+		err := result.refreshTopics()
+		if err != nil {
+			return nil, err
 		}
-		result.topics = map[string]TopicWrapper{}
-	}()
-	result.startTopicUpdateWatcher(ctx)
-	return result, result.refreshTopics()
+	}
+
+	return result, nil
 }
 
 func (this *Controller) handleReceivedCommand(topic model.Topic, m kafka.Message) error {
-	//TODO implement me
-	panic("implement me")
+	cmd := Command{}
+	err := json.Unmarshal(m.Value, &cmd)
+	if err != nil {
+		return err
+	}
+	if cmd.Command != "RIGHTS" {
+		return nil
+	}
+
+	resourcePermissions := model.Resource{
+		Id:                  cmd.Id,
+		TopicId:             topic.Id,
+		ResourcePermissions: rightsToPermissions(cmd.Rights),
+	}
+	updateIgnored, err := this.db.SetResourcePermissions(this.getTimeoutContext(), resourcePermissions, m.Time, true)
+	if err != nil {
+		return err
+	}
+	if updateIgnored {
+		log.Println("WARNING: old kafka command to update permissions ignored", resourcePermissions.TopicId, cmd.Id, m.Time)
+	}
+
+	go func() {
+		err := this.sendDone(topic, cmd.Id)
+		if err != nil {
+			log.Println("ERROR: unable to send done signal", err)
+		}
+	}()
+
+	return nil
 }
 
 func (this *Controller) handleReaderError(topic model.Topic, err error) {
@@ -76,6 +121,8 @@ func (this *Controller) notifyError(info error) {
 			Tags:   []string{"error", "permissions"},
 			Body:   info.Error(),
 		})
-		log.Println("ERROR: unable to send notification", err)
+		if err != nil {
+			log.Println("ERROR: unable to send notification", err)
+		}
 	}
 }

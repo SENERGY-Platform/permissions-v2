@@ -28,6 +28,46 @@ import (
 	"time"
 )
 
+func (this *Controller) initDoneProducer() {
+	if this.config.KafkaUrl != "" && this.config.DoneTopic != "" {
+		log.Printf("init done topic (%v) err=%v\n", this.config.DoneTopic, initTopic(this.config.KafkaUrl, 1, this.config.DoneTopic))
+		this.done = &kafka.Writer{
+			Addr:        kafka.TCP(this.config.KafkaUrl),
+			Topic:       this.config.DoneTopic,
+			MaxAttempts: 10,
+			BatchSize:   this.config.KafkaDoneBatchSize,
+		}
+	}
+}
+
+type Done struct {
+	ResourceKind string `json:"resource_kind"`
+	ResourceId   string `json:"resource_id"`
+	Handler      string `json:"handler"` // == github.com/SENERGY-Platform/permission-search
+	Command      string `json:"command"` // PUT | DELETE | RIGHTS
+}
+
+func (this *Controller) sendDone(topic model.Topic, id string) interface{} {
+	if this.done == nil {
+		return nil
+	}
+	msg := Done{
+		ResourceKind: topic.KafkaTopic,
+		ResourceId:   id,
+		Handler:      "github.com/SENERGY-Platform/permissions-v2",
+		Command:      "RIGHTS",
+	}
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return this.done.WriteMessages(this.getTimeoutContext(), kafka.Message{
+		Key:   []byte(msg.ResourceId),
+		Value: payload,
+		Time:  time.Now(),
+	})
+}
+
 func (this *Controller) newKafkaWriter(topic model.Topic) *kafka.Writer {
 	var logger *log.Logger
 	if this.config.Debug {
@@ -112,6 +152,32 @@ func permissionsToRights(permissions model.ResourcePermissions) *ResourcePermiss
 		}
 	}
 	return &result
+}
+
+func rightsToPermissions(permissions *ResourcePermissions) model.ResourcePermissions {
+	result := model.ResourcePermissions{
+		UserPermissions:  map[string]model.Permissions{},
+		GroupPermissions: map[string]model.Permissions{},
+	}
+	if permissions != nil {
+		for user, perm := range permissions.UserRights {
+			result.UserPermissions[user] = model.Permissions{
+				Read:         perm.Read,
+				Write:        perm.Write,
+				Execute:      perm.Execute,
+				Administrate: perm.Administrate,
+			}
+		}
+		for group, perm := range permissions.GroupRights {
+			result.GroupPermissions[group] = model.Permissions{
+				Read:         perm.Read,
+				Write:        perm.Write,
+				Execute:      perm.Execute,
+				Administrate: perm.Administrate,
+			}
+		}
+	}
+	return result
 }
 
 type KeySeparationBalancer struct {

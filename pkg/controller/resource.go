@@ -87,5 +87,6 @@ func (this *Controller) SetPermission(token jwt.Token, topicId string, id string
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
+	//TODO: optional done signal handling
 	return permissions, nil, http.StatusOK
 }

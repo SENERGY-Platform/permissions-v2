@@ -6,6 +6,8 @@
 
     "edit_forward": "",
 
+    "kafka_done_batch_size": 1,
+
     "mongo_url": "mongodb://localhost:27017",
     "mongo_database": "permissions",
     "mongo_permissions_collection": "permissions",

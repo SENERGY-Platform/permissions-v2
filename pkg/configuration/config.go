@@ -36,6 +36,8 @@ type Config struct {
 
 	KafkaUrl                  string `json:"kafka_url"`
 	DefaultKafkaConsumerGroup string `json:"default_kafka_consumer_group"`
+	DoneTopic                 string `json:"done_topic"`
+	KafkaDoneBatchSize        int    `json:"kafka_done_batch_size"`
 
 	MongoUrl                   string `json:"mongo_url"`
 	MongoDatabase              string `json:"mongo_database"`

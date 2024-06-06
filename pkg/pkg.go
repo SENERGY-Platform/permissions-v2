@@ -18,11 +18,25 @@ package pkg
 
 import (
 	"context"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/api"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
 	"sync"
 )
 
-func Start(context.Context, *sync.WaitGroup, configuration.Config) error {
-	//TODO
+func Start(ctx context.Context, wg *sync.WaitGroup, config configuration.Config) error {
+	db, err := database.New(config)
+	if err != nil {
+		return err
+	}
+	ctrl, err := controller.NewWithDependencies(ctx, config, db, config.EditForward != "")
+	if err != nil {
+		return err
+	}
+	err = api.Start(ctx, config, ctrl)
+	if err != nil {
+		return err
+	}
 	return nil
 }

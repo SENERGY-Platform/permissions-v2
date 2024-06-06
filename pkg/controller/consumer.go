@@ -31,13 +31,6 @@ import (
 )
 
 func (this *Controller) newKafkaReader(topic model.Topic) (reader *kafka.Reader, err error) {
-	if topic.EnsureTopicInit {
-		err = initTopic(this.config.KafkaUrl, topic.EnsureTopicInitPartitionNumber, topic.KafkaTopic)
-	}
-	if err != nil {
-		log.Println("ERROR: unable to create topic", err)
-		return nil, err
-	}
 	consumerGroup := topic.KafkaConsumerGroup
 	if consumerGroup == "" {
 		consumerGroup = this.config.DefaultKafkaConsumerGroup
