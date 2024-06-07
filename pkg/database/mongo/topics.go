@@ -104,5 +104,9 @@ func (this *Database) DeleteTopic(ctx context.Context, id string) error {
 		ctx, _ = getTimeoutContext()
 	}
 	_, err := this.topicsCollection().DeleteMany(ctx, bson.M{TopicBson.Id: id})
+	if err != nil {
+		return err
+	}
+	_, err = this.permissionsCollection().DeleteMany(ctx, bson.M{PermissionsEntryBson.TopicId: id})
 	return err
 }

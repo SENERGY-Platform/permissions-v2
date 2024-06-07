@@ -251,5 +251,8 @@ func (this *Mock) DeleteTopic(ctx context.Context, id string) error {
 	this.topics = slices.DeleteFunc(this.topics, func(topic model.Topic) bool {
 		return topic.Id == id
 	})
+	this.resources = slices.DeleteFunc(this.resources, func(element ResourceWithTime) bool {
+		return element.TopicId == id
+	})
 	return nil
 }
