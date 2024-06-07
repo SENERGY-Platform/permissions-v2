@@ -31,6 +31,7 @@ type Database interface {
 	ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) ([]string, error)
 
 	GetResource(ctx context.Context, topicId string, id string, options model.GetOptions) (resource model.Resource, err error)
+	DeleteResource(ctx context.Context, topicId string, id string) error
 
 	CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error)
 	CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, rights string) (result bool, err error)

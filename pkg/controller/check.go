@@ -22,7 +22,15 @@ import (
 	"net/http"
 )
 
-func (this *Controller) CheckPermission(token jwt.Token, topicId string, id string, permissions string) (access bool, err error, code int) {
+func (this *Controller) CheckPermission(tokenStr string, topicId string, id string, permissions string) (access bool, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return false, err, http.StatusUnauthorized
+	}
+	return this.checkPermission(token, topicId, id, permissions)
+}
+
+func (this *Controller) checkPermission(token jwt.Token, topicId string, id string, permissions string) (access bool, err error, code int) {
 	pureId, _ := idmodifier.SplitModifier(id)
 	access, err = this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), permissions)
 	if err != nil {
@@ -33,7 +41,11 @@ func (this *Controller) CheckPermission(token jwt.Token, topicId string, id stri
 	return access, err, code
 }
 
-func (this *Controller) CheckMultiplePermissions(token jwt.Token, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int) {
+func (this *Controller) CheckMultiplePermissions(tokenStr string, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return access, err, http.StatusUnauthorized
+	}
 	pureIdList := []string{}
 	pureIdToIds := map[string][]string{}
 	for _, id := range ids {

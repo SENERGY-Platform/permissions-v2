@@ -49,11 +49,7 @@ type PermissionsManagementEndpoints struct{}
 // @Router       /manage/{topic} [get]
 func (this *PermissionsManagementEndpoints) ListResourcesWithAdminPermission(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("GET /manage/{topic}", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
+		token := jwt.GetAuthToken(req)
 		topic := req.PathValue("topic")
 		if topic == "" {
 			http.Error(w, "missing topic", http.StatusBadRequest)
@@ -94,11 +90,7 @@ func (this *PermissionsManagementEndpoints) ListResourcesWithAdminPermission(con
 // @Router       /manage/{topic}/{id} [get]
 func (this *PermissionsManagementEndpoints) GetResource(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("GET /manage/{topic}/{id}", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
+		token := jwt.GetAuthToken(req)
 		topic := req.PathValue("topic")
 		if topic == "" {
 			http.Error(w, "missing topic", http.StatusBadRequest)
@@ -141,11 +133,8 @@ func (this *PermissionsManagementEndpoints) GetResource(config configuration.Con
 // @Router       /manage/{topic}/{id} [put]
 func (this *PermissionsManagementEndpoints) SetPermission(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("PUT /manage/{topic}/{id}", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
+		token := jwt.GetAuthToken(req)
+		var err error
 		topic := req.PathValue("topic")
 		if topic == "" {
 			http.Error(w, "missing topic", http.StatusBadRequest)

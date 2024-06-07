@@ -14,30 +14,27 @@
  * limitations under the License.
  */
 
-package pkg
+package com
 
 import (
 	"context"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/api"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
-	"sync"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"time"
 )
 
-func Start(ctx context.Context, wg *sync.WaitGroup, config configuration.Config) error {
-	db, err := database.New(config)
-	if err != nil {
-		return err
-	}
-	ctrl, err := controller.NewWithDependencies(ctx, config, db, com.NewKafkaComProvider(), config.EditForward != "" && config.EditForward != "-")
-	if err != nil {
-		return err
-	}
-	err = api.Start(ctx, config, ctrl)
-	if err != nil {
-		return err
-	}
-	return nil
+type Com interface {
+	Close() error
+	SendPermissions(ctx context.Context, topic model.Topic, id string, permissions model.ResourcePermissions) (err error)
+}
+
+type ReadHandler interface {
+	HandleReceivedCommand(topic model.Topic, r model.Resource, t time.Time) error
+	HandleReaderError(topic model.Topic, err error)
+	HandleResourceUpdate(topic model.Topic, id string, owner string) error
+	HandleResourceDelete(topic model.Topic, id string) error
+}
+
+type Provider interface {
+	Get(config configuration.Config, topic model.Topic, readHandler ReadHandler) (Com, error)
 }

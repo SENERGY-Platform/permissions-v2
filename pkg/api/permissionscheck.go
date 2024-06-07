@@ -47,11 +47,7 @@ type PermissionsCheckEndpoints struct{}
 // @Router       /check/{topic}/{id} [get]
 func (this *PermissionsCheckEndpoints) CheckPermission(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("GET /check/{topic}/{id}", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
+		token := jwt.GetAuthToken(req)
 		topic := req.PathValue("topic")
 		if topic == "" {
 			http.Error(w, "missing topic", http.StatusBadRequest)
@@ -94,11 +90,7 @@ func (this *PermissionsCheckEndpoints) CheckPermission(config configuration.Conf
 // @Router       /check/{topic} [get]
 func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("GET /check/{topic}", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
+		token := jwt.GetAuthToken(req)
 		topic := req.PathValue("topic")
 		if topic == "" {
 			http.Error(w, "missing topic", http.StatusBadRequest)
@@ -144,11 +136,7 @@ func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configura
 // @Router       /accessible/{topic} [get]
 func (this *PermissionsCheckEndpoints) ListAccessibleResourceIds(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("GET /accessible/{topic}", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
+		token := jwt.GetAuthToken(req)
 		topic := req.PathValue("topic")
 		if topic == "" {
 			http.Error(w, "missing topic", http.StatusBadRequest)

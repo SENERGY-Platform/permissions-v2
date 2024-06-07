@@ -22,9 +22,35 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"net/http"
+	"time"
 )
 
-func (this *Controller) ListAccessibleResourceIds(token jwt.Token, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int) {
+func (this *Controller) HandleResourceUpdate(topic model.Topic, id string, owner string) error {
+	resource := model.Resource{
+		Id:      id,
+		TopicId: topic.Id,
+		ResourcePermissions: model.ResourcePermissions{
+			UserPermissions:  map[string]model.Permissions{owner: {Read: true, Write: true, Execute: true, Administrate: true}},
+			GroupPermissions: map[string]model.Permissions{},
+		},
+	}
+	for _, gr := range topic.InitialGroupRights {
+		resource.GroupPermissions[gr.GroupName] = gr.Permissions
+	}
+	//init resource permissions; with time.Time{} and preventOlderUpdates=true we guarantee that no existing resource is overwritten
+	_, err := this.db.SetResourcePermissions(this.getTimeoutContext(), resource, time.Time{}, true)
+	return err
+}
+
+func (this *Controller) HandleResourceDelete(topic model.Topic, id string) error {
+	return this.db.DeleteResource(this.getTimeoutContext(), topic.Id, id)
+}
+
+func (this *Controller) ListAccessibleResourceIds(tokenStr string, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return ids, err, http.StatusUnauthorized
+	}
 	ids, err = this.db.ListResourceIdsByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), permissions, options)
 	if err != nil {
 		code = http.StatusInternalServerError
@@ -34,7 +60,11 @@ func (this *Controller) ListAccessibleResourceIds(token jwt.Token, topicId strin
 	return ids, err, code
 }
 
-func (this *Controller) ListResourcesWithAdminPermission(token jwt.Token, topicId string, options model.ListOptions) (result []model.Resource, err error, code int) {
+func (this *Controller) ListResourcesWithAdminPermission(tokenStr string, topicId string, options model.ListOptions) (result []model.Resource, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return result, err, http.StatusUnauthorized
+	}
 	result, err = this.db.ListResourcesByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), "a", options)
 	if err != nil {
 		code = http.StatusInternalServerError
@@ -44,7 +74,11 @@ func (this *Controller) ListResourcesWithAdminPermission(token jwt.Token, topicI
 	return result, err, code
 }
 
-func (this *Controller) GetResource(token jwt.Token, topicId string, id string) (result model.Resource, err error, code int) {
+func (this *Controller) GetResource(tokenStr string, topicId string, id string) (result model.Resource, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return result, err, http.StatusUnauthorized
+	}
 	pureId, _ := idmodifier.SplitModifier(id)
 	result, err = this.db.GetResource(this.getTimeoutContext(), topicId, pureId, model.GetOptions{
 		CheckPermission: !token.IsAdmin(), //admins may access without stored permission
@@ -65,10 +99,14 @@ func (this *Controller) GetResource(token jwt.Token, topicId string, id string) 
 	return result, nil, http.StatusOK
 }
 
-func (this *Controller) SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int) {
+func (this *Controller) SetPermission(tokenStr string, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return result, err, http.StatusUnauthorized
+	}
 	pureId, _ := idmodifier.SplitModifier(id)
 	if !token.IsAdmin() {
-		access, err, code := this.CheckPermission(token, topicId, pureId, "a")
+		access, err, code := this.checkPermission(token, topicId, pureId, "a")
 		if err != nil {
 			return result, err, code
 		}

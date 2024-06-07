@@ -18,9 +18,9 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/SENERGY-Platform/developer-notifications/pkg/client"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/segmentio/kafka-go"
@@ -32,6 +32,7 @@ import (
 type Controller struct {
 	config    configuration.Config
 	db        DB
+	com       com.Provider
 	topics    map[string]TopicWrapper
 	topicsMux sync.RWMutex
 	notifier  client.Client
@@ -40,15 +41,18 @@ type Controller struct {
 
 type DB = database.Database
 
-func NewWithDependencies(ctx context.Context, config configuration.Config, db DB, disableKafka bool) (*Controller, error) {
-	if disableKafka {
+func NewWithDependencies(ctx context.Context, config configuration.Config, db DB, c com.Provider, disableCom bool) (*Controller, error) {
+	if disableCom {
 		config.HandleDoneWait = false
 	}
-	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}}
+	if c == nil {
+		c = com.NewKafkaComProvider()
+	}
+	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}, com: c}
 	if config.DevNotifierUrl != "" {
 		result.notifier = client.New(config.DevNotifierUrl)
 	}
-	if !disableKafka {
+	if !disableCom {
 		err := result.initDoneHandling(ctx)
 		if err != nil {
 			return nil, err
@@ -76,40 +80,24 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 	return result, nil
 }
 
-func (this *Controller) handleReceivedCommand(topic model.Topic, m kafka.Message) error {
-	cmd := Command{}
-	err := json.Unmarshal(m.Value, &cmd)
-	if err != nil {
-		return err
-	}
-	if cmd.Command != "RIGHTS" {
-		return nil
-	}
-
-	resourcePermissions := model.Resource{
-		Id:                  cmd.Id,
-		TopicId:             topic.Id,
-		ResourcePermissions: rightsToPermissions(cmd.Rights),
-	}
-	updateIgnored, err := this.db.SetResourcePermissions(this.getTimeoutContext(), resourcePermissions, m.Time, true)
+func (this *Controller) HandleReceivedCommand(topic model.Topic, resource model.Resource, t time.Time) error {
+	updateIgnored, err := this.db.SetResourcePermissions(this.getTimeoutContext(), resource, t, true)
 	if err != nil {
 		return err
 	}
 	if updateIgnored {
-		log.Println("WARNING: old kafka command to update permissions ignored", resourcePermissions.TopicId, cmd.Id, m.Time)
+		log.Println("WARNING: old kafka command to update permissions ignored", topic.Id, resource.Id, t)
 	}
-
 	go func() {
-		err := this.sendDone(topic, cmd.Id)
+		err := this.sendDone(topic, resource.Id)
 		if err != nil {
 			log.Println("ERROR: unable to send done signal", err)
 		}
 	}()
-
 	return nil
 }
 
-func (this *Controller) handleReaderError(topic model.Topic, err error) {
+func (this *Controller) HandleReaderError(topic model.Topic, err error) {
 	log.Printf("ERROR: while consuming topic %v: %v\ntopic-config = %#v\ntry updateTopicHandling()\n", topic.KafkaTopic, err, topic)
 	err = this.updateTopicHandling(topic)
 	if err != nil {

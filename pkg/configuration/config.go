@@ -45,7 +45,6 @@ type Config struct {
 	MongoPermissionsCollection string `json:"mongo_permissions_collection"`
 	MongoTopicsCollection      string `json:"mongo_topics_collection"`
 
-	//TODO: use
 	DisabledTopicConsumers []string `json:"disabled_topic_consumers"` //may be needed to fix service with broken topic consumer
 
 	CheckDbTopicChangesInterval Duration `json:"check_db_topic_changes_interval"`

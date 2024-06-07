@@ -18,30 +18,29 @@ package api
 
 import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 )
 
 type Controller interface {
-	AdminInterface
 	PermissionsCheckInterface
+	AdminInterface
 	PermissionsManagementInterface
 }
 
 type AdminInterface interface {
-	ListTopics(token jwt.Token, options model.ListOptions) (result []model.Topic, err error, code int)
-	GetTopic(token jwt.Token, id string) (result model.Topic, err error, code int)
-	RemoveTopic(token jwt.Token, id string) (err error, code int)
-	SetTopic(token jwt.Token, topic model.Topic) (result model.Topic, err error, code int)
+	ListTopics(token string, options model.ListOptions) (result []model.Topic, err error, code int)
+	GetTopic(token string, id string) (result model.Topic, err error, code int)
+	RemoveTopic(token string, id string) (err error, code int)
+	SetTopic(token string, topic model.Topic) (result model.Topic, err error, code int)
 }
 
 type PermissionsCheckInterface interface {
-	CheckPermission(token jwt.Token, topicId string, id string, permissions string) (access bool, err error, code int)
-	CheckMultiplePermissions(token jwt.Token, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int)
-	ListAccessibleResourceIds(token jwt.Token, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int)
+	CheckPermission(token string, topicId string, id string, permissions string) (access bool, err error, code int)
+	CheckMultiplePermissions(token string, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int)
+	ListAccessibleResourceIds(token string, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int)
 }
 
 type PermissionsManagementInterface interface {
-	ListResourcesWithAdminPermission(token jwt.Token, topicId string, options model.ListOptions) (result []model.Resource, err error, code int)
-	GetResource(token jwt.Token, topicId string, id string) (result model.Resource, err error, code int)
-	SetPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int)
+	ListResourcesWithAdminPermission(token string, topicId string, options model.ListOptions) (result []model.Resource, err error, code int)
+	GetResource(token string, topicId string, id string) (result model.Resource, err error, code int)
+	SetPermission(token string, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int)
 }

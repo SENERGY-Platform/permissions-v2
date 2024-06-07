@@ -46,15 +46,7 @@ type TopicsEndpoints struct{}
 // @Router       /admin/topics [get]
 func (this *TopicsEndpoints) ListTopics(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("GET /admin/topics", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		if !token.IsAdmin() {
-			http.Error(w, "only admins may manage topics", http.StatusForbidden)
-			return
-		}
+		token := jwt.GetAuthToken(req)
 		listOptions, err := model.ListOptionsFromQuery(req.URL.Query())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -88,15 +80,7 @@ func (this *TopicsEndpoints) ListTopics(config configuration.Config, router *htt
 // @Router       /admin/topics/{id} [get]
 func (this *TopicsEndpoints) GetTopic(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("GET /admin/topics/{id}", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		if !token.IsAdmin() {
-			http.Error(w, "only admins may manage topics", http.StatusForbidden)
-			return
-		}
+		token := jwt.GetAuthToken(req)
 		id := req.PathValue("id")
 		if id == "" {
 			http.Error(w, "missing id", http.StatusBadRequest)
@@ -132,15 +116,7 @@ func (this *TopicsEndpoints) GetTopic(config configuration.Config, router *http.
 // @Router       /admin/topics/{id} [put]
 func (this *TopicsEndpoints) SetTopic(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("PUT /admin/topics/{id}", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		if !token.IsAdmin() {
-			http.Error(w, "only admins may manage topics", http.StatusForbidden)
-			return
-		}
+		token := jwt.GetAuthToken(req)
 		id := req.PathValue("id")
 		if id == "" {
 			http.Error(w, "missing id", http.StatusBadRequest)
@@ -148,7 +124,7 @@ func (this *TopicsEndpoints) SetTopic(config configuration.Config, router *http.
 		}
 
 		topic := model.Topic{}
-		err = json.NewDecoder(req.Body).Decode(&topic)
+		err := json.NewDecoder(req.Body).Decode(&topic)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -192,18 +168,9 @@ func (this *TopicsEndpoints) SetTopic(config configuration.Config, router *http.
 // @Router       /admin/topics [POST]
 func (this *TopicsEndpoints) SetTopicByPost(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("POST /admin/topics", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		if !token.IsAdmin() {
-			http.Error(w, "only admins may manage topics", http.StatusForbidden)
-			return
-		}
-
+		token := jwt.GetAuthToken(req)
 		topic := model.Topic{}
-		err = json.NewDecoder(req.Body).Decode(&topic)
+		err := json.NewDecoder(req.Body).Decode(&topic)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -236,15 +203,7 @@ func (this *TopicsEndpoints) SetTopicByPost(config configuration.Config, router 
 // @Router       /admin/topics/{id} [delete]
 func (this *TopicsEndpoints) DeleteTopic(config configuration.Config, router *http.ServeMux, ctrl Controller) {
 	router.HandleFunc("DELETE /admin/topics/{id}", func(w http.ResponseWriter, req *http.Request) {
-		token, err := jwt.GetParsedToken(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		if !token.IsAdmin() {
-			http.Error(w, "only admins may manage topics", http.StatusForbidden)
-			return
-		}
+		token := jwt.GetAuthToken(req)
 		id := req.PathValue("id")
 		if id == "" {
 			http.Error(w, "missing id", http.StatusBadRequest)

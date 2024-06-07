@@ -42,8 +42,16 @@ func (this *Database) SetResourcePermissions(ctx context.Context, r model.Resour
 	return false, this.SetPermissions(ctx, r.TopicId, r.Id, r.ResourcePermissions, t)
 }
 
+func (this *Database) DeleteResource(ctx context.Context, topicId string, id string) error {
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
+	}
+	_, err := this.permissionsCollection().DeleteMany(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: id})
+	return err
+}
+
 func (this *Database) newerResourceExists(ctx context.Context, topicId string, id string, t time.Time) (exists bool, err error) {
-	err = this.permissionsCollection().FindOne(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: id, PermissionsEntryTimestampBson: bson.M{"$gt": t.Unix()}}).Err()
+	err = this.permissionsCollection().FindOne(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: id, PermissionsEntryTimestampBson: bson.M{"$gte": t.Unix()}}).Err()
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return false, nil
 	}

@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/donewait"
 	kafka2 "github.com/SENERGY-Platform/service-commons/pkg/kafka"
@@ -43,7 +44,7 @@ func (this *Controller) optionalWait(wait bool, kafkaTopic string, id string) fu
 
 func (this *Controller) initDoneHandling(ctx context.Context) error {
 	if this.config.KafkaUrl != "" && this.config.DoneTopic != "" {
-		log.Printf("init done topic (%v) err=%v\n", this.config.DoneTopic, initTopic(this.config.KafkaUrl, 1, this.config.DoneTopic))
+		log.Printf("init done topic (%v) err=%v\n", this.config.DoneTopic, com.InitKafkaTopic(this.config.KafkaUrl, 1, this.config.DoneTopic))
 		this.done = &kafka.Writer{
 			Addr:        kafka.TCP(this.config.KafkaUrl),
 			Topic:       this.config.DoneTopic,

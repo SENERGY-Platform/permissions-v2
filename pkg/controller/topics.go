@@ -21,9 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/SENERGY-Platform/developer-notifications/pkg/client"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
-	"github.com/segmentio/kafka-go"
 	"log"
 	"net/http"
 	"slices"
@@ -32,12 +32,14 @@ import (
 
 type TopicWrapper struct {
 	model.Topic
-	debug  bool
-	writer *kafka.Writer
-	reader *kafka.Reader
+	com com.Com
 }
 
-func (this *Controller) ListTopics(token jwt.Token, options model.ListOptions) (result []model.Topic, err error, code int) {
+func (this *Controller) ListTopics(tokenStr string, options model.ListOptions) (result []model.Topic, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return result, err, http.StatusUnauthorized
+	}
 	if !token.IsAdmin() {
 		return result, errors.New("only admins may manage topics"), http.StatusUnauthorized
 	}
@@ -49,7 +51,11 @@ func (this *Controller) ListTopics(token jwt.Token, options model.ListOptions) (
 	return result, nil, http.StatusOK
 }
 
-func (this *Controller) GetTopic(token jwt.Token, id string) (result model.Topic, err error, code int) {
+func (this *Controller) GetTopic(tokenStr string, id string) (result model.Topic, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return result, err, http.StatusUnauthorized
+	}
 	if !token.IsAdmin() {
 		return result, errors.New("only admins may manage topics"), http.StatusUnauthorized
 	}
@@ -65,7 +71,11 @@ func (this *Controller) GetTopic(token jwt.Token, id string) (result model.Topic
 	return result, nil, http.StatusOK
 }
 
-func (this *Controller) RemoveTopic(token jwt.Token, id string) (err error, code int) {
+func (this *Controller) RemoveTopic(tokenStr string, id string) (err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return err, http.StatusUnauthorized
+	}
 	if !token.IsAdmin() {
 		return errors.New("only admins may manage topics"), http.StatusUnauthorized
 	}
@@ -95,7 +105,11 @@ func (this *Controller) RemoveTopic(token jwt.Token, id string) (err error, code
 	return nil, http.StatusOK
 }
 
-func (this *Controller) SetTopic(token jwt.Token, topic model.Topic) (result model.Topic, err error, code int) {
+func (this *Controller) SetTopic(tokenStr string, topic model.Topic) (result model.Topic, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return result, err, http.StatusUnauthorized
+	}
 	if !token.IsAdmin() {
 		return result, errors.New("only admins may manage topics"), http.StatusUnauthorized
 	}
@@ -248,35 +262,17 @@ func (this *Controller) stopTopicHandling(id string) error {
 }
 
 func (this *Controller) newTopicWrapper(topic model.Topic) (result TopicWrapper, err error) {
-	if topic.EnsureTopicInit {
-		err = initTopic(this.config.KafkaUrl, topic.EnsureTopicInitPartitionNumber, topic.KafkaTopic)
-		if err != nil {
-			log.Println("WARNING: unable to create topic", topic.Id, topic.KafkaTopic, err)
-		}
+	c, err := this.com.Get(this.config, topic, this)
+	if err != nil {
+		return result, err
 	}
-	result = TopicWrapper{writer: this.newKafkaWriter(topic), debug: this.config.Debug, Topic: topic}
-	if slices.Contains(this.config.DisabledTopicConsumers, topic.Id) || slices.Contains(this.config.DisabledTopicConsumers, topic.KafkaTopic) {
-		result.reader, err = this.newKafkaReader(topic)
-		if err != nil {
-			result.writer.Close()
-			return TopicWrapper{}, err
-		}
-	}
-	return result, nil
+	return TopicWrapper{com: c, Topic: topic}, nil
 }
 
 func (this *TopicWrapper) Close() (err error) {
-	if this.writer != nil {
-		err = this.writer.Close()
-	}
-	if err != nil {
-		return err
-	}
-	if this.reader != nil {
-		err = this.reader.Close()
-	}
-	if err != nil {
-		return err
-	}
-	return nil
+	return this.com.Close()
+}
+
+func (this *TopicWrapper) SendPermissions(ctx context.Context, id string, permissions model.ResourcePermissions) (err error) {
+	return this.com.SendPermissions(ctx, this.Topic, id, permissions)
 }
