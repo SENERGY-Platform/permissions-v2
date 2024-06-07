@@ -171,6 +171,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.Topic"
                         }
                     },
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/model.Topic"
+                        }
+                    },
                     "400": {
                         "description": "Bad Request"
                     },
@@ -576,6 +582,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "boolean",
+                        "description": "if set to true, the response will be sent after the corresponding kafka done signal has been received",
+                        "name": "wait",
+                        "in": "query"
+                    },
+                    {
                         "description": "Topic",
                         "name": "message",
                         "in": "body",
@@ -689,6 +701,12 @@ const docTemplate = `{
         "model.Topic": {
             "type": "object",
             "properties": {
+                "ensure_topic_init": {
+                    "type": "boolean"
+                },
+                "ensure_topic_init_partition_number": {
+                    "type": "integer"
+                },
                 "id": {
                     "description": "at least one of Id and KafkaTopic must be set",
                     "type": "string"
@@ -706,6 +724,9 @@ const docTemplate = `{
                 "kafka_topic": {
                     "description": "changeable, defaults to Id",
                     "type": "string"
+                },
+                "last_update_unix_timestamp": {
+                    "type": "integer"
                 }
             }
         }

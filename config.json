@@ -1,17 +1,24 @@
 {
     "port": "8080",
+    "edit_forward": "",
     "debug": false,
     "enable_swagger_ui": false,
     "dev_notifier_url": "http://api.developer-notifications:8080",
 
-    "edit_forward": "",
+    "handle_done_wait": true,
 
+    "kafka_url": "",
+    "default_kafka_consumer_group": "permissions-v2-0",
+    "done_topic": "permissions-v2",
     "kafka_done_batch_size": 1,
+
 
     "mongo_url": "mongodb://localhost:27017",
     "mongo_database": "permissions",
     "mongo_permissions_collection": "permissions",
     "mongo_topics_collection": "topics",
+
+    "disabled_topic_consumers": [],
 
     "check_db_topic_changes_interval": "10m"
 }
