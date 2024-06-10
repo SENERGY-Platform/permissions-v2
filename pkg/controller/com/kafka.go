@@ -47,15 +47,16 @@ type KafkaCom struct {
 }
 
 func (this *KafkaComProvider) Get(config configuration.Config, topic model.Topic, readHandler ReadHandler) (result Com, err error) {
+	log.Println("init new com", topic.Id)
 	if topic.EnsureTopicInit {
 		err = InitKafkaTopic(config.KafkaUrl, topic.EnsureTopicInitPartitionNumber, topic.KafkaTopic)
 		if err != nil {
 			log.Println("WARNING: unable to create topic", topic.Id, topic.KafkaTopic, err)
 		}
 	}
-	temp := &KafkaCom{config: config, writer: newKafkaWriter(config, topic)}
-	if slices.Contains(config.DisabledTopicConsumers, topic.Id) || slices.Contains(config.DisabledTopicConsumers, topic.KafkaTopic) {
-		temp.reader, err = newKafkaReader(config, topic, readHandler)
+	temp := &KafkaCom{config: config, writer: NewKafkaWriter(config, topic)}
+	if !slices.Contains(config.DisabledTopicConsumers, topic.Id) && !slices.Contains(config.DisabledTopicConsumers, topic.KafkaTopic) {
+		temp.reader, err = NewKafkaReader(config, topic, readHandler)
 		if err != nil {
 			temp.writer.Close()
 			return nil, err
@@ -100,7 +101,7 @@ func (this *KafkaCom) SendPermissions(ctx context.Context, topic model.Topic, id
 	})
 }
 
-func newKafkaWriter(config configuration.Config, topic model.Topic) *kafka.Writer {
+func NewKafkaWriter(config configuration.Config, topic model.Topic) *kafka.Writer {
 	var logger *log.Logger
 	if config.Debug {
 		logger = log.New(os.Stdout, "[KAFKA-PRODUCER] ", 0)
@@ -118,7 +119,8 @@ func newKafkaWriter(config configuration.Config, topic model.Topic) *kafka.Write
 	return writer
 }
 
-func newKafkaReader(config configuration.Config, topic model.Topic, handler ReadHandler) (reader *kafka.Reader, err error) {
+func NewKafkaReader(config configuration.Config, topic model.Topic, handler ReadHandler) (reader *kafka.Reader, err error) {
+	log.Println("new consumer for topic", topic.KafkaTopic)
 	consumerGroup := topic.KafkaConsumerGroup
 	if consumerGroup == "" {
 		consumerGroup = config.DefaultKafkaConsumerGroup
@@ -135,7 +137,7 @@ func newKafkaReader(config configuration.Config, topic model.Topic, handler Read
 		PartitionWatchInterval: time.Minute,
 	})
 	go func() {
-		defer log.Println("close consumer for topic ", topic)
+		defer log.Println("close consumer for topic ", topic.KafkaTopic)
 		for {
 			m, err := reader.FetchMessage(context.Background())
 			if err == io.EOF || err == context.Canceled {

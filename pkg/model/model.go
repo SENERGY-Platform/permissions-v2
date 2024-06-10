@@ -37,6 +37,8 @@ type Topic struct {
 	InitialGroupRights []GroupRight `json:"initial_group_rights"`
 
 	LastUpdateUnixTimestamp int64 `json:"last_update_unix_timestamp"`
+
+	InitOnlyByCqrs bool `json:"init_only_by_cqrs"`
 }
 
 func (this Topic) Validate() error {
@@ -98,6 +100,16 @@ type Resource struct {
 type ResourcePermissions struct {
 	UserPermissions  map[string]Permissions `json:"user_permissions"`
 	GroupPermissions map[string]Permissions `json:"group_permissions"`
+}
+
+func (this ResourcePermissions) Valid() bool {
+	//needs at least one admin user
+	for _, r := range this.UserPermissions {
+		if r.Administrate {
+			return true
+		}
+	}
+	return false
 }
 
 type Permissions struct {

@@ -31,7 +31,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config configuration.Config)
 	if err != nil {
 		return err
 	}
-	ctrl, err := controller.NewWithDependencies(ctx, config, db, com.NewKafkaComProvider(), config.EditForward != "" && config.EditForward != "-")
+	ctrl, err := controller.NewWithDependencies(ctx, config, db, com.NewKafkaComProvider())
 	if err != nil {
 		return err
 	}

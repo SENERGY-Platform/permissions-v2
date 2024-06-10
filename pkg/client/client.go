@@ -46,8 +46,7 @@ func NewTestClient(ctx context.Context) (client Client, err error) {
 	return controller.NewWithDependencies(ctx,
 		configuration.Config{},
 		mock.New(),
-		com.NewBypassProvider(),
-		false)
+		com.NewBypassProvider())
 }
 
 type Impl struct {

@@ -21,11 +21,15 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/idmodifier"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
+	"log"
 	"net/http"
 	"time"
 )
 
 func (this *Controller) HandleResourceUpdate(topic model.Topic, id string, owner string) error {
+	if this.config.Debug {
+		log.Println("handle resource update command", topic.Id, id)
+	}
 	resource := model.Resource{
 		Id:      id,
 		TopicId: topic.Id,
@@ -43,6 +47,9 @@ func (this *Controller) HandleResourceUpdate(topic model.Topic, id string, owner
 }
 
 func (this *Controller) HandleResourceDelete(topic model.Topic, id string) error {
+	if this.config.Debug {
+		log.Println("handle resource delete command", topic.Id, id)
+	}
 	return this.db.DeleteResource(this.getTimeoutContext(), topic.Id, id)
 }
 
@@ -104,15 +111,30 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	if err != nil {
 		return result, err, http.StatusUnauthorized
 	}
+	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(), topicId)
+	if err != nil {
+		return result, err, http.StatusInternalServerError
+	}
+	if !exists {
+		return result, errors.New("topic does not exist"), http.StatusBadRequest
+	}
 	pureId, _ := idmodifier.SplitModifier(id)
 	if !token.IsAdmin() {
-		access, err, code := this.checkPermission(token, topicId, pureId, "a")
+		accessMap, err := this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, []string{pureId}, token.GetUserId(), token.GetRoles(), "a")
 		if err != nil {
-			return result, err, code
+			return result, err, http.StatusInternalServerError
 		}
-		if !access {
+		access, ok := accessMap[pureId]
+		if !ok && topic.InitOnlyByCqrs {
+			return result, errors.New("resource may only be initialized by resource cqrs command"), http.StatusForbidden
+		}
+		if ok && !access {
 			return result, errors.New("access denied"), http.StatusForbidden
 		}
+	}
+
+	if !permissions.Valid() {
+		return result, errors.New("invalid permissions"), http.StatusBadRequest
 	}
 
 	wait := func() error { return nil }
@@ -120,7 +142,7 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	err, code = func() (err error, code int) {
 		this.topicsMux.RLock()
 		defer this.topicsMux.RUnlock()
-		wrapper, ok := this.topics[pureId]
+		wrapper, ok := this.topics[topicId]
 		if !ok {
 			return errors.New("unknown topic id"), http.StatusBadRequest
 		}
@@ -133,6 +155,9 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 		}
 		return nil, http.StatusOK
 	}()
+	if err != nil {
+		return permissions, err, code
+	}
 
 	err = wait()
 	if err != nil {

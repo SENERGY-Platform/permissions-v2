@@ -61,6 +61,8 @@ func (this *Controller) initDoneHandling(ctx context.Context) error {
 				return err
 			}
 		}
+	} else {
+		log.Println("no done topic handling")
 	}
 	return nil
 }

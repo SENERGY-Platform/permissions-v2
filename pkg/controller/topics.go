@@ -159,7 +159,7 @@ func (this *Controller) SetTopic(tokenStr string, topic model.Topic) (result mod
 		return result, err, http.StatusInternalServerError
 	}
 
-	return result, nil, http.StatusOK
+	return topic, nil, http.StatusOK
 }
 
 func (this *Controller) startTopicUpdateWatcher(ctx context.Context) {
@@ -236,7 +236,7 @@ func (this *Controller) updateTopicHandling(topic model.Topic) error {
 	if err != nil {
 		return fmt.Errorf("unable to stop topic: %w", err)
 	}
-	this.topicsMux.Unlock()
+	this.topicsMux.Lock()
 	defer this.topicsMux.Unlock()
 	wrapper, err := this.newTopicWrapper(topic)
 	if err != nil {
@@ -247,7 +247,7 @@ func (this *Controller) updateTopicHandling(topic model.Topic) error {
 }
 
 func (this *Controller) stopTopicHandling(id string) error {
-	this.topicsMux.Unlock()
+	this.topicsMux.Lock()
 	defer this.topicsMux.Unlock()
 	topic, ok := this.topics[id]
 	if !ok {
@@ -262,6 +262,9 @@ func (this *Controller) stopTopicHandling(id string) error {
 }
 
 func (this *Controller) newTopicWrapper(topic model.Topic) (result TopicWrapper, err error) {
+	if this.config.DisableCom {
+		return result, errors.New("com is disabled")
+	}
 	c, err := this.com.Get(this.config, topic, this)
 	if err != nil {
 		return result, err

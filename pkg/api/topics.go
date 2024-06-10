@@ -143,6 +143,7 @@ func (this *TopicsEndpoints) SetTopic(config configuration.Config, router *http.
 			http.Error(w, err.Error(), code)
 			return
 		}
+		w.WriteHeader(code)
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
@@ -181,6 +182,7 @@ func (this *TopicsEndpoints) SetTopicByPost(config configuration.Config, router 
 			http.Error(w, err.Error(), code)
 			return
 		}
+		w.WriteHeader(code)
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {

@@ -41,8 +41,15 @@ type Controller struct {
 
 type DB = database.Database
 
-func NewWithDependencies(ctx context.Context, config configuration.Config, db DB, c com.Provider, disableCom bool) (*Controller, error) {
-	if disableCom {
+type LogNotifier struct{}
+
+func (this LogNotifier) SendMessage(message client.Message) error {
+	log.Printf("NOTIFIER: %#v\n", message)
+	return nil
+}
+
+func NewWithDependencies(ctx context.Context, config configuration.Config, db DB, c com.Provider) (*Controller, error) {
+	if config.DisableCom {
 		config.HandleDoneWait = false
 	}
 	if c == nil {
@@ -51,8 +58,10 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}, com: c}
 	if config.DevNotifierUrl != "" {
 		result.notifier = client.New(config.DevNotifierUrl)
+	} else {
+		result.notifier = LogNotifier{}
 	}
-	if !disableCom {
+	if !config.DisableCom {
 		err := result.initDoneHandling(ctx)
 		if err != nil {
 			return nil, err
@@ -81,6 +90,9 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 }
 
 func (this *Controller) HandleReceivedCommand(topic model.Topic, resource model.Resource, t time.Time) error {
+	if this.config.Debug {
+		log.Println("handle permissions command", topic.Id, resource.Id)
+	}
 	updateIgnored, err := this.db.SetResourcePermissions(this.getTimeoutContext(), resource, t, true)
 	if err != nil {
 		return err
@@ -111,15 +123,13 @@ func (this *Controller) getTimeoutContext() context.Context {
 }
 
 func (this *Controller) notifyError(info error) {
-	if this.notifier != nil && this.config.DevNotifierUrl != "" {
-		err := this.notifier.SendMessage(client.Message{
-			Sender: "github.com/SENERGY-Platform/permissions-v2",
-			Title:  "PermissionsV2 Error",
-			Tags:   []string{"error", "permissions"},
-			Body:   info.Error(),
-		})
-		if err != nil {
-			log.Println("ERROR: unable to send notification", err)
-		}
+	err := this.notifier.SendMessage(client.Message{
+		Sender: "github.com/SENERGY-Platform/permissions-v2",
+		Title:  "PermissionsV2 Error",
+		Tags:   []string{"error", "permissions"},
+		Body:   info.Error(),
+	})
+	if err != nil {
+		log.Println("ERROR: unable to send notification", err)
 	}
 }

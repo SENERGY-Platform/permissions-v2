@@ -34,6 +34,8 @@ type Config struct {
 	EditForward     string `json:"edit_forward"`
 	DevNotifierUrl  string `json:"dev_notifier_url"`
 
+	DisableCom bool `json:"disable_com"`
+
 	KafkaUrl                  string `json:"kafka_url"`
 	DefaultKafkaConsumerGroup string `json:"default_kafka_consumer_group"`
 	DoneTopic                 string `json:"done_topic"`

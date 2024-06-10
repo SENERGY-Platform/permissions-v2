@@ -47,7 +47,7 @@ func (this *Database) SetTopic(ctx context.Context, topic model.Topic) error {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
-	topic.LastUpdateUnixTimestamp = time.Now().Unix()
+	topic.LastUpdateUnixTimestamp = time.Now().UnixMilli()
 	_, err := this.topicsCollection().ReplaceOne(ctx, bson.M{TopicBson.Id: topic.Id}, topic, options.Replace().SetUpsert(true))
 	return err
 }
