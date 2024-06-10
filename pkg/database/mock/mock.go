@@ -21,6 +21,7 @@ import (
 	"errors"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 )
@@ -79,6 +80,9 @@ func (this *Mock) ListResourcesByPermissions(ctx context.Context, topicId string
 			result = append(result, element.Resource)
 		}
 	}
+	slices.SortFunc(result, func(a, b model.Resource) int {
+		return strings.Compare(a.Id, b.Id)
+	})
 	return limitOffset(result, options.Limit, options.Offset), nil
 }
 

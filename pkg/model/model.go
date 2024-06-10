@@ -74,6 +74,9 @@ func (this Topic) Equal(topic Topic) bool {
 	if this.KafkaConsumerGroup != topic.KafkaConsumerGroup {
 		return false
 	}
+	if this.InitOnlyByCqrs != topic.InitOnlyByCqrs {
+		return false
+	}
 	slices.SortFunc(this.InitialGroupRights, func(a, b GroupRight) int {
 		return strings.Compare(a.GroupName, b.GroupName)
 	})

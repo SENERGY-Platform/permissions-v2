@@ -393,6 +393,34 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				}
 			})
 
+			t.Run("admin list", func(t *testing.T) {
+				list, err, _ := c.ListResourcesWithAdminPermission(TestToken, "devices", model.ListOptions{})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				ids := []string{}
+				for _, resource := range list {
+					ids = append(ids, resource.Id)
+				}
+				if !reflect.DeepEqual(ids, []string{"a", "b", "buseradmin", "c"}) {
+					t.Errorf("%#v\n", ids)
+				}
+
+				list, err, _ = c.ListResourcesWithAdminPermission(SecondOwnerToken, "devices", model.ListOptions{})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				ids = []string{}
+				for _, resource := range list {
+					ids = append(ids, resource.Id)
+				}
+				if !reflect.DeepEqual(ids, []string{"a", "buseradmin", "c"}) {
+					t.Errorf("%#v\n", ids)
+				}
+			})
+
 			t.Run("permissions management auth", func(t *testing.T) {
 				tests := map[string]map[string]bool{
 					TestToken: {
@@ -496,14 +524,213 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 
 		t.Run("check permissions", func(t *testing.T) {
 			t.Run("init permissions", func(t *testing.T) {
-
+				_, err, _ := c.SetPermission(TestToken, "devices", "1", model.ResourcePermissions{
+					UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				}, model.SetPermissionOptions{Wait: true})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				_, err, _ = c.SetPermission(TestToken, "devices", "2", model.ResourcePermissions{
+					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+					GroupPermissions: map[string]model.Permissions{"user": {true, true, true, true}},
+				}, model.SetPermissionOptions{Wait: true})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				_, err, _ = c.SetPermission(TestToken, "devices", "3", model.ResourcePermissions{
+					UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
+				}, model.SetPermissionOptions{Wait: true})
+				if err != nil {
+					t.Error(err)
+					return
+				}
 			})
+
+			t.Run("check", func(t *testing.T) {
+				access, err, _ := c.CheckPermission(TestToken, "devices", "1", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !access {
+					t.Error(access)
+					return
+				}
+				access, err, _ = c.CheckPermission(TestToken, "devices", "2", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !access {
+					t.Error(access)
+					return
+				}
+				access, err, _ = c.CheckPermission(TestToken, "devices", "3", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !access {
+					t.Error(access)
+					return
+				}
+				access, err, _ = c.CheckPermission(TestToken, "devices", "2", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !access {
+					t.Error(access)
+					return
+				}
+				access, err, _ = c.CheckPermission(TestToken, "devices", "4", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if access {
+					t.Error(access)
+					return
+				}
+
+				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "1", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if access {
+					t.Error(access)
+					return
+				}
+				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "2", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !access {
+					t.Error(access)
+					return
+				}
+				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "3", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !access {
+					t.Error(access)
+					return
+				}
+				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "2", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !access {
+					t.Error(access)
+					return
+				}
+				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "4", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if access {
+					t.Error(access)
+					return
+				}
+			})
+
+			t.Run("check multiple", func(t *testing.T) {
+				access, err, _ := c.CheckMultiplePermissions(TestToken, "devices", []string{"1", "2", "3", "4"}, "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(access, map[string]bool{"1": true, "2": true, "3": true}) {
+					t.Errorf("%#v\n", access)
+					return
+				}
+				access, err, _ = c.CheckMultiplePermissions(SecondOwnerToken, "devices", []string{"1", "2", "3", "4"}, "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(access, map[string]bool{"1": false, "2": true, "3": true}) {
+					t.Errorf("%#v\n", access)
+					return
+				}
+			})
+
+			t.Run("list", func(t *testing.T) {
+				ids, err, _ := c.ListAccessibleResourceIds(TestToken, "devices", "r", model.ListOptions{})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(ids, []string{"1", "2", "3", "a", "b", "buseradmin", "c"}) {
+					t.Errorf("%#v\n", ids)
+					return
+				}
+				ids, err, _ = c.ListAccessibleResourceIds(SecondOwnerToken, "devices", "r", model.ListOptions{})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(ids, []string{"2", "3", "a", "adminless", "buseradmin", "c"}) {
+					t.Errorf("%#v\n", ids)
+					return
+				}
+			})
+
 			t.Run("try to_be_deleted topic", func(t *testing.T) {
-				//TODO
+				access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted", "2", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if access {
+					t.Error(access)
+					return
+				}
 			})
 
 			t.Run("check after topic delete", func(t *testing.T) {
-				//TODO
+				err, _ := c.RemoveTopic(client.InternalAdminToken, "devices")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				access, err, _ := c.CheckMultiplePermissions(TestToken, "devices", []string{"1", "2", "3", "4"}, "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if len(access) > 0 {
+					t.Errorf("%#v\n", access)
+					return
+				}
+				ids, err, _ := c.ListAccessibleResourceIds(TestToken, "devices", "r", model.ListOptions{})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if len(ids) > 0 {
+					t.Errorf("%#v\n", ids)
+					return
+				}
+
+				_, err, code := c.SetPermission(TestToken, "devices", "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				if err == nil {
+					t.Error("expect error")
+					return
+				}
+				if code != http.StatusBadRequest {
+					t.Error(code)
+					return
+				}
+
 			})
 		})
 	}
