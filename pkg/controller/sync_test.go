@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package tests
+package controller
 
 import "testing"
 

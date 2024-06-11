@@ -86,6 +86,15 @@ func TestIntegration(t *testing.T) {
 		return
 	}
 
+	forwardConfig := config
+	freePort2, err := docker.GetFreePort()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	forwardConfig.Port = strconv.Itoa(freePort2)
+	forwardConfig.EditForward = "http://localhost:" + config.Port
+
 	actualClient := client.New("http://localhost:" + config.Port)
 
 	testClient, err := client.NewTestClient(ctx)
@@ -97,6 +106,80 @@ func TestIntegration(t *testing.T) {
 	t.Run("with test client", RunTestsWithClient(config, testClient))
 
 	t.Run("with actual client", RunTestsWithClient(config, actualClient))
+
+}
+
+func TestForward(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	config, err := configuration.Load("../../config.json")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	config.Debug = true
+	config.DevNotifierUrl = ""
+
+	_, zkIp, err := docker.Zookeeper(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	config.KafkaUrl = zkIp + ":2181"
+
+	//kafka
+	config.KafkaUrl, err = docker.Kafka(ctx, wg, config.KafkaUrl)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	dockerPort, _, err := docker.MongoDB(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	config.MongoUrl = "mongodb://localhost:" + dockerPort
+
+	freePort, err := docker.GetFreePort()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	config.Port = strconv.Itoa(freePort)
+
+	err = pkg.Start(ctx, wg, config)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	forwardConfig := config
+	freePort2, err := docker.GetFreePort()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	forwardConfig.Port = strconv.Itoa(freePort2)
+	forwardConfig.EditForward = "http://localhost:" + config.Port
+	forwardConfig.HandleDoneWait = false
+	forwardConfig.DisableCom = true
+	forwardConfig.KafkaUrl = ""
+	err = pkg.Start(ctx, wg, forwardConfig)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	time.Sleep(time.Second)
+
+	c := client.New("http://localhost:" + forwardConfig.Port)
+
+	t.Run("with forward client", RunTestsWithClient(config, c))
 
 }
 

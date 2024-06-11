@@ -72,14 +72,13 @@ func GetRouter(config configuration.Config, command Controller) http.Handler {
 			call(config, router, command)
 		}
 	}
-
-	var handler http.Handler
-	handler = accesslog.New(util.NewCors(router))
+	var handler http.Handler = router
 	if config.EditForward != "" && config.EditForward != "-" {
 		handler = util.NewConditionalForward(handler, config.EditForward, func(r *http.Request) bool {
 			return r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodDelete
 		})
 	}
+	handler = accesslog.New(util.NewCors(handler))
 	return handler
 }
 
