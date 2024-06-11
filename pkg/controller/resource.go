@@ -147,7 +147,7 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 			return errors.New("unknown topic id"), http.StatusBadRequest
 		}
 
-		wait = this.optionalWait(options.Wait, wrapper.KafkaTopic, pureId)
+		wait = this.optionalWait(options.Wait && !topic.NoCqrs, wrapper.KafkaTopic, pureId)
 
 		err = wrapper.SendPermissions(this.getTimeoutContext(), pureId, permissions)
 		if err != nil {

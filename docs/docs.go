@@ -711,6 +711,9 @@ const docTemplate = `{
                     "description": "at least one of Id and KafkaTopic must be set",
                     "type": "string"
                 },
+                "init_only_by_cqrs": {
+                    "type": "boolean"
+                },
                 "initial_group_rights": {
                     "type": "array",
                     "items": {
@@ -722,11 +725,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "kafka_topic": {
-                    "description": "changeable, defaults to Id",
                     "type": "string"
                 },
                 "last_update_unix_timestamp": {
                     "type": "integer"
+                },
+                "no_cqrs": {
+                    "type": "boolean"
                 }
             }
         }

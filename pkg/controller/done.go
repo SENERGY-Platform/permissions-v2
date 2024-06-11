@@ -30,7 +30,7 @@ import (
 
 func (this *Controller) optionalWait(wait bool, kafkaTopic string, id string) func() error {
 	f := func() error { return nil }
-	if wait && this.config.HandleDoneWait {
+	if wait && this.config.HandleDoneWait && kafkaTopic != "" {
 		ctx, _ := context.WithTimeout(context.Background(), time.Minute)
 		f = donewait.AsyncWait(ctx, donewait.DoneMsg{
 			ResourceKind: kafkaTopic,
