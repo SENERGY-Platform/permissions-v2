@@ -144,7 +144,7 @@ func TestTopicSync(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 	})
 
 	t.Run("check topics after init", func(t *testing.T) {
@@ -345,7 +345,7 @@ func TestTopicSync(t *testing.T) {
 
 		err = db.SetTopic(ctrl.getTimeoutContext(), model.Topic{
 			Id:              "topic6_2",
-			KafkaTopic:      "topic62",
+			KafkaTopic:      "topic6_2",
 			EnsureTopicInit: true,
 		})
 		if err != nil {
@@ -358,7 +358,7 @@ func TestTopicSync(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 	})
 
 	t.Run("check topics after update", func(t *testing.T) {

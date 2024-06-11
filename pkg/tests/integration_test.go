@@ -923,6 +923,23 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 				})
 			}
 
+			t.Run("check after resource delete", func(t *testing.T) {
+				err, _ := c.RemoveResource(TestToken, topicId, "1")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(access, map[string]bool{"2": true, "3": true}) {
+					t.Errorf("%#v\n", access)
+					return
+				}
+			})
+
 			t.Run("check after topic delete", func(t *testing.T) {
 				err, _ := c.RemoveTopic(client.InternalAdminToken, topicId)
 				if err != nil {

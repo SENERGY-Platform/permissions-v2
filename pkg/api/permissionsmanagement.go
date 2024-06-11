@@ -78,7 +78,7 @@ func (this *PermissionsManagementEndpoints) ListResourcesWithAdminPermission(con
 
 // GetResource godoc
 // @Summary      get resource
-// @Description  get resource, requesting user must have admin right
+// @Description  get resource, requesting user must have admin right  on the resource
 // @Tags         manage, resource
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
@@ -114,6 +114,42 @@ func (this *PermissionsManagementEndpoints) GetResource(config configuration.Con
 		if err != nil {
 			log.Println("ERROR: unable to encode response", err)
 		}
+	})
+}
+
+// DeleteResource godoc
+// @Summary      delete resource
+// @Description  delete resource, requesting user must have admin right on the resource
+// @Tags         manage, resource
+// @Security Bearer
+// @Param        topic path string true "Topic Id"
+// @Param        id path string true "Resource Id"
+// @Success      200 {object}  model.Resource
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Failure      500
+// @Router       /manage/{topic}/{id} [delete]
+func (this *PermissionsManagementEndpoints) DeleteResource(config configuration.Config, router *http.ServeMux, ctrl Controller) {
+	router.HandleFunc("DELETE /manage/{topic}/{id}", func(w http.ResponseWriter, req *http.Request) {
+		token := jwt.GetAuthToken(req)
+		topic := req.PathValue("topic")
+		if topic == "" {
+			http.Error(w, "missing topic", http.StatusBadRequest)
+			return
+		}
+		id := req.PathValue("id")
+		if id == "" {
+			http.Error(w, "missing id", http.StatusBadRequest)
+			return
+		}
+
+		err, code := ctrl.RemoveResource(token, topic, id)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+			return
+		}
+		w.WriteHeader(code)
 	})
 }
 

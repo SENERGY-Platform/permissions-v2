@@ -154,6 +154,14 @@ func (this *Impl) GetResource(token string, topicId string, id string) (result m
 	return do[model.Resource](token, req)
 }
 
+func (this *Impl) RemoveResource(token string, topicId string, id string) (err error, code int) {
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%v/manage/%v/%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id)), nil)
+	if err != nil {
+		return err, 0
+	}
+	return doVoid(token, req)
+}
+
 func (this *Impl) SetPermission(token string, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int) {
 	body, err := json.Marshal(permissions)
 	if err != nil {

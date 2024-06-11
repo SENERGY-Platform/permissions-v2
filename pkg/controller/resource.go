@@ -81,6 +81,34 @@ func (this *Controller) ListResourcesWithAdminPermission(tokenStr string, topicI
 	return result, err, code
 }
 
+func (this *Controller) RemoveResource(tokenStr string, topicId string, id string) (err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return err, http.StatusUnauthorized
+	}
+	pureId, _ := idmodifier.SplitModifier(id)
+	_, err = this.db.GetResource(this.getTimeoutContext(), topicId, pureId, model.GetOptions{
+		CheckPermission: !token.IsAdmin(), //admins may access without stored permission
+		UserId:          token.GetUserId(),
+		GroupIds:        token.GetRoles(),
+		Permission:      "a",
+	})
+	if errors.Is(err, model.PermissionCheckFailed) {
+		return errors.New("access denied"), http.StatusForbidden
+	}
+	if errors.Is(err, model.ErrNotFound) {
+		return nil, http.StatusOK
+	}
+	if err != nil {
+		return err, http.StatusInternalServerError
+	}
+	err = this.db.DeleteResource(this.getTimeoutContext(), topicId, id)
+	if err != nil {
+		return err, http.StatusInternalServerError
+	}
+	return nil, http.StatusOK
+}
+
 func (this *Controller) GetResource(tokenStr string, topicId string, id string) (result model.Resource, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {

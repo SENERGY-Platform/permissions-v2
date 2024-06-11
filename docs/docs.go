@@ -557,7 +557,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "get resource, requesting user must have admin right",
+                "description": "get resource, requesting user must have admin right  on the resource",
                 "produces": [
                     "application/json"
                 ],
@@ -672,6 +672,55 @@ const docTemplate = `{
                         "description": "Internal Server Error"
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "delete resource, requesting user must have admin right on the resource",
+                "tags": [
+                    "manage",
+                    "resource"
+                ],
+                "summary": "delete resource",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Topic Id",
+                        "name": "topic",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Resource Id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Resource"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
             }
         }
     },
@@ -767,6 +816,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "init_only_by_cqrs": {
+                    "description": "if true the user may not set permissions for not existing resources; if false the user may\nif true the initial resource must be created by cqrs",
                     "type": "boolean"
                 },
                 "initial_group_rights": {
@@ -783,6 +833,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "last_update_unix_timestamp": {
+                    "description": "should be ignored by the user; is set by db",
                     "type": "integer"
                 },
                 "no_cqrs": {

@@ -42,5 +42,6 @@ type PermissionsCheckInterface interface {
 type PermissionsManagementInterface interface {
 	ListResourcesWithAdminPermission(token string, topicId string, options model.ListOptions) (result []model.Resource, err error, code int)
 	GetResource(token string, topicId string, id string) (result model.Resource, err error, code int)
+	RemoveResource(token string, topicId string, id string) (err error, code int)
 	SetPermission(token string, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int)
 }

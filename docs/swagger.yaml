@@ -60,6 +60,9 @@ definitions:
         description: at least one of Id and KafkaTopic must be set
         type: string
       init_only_by_cqrs:
+        description: |-
+          if true the user may not set permissions for not existing resources; if false the user may
+          if true the initial resource must be created by cqrs
         type: boolean
       initial_group_rights:
         items:
@@ -71,6 +74,7 @@ definitions:
       kafka_topic:
         type: string
       last_update_unix_timestamp:
+        description: should be ignored by the user; is set by db
         type: integer
       no_cqrs:
         type: boolean
@@ -425,8 +429,40 @@ paths:
       - manage
       - resource
   /manage/{topic}/{id}:
+    delete:
+      description: delete resource, requesting user must have admin right on the resource
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: Resource Id
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Resource'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: delete resource
+      tags:
+      - manage
+      - resource
     get:
-      description: get resource, requesting user must have admin right
+      description: get resource, requesting user must have admin right  on the resource
       parameters:
       - description: Topic Id
         in: path

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -38,20 +39,28 @@ type Topic struct {
 
 	InitialGroupRights []GroupRight `json:"initial_group_rights"`
 
+	//if true the user may not set permissions for not existing resources; if false the user may
+	//if true the initial resource must be created by cqrs
 	InitOnlyByCqrs bool `json:"init_only_by_cqrs"`
 
-	LastUpdateUnixTimestamp int64 `json:"last_update_unix_timestamp"`
+	LastUpdateUnixTimestamp int64 `json:"last_update_unix_timestamp"` //should be ignored by the user; is set by db
 }
 
 func (this Topic) Validate() error {
 	if this.Id == "" {
 		return errors.New("id is required")
 	}
+	if this.KafkaTopic == "" && !this.NoCqrs {
+		return errors.New("kafka topic is required")
+	}
 	if strings.TrimSpace(this.KafkaTopic) != this.KafkaTopic {
 		return errors.New("kafka_topic contains space pre/suffix")
 	}
-	if this.KafkaTopic == "" && !this.NoCqrs {
-		return errors.New("kafka topic is required")
+	if this.KafkaTopic != "" && !regexp.MustCompile("^[a-zA-Z0-9\\._\\-]+$").MatchString(this.KafkaTopic) {
+		return errors.New("kafka topic contains invalid characters")
+	}
+	if this.NoCqrs && this.InitOnlyByCqrs {
+		return errors.New("init_only_by_cqrs can not be true if no_cqrs is true")
 	}
 	usedGroupName := map[string]bool{}
 	for _, g := range this.InitialGroupRights {
