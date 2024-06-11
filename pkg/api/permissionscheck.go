@@ -36,6 +36,7 @@ type PermissionsCheckEndpoints struct{}
 // @Summary      check permission
 // @Description  check permission
 // @Tags         check
+// @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        id path string true "Resource Id"
 // @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
@@ -79,6 +80,7 @@ func (this *PermissionsCheckEndpoints) CheckPermission(config configuration.Conf
 // @Summary      check multiple permissions
 // @Description  check multiple permissions
 // @Tags         check
+// @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        ids query string true "Resource Ids, comma seperated"
 // @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
@@ -124,6 +126,7 @@ func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configura
 // @Summary      list accessible resource ids
 // @Description  list accessible resource ids
 // @Tags         accessible, resource
+// @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
 // @Param        limit query integer false "limits size of result; 0 means unlimited"

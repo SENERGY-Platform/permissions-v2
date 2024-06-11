@@ -64,6 +64,7 @@ func Start(ctx context.Context, config configuration.Config, ctrl Controller) (e
 // @securityDefinitions.apikey Bearer
 // @in header
 // @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func GetRouter(config configuration.Config, command Controller) http.Handler {
 	router := http.NewServeMux()
 	for _, e := range endpoints {

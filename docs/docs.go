@@ -35,6 +35,11 @@ const docTemplate = `{
         },
         "/accessible/{topic}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "list accessible resource ids",
                 "produces": [
                     "application/json"
@@ -95,6 +100,11 @@ const docTemplate = `{
         },
         "/admin/topics": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "lists topics with their configuration, requesting user must be admin",
                 "produces": [
                     "application/json"
@@ -142,6 +152,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "set topic config, requesting user must be admin",
                 "consumes": [
                     "application/json"
@@ -197,6 +212,11 @@ const docTemplate = `{
         },
         "/admin/topics/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "get topic config, requesting user must be admin",
                 "produces": [
                     "application/json"
@@ -239,6 +259,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "set topic config, requesting user must be admin",
                 "consumes": [
                     "application/json"
@@ -293,6 +318,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "remove topic config, requesting user must be admin",
                 "tags": [
                     "topics"
@@ -331,6 +361,11 @@ const docTemplate = `{
         },
         "/check/{topic}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "check multiple permissions",
                 "produces": [
                     "application/json"
@@ -385,6 +420,11 @@ const docTemplate = `{
         },
         "/check/{topic}/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "check permission",
                 "produces": [
                     "application/json"
@@ -450,6 +490,11 @@ const docTemplate = `{
         },
         "/manage/{topic}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "lists resources the user has admin rights to",
                 "produces": [
                     "application/json"
@@ -507,6 +552,11 @@ const docTemplate = `{
         },
         "/manage/{topic}/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "get resource, requesting user must have admin right",
                 "produces": [
                     "application/json"
@@ -554,6 +604,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "get resource rights, requesting user must have admin right",
                 "consumes": [
                     "application/json"
@@ -738,6 +793,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "Bearer": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

@@ -37,6 +37,7 @@ type PermissionsManagementEndpoints struct{}
 // @Summary      lists resources the user has admin rights to
 // @Description  lists resources the user has admin rights to
 // @Tags         manage, resource
+// @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        limit query integer false "limits size of result; 0 means unlimited"
 // @Param        offset query integer false "offset to be used in combination with limit"
@@ -79,6 +80,7 @@ func (this *PermissionsManagementEndpoints) ListResourcesWithAdminPermission(con
 // @Summary      get resource
 // @Description  get resource, requesting user must have admin right
 // @Tags         manage, resource
+// @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        id path string true "Resource Id"
 // @Produce      json
@@ -119,6 +121,7 @@ func (this *PermissionsManagementEndpoints) GetResource(config configuration.Con
 // @Summary      set resource rights
 // @Description  get resource rights, requesting user must have admin right
 // @Tags         manage, resource-rights
+// @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        id path string true "Resource Id"
 // @Param        wait query bool false "if set to true, the response will be sent after the corresponding kafka done signal has been received"

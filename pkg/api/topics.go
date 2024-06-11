@@ -35,6 +35,7 @@ type TopicsEndpoints struct{}
 // @Summary      lists topics with their configuration
 // @Description  lists topics with their configuration, requesting user must be admin
 // @Tags         topics
+// @Security Bearer
 // @Param        limit query integer false "limits size of result; 0 means unlimited"
 // @Param        offset query integer false "offset to be used in combination with limit"
 // @Produce      json
@@ -69,6 +70,7 @@ func (this *TopicsEndpoints) ListTopics(config configuration.Config, router *htt
 // @Summary      get topic config
 // @Description  get topic config, requesting user must be admin
 // @Tags         topics
+// @Security Bearer
 // @Param        id path string true "Topic Id"
 // @Produce      json
 // @Success      200 {object}  model.Topic
@@ -105,6 +107,7 @@ func (this *TopicsEndpoints) GetTopic(config configuration.Config, router *http.
 // @Tags         topics
 // @Accept       json
 // @Produce      json
+// @Security Bearer
 // @Param        id path string true "Topic Id"
 // @Param        message body model.Topic true "Topic"
 // @Success      200 {object}  model.Topic
@@ -158,6 +161,7 @@ func (this *TopicsEndpoints) SetTopic(config configuration.Config, router *http.
 // @Tags         topics
 // @Accept       json
 // @Produce      json
+// @Security Bearer
 // @Param        message body model.Topic true "Topic"
 // @Success      200 {object}  model.Topic
 // @Success      202 {object}  model.Topic
@@ -195,6 +199,7 @@ func (this *TopicsEndpoints) SetTopicByPost(config configuration.Config, router 
 // @Summary      remove topic config
 // @Description  remove topic config, requesting user must be admin
 // @Tags         topics
+// @Security Bearer
 // @Param        id path string true "Topic Id"
 // @Success      200
 // @Failure      400
