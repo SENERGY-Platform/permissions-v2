@@ -117,7 +117,7 @@ func (this *Controller) SetTopic(tokenStr string, topic model.Topic) (result mod
 	if topic.Id == "" {
 		topic.Id = topic.KafkaTopic
 	}
-	if topic.KafkaTopic == "" {
+	if topic.KafkaTopic == "" && !topic.NoCqrs {
 		topic.KafkaTopic = topic.Id
 	}
 

@@ -100,9 +100,6 @@ func TestIntegration(t *testing.T) {
 
 }
 
-const Userjwt = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIzaUtabW9aUHpsMmRtQnBJdS1vSkY4ZVVUZHh4OUFIckVOcG5CcHM5SjYwIn0.eyJqdGkiOiJiOGUyNGZkNy1jNjJlLTRhNWQtOTQ4ZC1mZGI2ZWVkM2JmYzYiLCJleHAiOjE1MzA1MzIwMzIsIm5iZiI6MCwiaWF0IjoxNTMwNTI4NDMyLCJpc3MiOiJodHRwczovL2F1dGguc2VwbC5pbmZhaS5vcmcvYXV0aC9yZWFsbXMvbWFzdGVyIiwiYXVkIjoiZnJvbnRlbmQiLCJzdWIiOiJkZDY5ZWEwZC1mNTUzLTQzMzYtODBmMy03ZjQ1NjdmODVjN2IiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJmcm9udGVuZCIsIm5vbmNlIjoiMjJlMGVjZjgtZjhhMS00NDQ1LWFmMjctNGQ1M2JmNWQxOGI5IiwiYXV0aF90aW1lIjoxNTMwNTI4NDIzLCJzZXNzaW9uX3N0YXRlIjoiMWQ3NWE5ODQtNzM1OS00MWJlLTgxYjktNzMyZDgyNzRjMjNlIiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJjcmVhdGUtcmVhbG0iLCJhZG1pbiIsImRldmVsb3BlciIsInVtYV9hdXRob3JpemF0aW9uIiwidXNlciJdfSwicmVzb3VyY2VfYWNjZXNzIjp7Im1hc3Rlci1yZWFsbSI6eyJyb2xlcyI6WyJ2aWV3LWlkZW50aXR5LXByb3ZpZGVycyIsInZpZXctcmVhbG0iLCJtYW5hZ2UtaWRlbnRpdHktcHJvdmlkZXJzIiwiaW1wZXJzb25hdGlvbiIsImNyZWF0ZS1jbGllbnQiLCJtYW5hZ2UtdXNlcnMiLCJxdWVyeS1yZWFsbXMiLCJ2aWV3LWF1dGhvcml6YXRpb24iLCJxdWVyeS1jbGllbnRzIiwicXVlcnktdXNlcnMiLCJtYW5hZ2UtZXZlbnRzIiwibWFuYWdlLXJlYWxtIiwidmlldy1ldmVudHMiLCJ2aWV3LXVzZXJzIiwidmlldy1jbGllbnRzIiwibWFuYWdlLWF1dGhvcml6YXRpb24iLCJtYW5hZ2UtY2xpZW50cyIsInF1ZXJ5LWdyb3VwcyJdfSwiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwicm9sZXMiOlsidW1hX2F1dGhvcml6YXRpb24iLCJhZG1pbiIsImNyZWF0ZS1yZWFsbSIsImRldmVsb3BlciIsInVzZXIiLCJvZmZsaW5lX2FjY2VzcyJdLCJuYW1lIjoiZGYgZGZmZmYiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJzZXBsIiwiZ2l2ZW5fbmFtZSI6ImRmIiwiZmFtaWx5X25hbWUiOiJkZmZmZiIsImVtYWlsIjoic2VwbEBzZXBsLmRlIn0.eOwKV7vwRrWr8GlfCPFSq5WwR_p-_rSJURXCV1K7ClBY5jqKQkCsRL2V4YhkP1uS6ECeSxF7NNOLmElVLeFyAkvgSNOUkiuIWQpMTakNKynyRfH0SrdnPSTwK2V1s1i4VjoYdyZWXKNjeT2tUUX9eCyI5qOf_Dzcai5FhGCSUeKpV0ScUj5lKrn56aamlW9IdmbFJ4VwpQg2Y843Vc0TqpjK9n_uKwuRcQd9jkKHkbwWQ-wyJEbFWXHjQ6LnM84H0CQ2fgBqPPfpQDKjGSUNaCS-jtBcbsBAWQSICwol95BuOAqVFMucx56Wm-OyQOuoQ1jaLt2t-Uxtr-C9wKJWHQ"
-const Userid = "dd69ea0d-f553-4336-80f3-7f4567f85c7b"
-
 // has role user
 const TestTokenUser = "testOwner"
 const TestToken = `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwOGM0N2E4OC0yYzc5LTQyMGYtODEwNC02NWJkOWViYmU0MWUiLCJleHAiOjE1NDY1MDcyMzMsIm5iZiI6MCwiaWF0IjoxNTQ2NTA3MTczLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXV0aC9yZWFsbXMvbWFzdGVyIiwiYXVkIjoiZnJvbnRlbmQiLCJzdWIiOiJ0ZXN0T3duZXIiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJmcm9udGVuZCIsIm5vbmNlIjoiOTJjNDNjOTUtNzViMC00NmNmLTgwYWUtNDVkZDk3M2I0YjdmIiwiYXV0aF90aW1lIjoxNTQ2NTA3MDA5LCJzZXNzaW9uX3N0YXRlIjoiNWRmOTI4ZjQtMDhmMC00ZWI5LTliNjAtM2EwYWUyMmVmYzczIiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsibWFzdGVyLXJlYWxtIjp7InJvbGVzIjpbInZpZXctcmVhbG0iLCJ2aWV3LWlkZW50aXR5LXByb3ZpZGVycyIsIm1hbmFnZS1pZGVudGl0eS1wcm92aWRlcnMiLCJpbXBlcnNvbmF0aW9uIiwiY3JlYXRlLWNsaWVudCIsIm1hbmFnZS11c2VycyIsInF1ZXJ5LXJlYWxtcyIsInZpZXctYXV0aG9yaXphdGlvbiIsInF1ZXJ5LWNsaWVudHMiLCJxdWVyeS11c2VycyIsIm1hbmFnZS1ldmVudHMiLCJtYW5hZ2UtcmVhbG0iLCJ2aWV3LWV2ZW50cyIsInZpZXctdXNlcnMiLCJ2aWV3LWNsaWVudHMiLCJtYW5hZ2UtYXV0aG9yaXphdGlvbiIsIm1hbmFnZS1jbGllbnRzIiwicXVlcnktZ3JvdXBzIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJyb2xlcyI6WyJ1c2VyIl19.ykpuOmlpzj75ecSI6cHbCATIeY4qpyut2hMc1a67Ycg`
@@ -112,7 +109,7 @@ const SecondOwnerToken = `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOi
 
 func RunTestsWithClient(config configuration.Config, c client.Client) func(t *testing.T) {
 	return func(t *testing.T) {
-		t.Run("topic crud", func(t *testing.T) {
+		t.Run("cqrs topic crud", func(t *testing.T) {
 			t.Run("create topic", func(t *testing.T) {
 				result, err, _ := c.SetTopic(client.InternalAdminToken, model.Topic{
 					Id:                 "devices",
@@ -250,9 +247,147 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					return
 				}
 			})
-
 		})
-		t.Run("initial resource", func(t *testing.T) {
+		t.Run("none-cqrs topic crud", func(t *testing.T) {
+			t.Run("create topic", func(t *testing.T) {
+				result, err, _ := c.SetTopic(client.InternalAdminToken, model.Topic{
+					Id:     "foo",
+					NoCqrs: true,
+				})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if result.Id != "foo" {
+					t.Errorf("%#v\n", result)
+					return
+				}
+			})
+			t.Run("update topic", func(t *testing.T) {
+				result, err, code := c.SetTopic(client.InternalAdminToken, model.Topic{
+					Id:     "foo",
+					NoCqrs: true,
+					InitialGroupRights: []model.GroupRight{
+						{
+							GroupName:   "g1",
+							Permissions: model.Permissions{Read: true},
+						},
+					},
+				})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if code != http.StatusOK {
+					t.Error(code)
+					return
+				}
+				if result.Id != "foo" {
+					t.Errorf("%#v\n", result)
+					return
+				}
+				if result.KafkaTopic != "" {
+					t.Errorf("%#v\n", result)
+					return
+				}
+				if len(result.InitialGroupRights) != 1 {
+					t.Errorf("%#v\n", result)
+					return
+				}
+			})
+			t.Run("unchanged topic", func(t *testing.T) {
+				result, err, code := c.SetTopic(client.InternalAdminToken, model.Topic{
+					Id:     "foo",
+					NoCqrs: true,
+					InitialGroupRights: []model.GroupRight{
+						{
+							GroupName:   "g1",
+							Permissions: model.Permissions{Read: true},
+						},
+					},
+				})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if code != http.StatusAccepted {
+					t.Error(code)
+					return
+				}
+				if result.Id != "foo" {
+					t.Errorf("%#v\n", result)
+					return
+				}
+				if result.KafkaTopic != "" {
+					t.Errorf("%#v\n", result)
+					return
+				}
+				if len(result.InitialGroupRights) != 1 {
+					t.Errorf("%#v\n", result)
+					return
+				}
+			})
+			t.Run("get topic", func(t *testing.T) {
+				result, err, _ := c.GetTopic(client.InternalAdminToken, "foo")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if result.Id != "foo" {
+					t.Errorf("%#v\n", result)
+					return
+				}
+				if len(result.InitialGroupRights) != 1 {
+					t.Errorf("%#v\n", result)
+					return
+				}
+			})
+			t.Run("delete topic", func(t *testing.T) {
+				temp, err, _ := c.SetTopic(client.InternalAdminToken, model.Topic{
+					Id:                 "to_be_deleted_2",
+					KafkaTopic:         "to_be_deleted_2",
+					EnsureTopicInit:    true,
+					KafkaConsumerGroup: "",
+				})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				err, _ = c.RemoveTopic(client.InternalAdminToken, temp.Id)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				list, err, _ := c.ListTopics(client.InternalAdminToken, model.ListOptions{})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if len(list) != 2 {
+					t.Errorf("%#v\n", list)
+					return
+				}
+				if !slices.ContainsFunc(list, func(topic model.Topic) bool {
+					return topic.Id == "devices"
+				}) {
+					t.Errorf("%#v\n", list)
+					return
+				}
+				if !slices.ContainsFunc(list, func(topic model.Topic) bool {
+					return topic.Id == "foo"
+				}) {
+					t.Errorf("%#v\n", list)
+					return
+				}
+				if slices.ContainsFunc(list, func(topic model.Topic) bool {
+					return topic.Id == "to_be_deleted"
+				}) {
+					t.Errorf("%#v\n", list)
+					return
+				}
+			})
+		})
+		t.Run("initial cqrs resource", func(t *testing.T) {
 			if _, ok := c.(*controller.Controller); ok {
 				t.Skip("skip for test client")
 				return
@@ -298,35 +433,42 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			}
 
 		})
-		t.Run("topic sync interval", func(t *testing.T) {
-			//TODO
-			t.Skip("TODO")
-		})
-		t.Run("manage permissions", func(t *testing.T) {
-			t.Run("try to_be_deleted topic", func(t *testing.T) {
-				_, err, code := c.SetPermission(TestToken, "to_be_deleted", "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
-				if err == nil {
-					t.Error("expect error")
-					return
-				}
-				if code != http.StatusBadRequest {
-					t.Error(code)
-					return
-				}
 
-				_, err, code = c.GetResource(TestToken, "to_be_deleted", "nope")
-				if err == nil {
-					t.Error("expect error")
-					return
-				}
-				if code != http.StatusNotFound {
-					t.Error(code)
-					return
-				}
-			})
+		t.Run("cqrs", RunTestsWithTopic(config, c, "devices", true))
+
+		t.Run("without cqrs", RunTestsWithTopic(config, c, "foo", false))
+	}
+}
+
+func RunTestsWithTopic(config configuration.Config, c client.Client, topicId string, withToBeDeletedCheck bool) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Run("manage permissions", func(t *testing.T) {
+			if withToBeDeletedCheck {
+				t.Run("try to_be_deleted topic", func(t *testing.T) {
+					_, err, code := c.SetPermission(TestToken, "to_be_deleted", "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+					if err == nil {
+						t.Error("expect error")
+						return
+					}
+					if code != http.StatusBadRequest {
+						t.Error(code)
+						return
+					}
+
+					_, err, code = c.GetResource(TestToken, "to_be_deleted", "nope")
+					if err == nil {
+						t.Error("expect error")
+						return
+					}
+					if code != http.StatusNotFound {
+						t.Error(code)
+						return
+					}
+				})
+			}
 
 			t.Run("initial permissions set", func(t *testing.T) {
-				_, err, code := c.SetPermission(TestToken, "devices", "b", model.ResourcePermissions{
+				_, err, code := c.SetPermission(TestToken, topicId, "b", model.ResourcePermissions{
 					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
 					GroupPermissions: nil,
 				}, model.SetPermissionOptions{Wait: true})
@@ -339,7 +481,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					return
 				}
 
-				_, err, code = c.SetPermission(TestToken, "devices", "buseradmin", model.ResourcePermissions{
+				_, err, code = c.SetPermission(TestToken, topicId, "buseradmin", model.ResourcePermissions{
 					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
 					GroupPermissions: map[string]model.Permissions{"user": {true, true, true, true}},
 				}, model.SetPermissionOptions{Wait: true})
@@ -352,7 +494,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					return
 				}
 
-				_, err, code = c.SetPermission(TestToken, "devices", "c", model.ResourcePermissions{
+				_, err, code = c.SetPermission(TestToken, topicId, "c", model.ResourcePermissions{
 					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
 					GroupPermissions: nil,
 				}, model.SetPermissionOptions{Wait: true})
@@ -367,7 +509,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 
 			t.Run("update permissions", func(t *testing.T) {
-				_, err, code := c.SetPermission(TestToken, "devices", "a", model.ResourcePermissions{
+				_, err, code := c.SetPermission(TestToken, topicId, "a", model.ResourcePermissions{
 					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
 					GroupPermissions: nil,
 				}, model.SetPermissionOptions{Wait: true})
@@ -379,7 +521,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(code)
 					return
 				}
-				_, err, code = c.SetPermission(TestToken, "devices", "c", model.ResourcePermissions{
+				_, err, code = c.SetPermission(TestToken, topicId, "c", model.ResourcePermissions{
 					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
 					GroupPermissions: map[string]model.Permissions{},
 				}, model.SetPermissionOptions{Wait: true})
@@ -394,7 +536,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 
 			t.Run("admin list", func(t *testing.T) {
-				list, err, _ := c.ListResourcesWithAdminPermission(TestToken, "devices", model.ListOptions{})
+				list, err, _ := c.ListResourcesWithAdminPermission(TestToken, topicId, model.ListOptions{})
 				if err != nil {
 					t.Error(err)
 					return
@@ -407,7 +549,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", ids)
 				}
 
-				list, err, _ = c.ListResourcesWithAdminPermission(SecondOwnerToken, "devices", model.ListOptions{})
+				list, err, _ = c.ListResourcesWithAdminPermission(SecondOwnerToken, topicId, model.ListOptions{})
 				if err != nil {
 					t.Error(err)
 					return
@@ -439,7 +581,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				for user, sub := range tests {
 					for id, access := range sub {
 						token, _ := jwt.Parse(user)
-						_, err, code := c.GetResource(user, "devices", id)
+						_, err, code := c.GetResource(user, topicId, id)
 						if access {
 							if err != nil {
 								t.Error(token.GetUserId(), id, access, err)
@@ -465,7 +607,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				for id, access := range tests[SecondOwnerToken] {
 					user := SecondOwnerToken
 					token, _ := jwt.Parse(user)
-					_, err, code := c.SetPermission(user, "devices", id, model.ResourcePermissions{
+					_, err, code := c.SetPermission(user, topicId, id, model.ResourcePermissions{
 						UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
 						GroupPermissions: map[string]model.Permissions{"user": {true, true, true, true}, "g2": {true, true, true, true}},
 					}, model.SetPermissionOptions{Wait: true})
@@ -494,7 +636,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 		})
 
 		t.Run("prevent admin less resource", func(t *testing.T) {
-			_, err, _ := c.SetPermission(TestToken, "devices", "adminless", model.ResourcePermissions{
+			_, err, _ := c.SetPermission(TestToken, topicId, "adminless", model.ResourcePermissions{
 				UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, false}},
 				GroupPermissions: map[string]model.Permissions{"g2": {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
@@ -503,7 +645,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				return
 			}
 
-			_, err, _ = c.SetPermission(TestToken, "devices", "adminless", model.ResourcePermissions{
+			_, err, _ = c.SetPermission(TestToken, topicId, "adminless", model.ResourcePermissions{
 				UserPermissions:  map[string]model.Permissions{SecendOwnerTokenUser: {true, true, true, false}},
 				GroupPermissions: map[string]model.Permissions{"g2": {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
@@ -512,7 +654,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				return
 			}
 
-			_, err, _ = c.SetPermission(TestToken, "devices", "adminless", model.ResourcePermissions{
+			_, err, _ = c.SetPermission(TestToken, topicId, "adminless", model.ResourcePermissions{
 				UserPermissions:  map[string]model.Permissions{SecendOwnerTokenUser: {true, true, true, true}},
 				GroupPermissions: map[string]model.Permissions{"g2": {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
@@ -524,14 +666,14 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 
 		t.Run("check permissions", func(t *testing.T) {
 			t.Run("init permissions", func(t *testing.T) {
-				_, err, _ := c.SetPermission(TestToken, "devices", "1", model.ResourcePermissions{
+				_, err, _ := c.SetPermission(TestToken, topicId, "1", model.ResourcePermissions{
 					UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
 					t.Error(err)
 					return
 				}
-				_, err, _ = c.SetPermission(TestToken, "devices", "2", model.ResourcePermissions{
+				_, err, _ = c.SetPermission(TestToken, topicId, "2", model.ResourcePermissions{
 					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
 					GroupPermissions: map[string]model.Permissions{"user": {true, true, true, true}},
 				}, model.SetPermissionOptions{Wait: true})
@@ -539,7 +681,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(err)
 					return
 				}
-				_, err, _ = c.SetPermission(TestToken, "devices", "3", model.ResourcePermissions{
+				_, err, _ = c.SetPermission(TestToken, topicId, "3", model.ResourcePermissions{
 					UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
@@ -549,7 +691,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 
 			t.Run("check", func(t *testing.T) {
-				access, err, _ := c.CheckPermission(TestToken, "devices", "1", "r")
+				access, err, _ := c.CheckPermission(TestToken, topicId, "1", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -558,7 +700,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(TestToken, "devices", "2", "r")
+				access, err, _ = c.CheckPermission(TestToken, topicId, "2", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -567,7 +709,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(TestToken, "devices", "3", "r")
+				access, err, _ = c.CheckPermission(TestToken, topicId, "3", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -576,7 +718,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(TestToken, "devices", "2", "r")
+				access, err, _ = c.CheckPermission(TestToken, topicId, "2", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -585,7 +727,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(TestToken, "devices", "4", "r")
+				access, err, _ = c.CheckPermission(TestToken, topicId, "4", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -595,7 +737,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					return
 				}
 
-				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "1", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "1", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -604,7 +746,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "2", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "2", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -613,7 +755,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "3", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "3", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -622,7 +764,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "2", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "2", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -631,7 +773,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(SecondOwnerToken, "devices", "4", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "4", "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -643,7 +785,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 
 			t.Run("check multiple", func(t *testing.T) {
-				access, err, _ := c.CheckMultiplePermissions(TestToken, "devices", []string{"1", "2", "3", "4"}, "r")
+				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -652,7 +794,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", access)
 					return
 				}
-				access, err, _ = c.CheckMultiplePermissions(SecondOwnerToken, "devices", []string{"1", "2", "3", "4"}, "r")
+				access, err, _ = c.CheckMultiplePermissions(SecondOwnerToken, topicId, []string{"1", "2", "3", "4"}, "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -664,7 +806,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 
 			t.Run("list", func(t *testing.T) {
-				ids, err, _ := c.ListAccessibleResourceIds(TestToken, "devices", "r", model.ListOptions{})
+				ids, err, _ := c.ListAccessibleResourceIds(TestToken, topicId, "r", model.ListOptions{})
 				if err != nil {
 					t.Error(err)
 					return
@@ -673,7 +815,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", ids)
 					return
 				}
-				ids, err, _ = c.ListAccessibleResourceIds(SecondOwnerToken, "devices", "r", model.ListOptions{})
+				ids, err, _ = c.ListAccessibleResourceIds(SecondOwnerToken, topicId, "r", model.ListOptions{})
 				if err != nil {
 					t.Error(err)
 					return
@@ -684,25 +826,27 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				}
 			})
 
-			t.Run("try to_be_deleted topic", func(t *testing.T) {
-				access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted", "2", "r")
-				if err != nil {
-					t.Error(err)
-					return
-				}
-				if access {
-					t.Error(access)
-					return
-				}
-			})
+			if withToBeDeletedCheck {
+				t.Run("try to_be_deleted topic", func(t *testing.T) {
+					access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted", "2", "r")
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					if access {
+						t.Error(access)
+						return
+					}
+				})
+			}
 
 			t.Run("check after topic delete", func(t *testing.T) {
-				err, _ := c.RemoveTopic(client.InternalAdminToken, "devices")
+				err, _ := c.RemoveTopic(client.InternalAdminToken, topicId)
 				if err != nil {
 					t.Error(err)
 					return
 				}
-				access, err, _ := c.CheckMultiplePermissions(TestToken, "devices", []string{"1", "2", "3", "4"}, "r")
+				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
 				if err != nil {
 					t.Error(err)
 					return
@@ -711,7 +855,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", access)
 					return
 				}
-				ids, err, _ := c.ListAccessibleResourceIds(TestToken, "devices", "r", model.ListOptions{})
+				ids, err, _ := c.ListAccessibleResourceIds(TestToken, topicId, "r", model.ListOptions{})
 				if err != nil {
 					t.Error(err)
 					return
@@ -721,7 +865,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					return
 				}
 
-				_, err, code := c.SetPermission(TestToken, "devices", "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				_, err, code := c.SetPermission(TestToken, topicId, "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
 				if err == nil {
 					t.Error("expect error")
 					return
@@ -734,4 +878,5 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 		})
 	}
+
 }

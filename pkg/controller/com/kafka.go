@@ -47,6 +47,9 @@ type KafkaCom struct {
 }
 
 func (this *KafkaComProvider) Get(config configuration.Config, topic model.Topic, readHandler ReadHandler) (result Com, err error) {
+	if topic.NoCqrs {
+		return NewBypassProvider().Get(config, topic, readHandler)
+	}
 	log.Println("init new com", topic.Id)
 	if topic.EnsureTopicInit {
 		err = InitKafkaTopic(config.KafkaUrl, topic.EnsureTopicInitPartitionNumber, topic.KafkaTopic)

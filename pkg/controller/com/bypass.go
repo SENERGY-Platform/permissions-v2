@@ -20,6 +20,7 @@ import (
 	"context"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"log"
 	"time"
 )
 
@@ -30,6 +31,7 @@ func NewBypassProvider() *BypassProvider {
 type BypassProvider struct{}
 
 func (this *BypassProvider) Get(config configuration.Config, topic model.Topic, readHandler ReadHandler) (Com, error) {
+	log.Println("init new bypass com", topic.Id)
 	return &Bypass{readHandler: readHandler}, nil
 }
 

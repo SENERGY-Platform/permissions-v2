@@ -26,8 +26,10 @@ import (
 
 type Topic struct {
 	//at least one of Id and KafkaTopic must be set
-	Id         string `json:"id"`          //unchangeable, defaults to KafkaTopic
-	KafkaTopic string `json:"kafka_topic"` //changeable, defaults to Id
+	Id     string `json:"id"`
+	NoCqrs bool   `json:"no_cqrs"`
+
+	KafkaTopic string `json:"kafka_topic"`
 
 	EnsureTopicInit                bool `json:"ensure_topic_init"`
 	EnsureTopicInitPartitionNumber int  `json:"ensure_topic_init_partition_number"`
@@ -36,16 +38,19 @@ type Topic struct {
 
 	InitialGroupRights []GroupRight `json:"initial_group_rights"`
 
-	LastUpdateUnixTimestamp int64 `json:"last_update_unix_timestamp"`
-
 	InitOnlyByCqrs bool `json:"init_only_by_cqrs"`
+
+	LastUpdateUnixTimestamp int64 `json:"last_update_unix_timestamp"`
 }
 
 func (this Topic) Validate() error {
 	if this.Id == "" {
 		return errors.New("id is required")
 	}
-	if this.KafkaTopic == "" {
+	if strings.TrimSpace(this.KafkaTopic) != this.KafkaTopic {
+		return errors.New("kafka_topic contains space pre/suffix")
+	}
+	if this.KafkaTopic == "" && !this.NoCqrs {
 		return errors.New("kafka topic is required")
 	}
 	usedGroupName := map[string]bool{}
@@ -60,6 +65,9 @@ func (this Topic) Validate() error {
 
 func (this Topic) Equal(topic Topic) bool {
 	if this.Id != topic.Id {
+		return false
+	}
+	if this.NoCqrs != topic.NoCqrs {
 		return false
 	}
 	if this.KafkaTopic != topic.KafkaTopic {
