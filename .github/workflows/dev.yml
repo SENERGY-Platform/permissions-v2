@@ -32,8 +32,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            smartenergyplatform/permissions:dev
-            ghcr.io/senergy-platform/permissions:dev
+            smartenergyplatform/permissions-v2:dev
+            ghcr.io/senergy-platform/permissions-v2:dev
       - name: Deploy
         uses: wei/curl@v1
         with:
