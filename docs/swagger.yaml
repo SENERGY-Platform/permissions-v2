@@ -430,7 +430,8 @@ paths:
       - resource
   /manage/{topic}/{id}:
     delete:
-      description: delete resource, requesting user must have admin right on the resource
+      description: delete resource, requesting user must have admin right on the resource,
+        topic must have NoCqrs=true
       parameters:
       - description: Topic Id
         in: path

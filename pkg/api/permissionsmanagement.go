@@ -119,7 +119,7 @@ func (this *PermissionsManagementEndpoints) GetResource(config configuration.Con
 
 // DeleteResource godoc
 // @Summary      delete resource
-// @Description  delete resource, requesting user must have admin right on the resource
+// @Description  delete resource, requesting user must have admin right on the resource, topic must have NoCqrs=true
 // @Tags         manage, resource
 // @Security Bearer
 // @Param        topic path string true "Topic Id"

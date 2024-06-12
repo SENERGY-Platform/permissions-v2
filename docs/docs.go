@@ -679,7 +679,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "delete resource, requesting user must have admin right on the resource",
+                "description": "delete resource, requesting user must have admin right on the resource, topic must have NoCqrs=true",
                 "tags": [
                     "manage",
                     "resource"

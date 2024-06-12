@@ -331,6 +331,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				}
 			})
 		})
+
 		t.Run("none-cqrs topic crud", func(t *testing.T) {
 			t.Run("create topic", func(t *testing.T) {
 				result, err, _ := c.SetTopic(client.InternalAdminToken, model.Topic{
@@ -470,6 +471,73 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				}
 			})
 		})
+
+		t.Run("try deleted topic", func(t *testing.T) {
+			t.Run("try to_be_deleted", func(t *testing.T) {
+				_, err, code := c.SetPermission(TestToken, "to_be_deleted", "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				if err == nil {
+					t.Error("expect error")
+					return
+				}
+				if code != http.StatusBadRequest {
+					t.Error(code)
+					return
+				}
+
+				access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted", "2", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if access {
+					t.Error(access)
+					return
+				}
+
+				_, err, code = c.GetResource(TestToken, "to_be_deleted", "nope")
+				if err == nil {
+					t.Error("expect error")
+					return
+				}
+				if code != http.StatusNotFound {
+					t.Error(code)
+					return
+				}
+			})
+
+			t.Run("try to_be_deleted_2", func(t *testing.T) {
+				_, err, code := c.SetPermission(TestToken, "to_be_deleted_2", "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				if err == nil {
+					t.Error("expect error")
+					return
+				}
+				if code != http.StatusBadRequest {
+					t.Error(code)
+					return
+				}
+
+				access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted_2", "2", "r")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if access {
+					t.Error(access)
+					return
+				}
+
+				_, err, code = c.GetResource(TestToken, "to_be_deleted_2", "nope")
+				if err == nil {
+					t.Error("expect error")
+					return
+				}
+				if code != http.StatusNotFound {
+					t.Error(code)
+					return
+				}
+			})
+		})
+
 		t.Run("initial cqrs resource", func(t *testing.T) {
 			if _, ok := c.(*controller.Controller); ok {
 				t.Skip("skip for test client")
@@ -523,32 +591,9 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 	}
 }
 
-func RunTestsWithTopic(config configuration.Config, c client.Client, topicId string, withToBeDeletedCheck bool) func(t *testing.T) {
+func RunTestsWithTopic(config configuration.Config, c client.Client, topicId string, cqrs bool) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Run("manage permissions", func(t *testing.T) {
-			if withToBeDeletedCheck {
-				t.Run("try to_be_deleted topic", func(t *testing.T) {
-					_, err, code := c.SetPermission(TestToken, "to_be_deleted", "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
-					if err == nil {
-						t.Error("expect error")
-						return
-					}
-					if code != http.StatusBadRequest {
-						t.Error(code)
-						return
-					}
-
-					_, err, code = c.GetResource(TestToken, "to_be_deleted", "nope")
-					if err == nil {
-						t.Error("expect error")
-						return
-					}
-					if code != http.StatusNotFound {
-						t.Error(code)
-						return
-					}
-				})
-			}
 
 			t.Run("initial permissions set", func(t *testing.T) {
 				_, err, code := c.SetPermission(TestToken, topicId, "b", model.ResourcePermissions{
@@ -909,34 +954,37 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 				}
 			})
 
-			if withToBeDeletedCheck {
-				t.Run("try to_be_deleted topic", func(t *testing.T) {
-					access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted", "2", "r")
+			t.Run("check after resource delete", func(t *testing.T) {
+				if cqrs {
+					err, _ := c.RemoveResource(TestToken, topicId, "1")
+					if err == nil {
+						t.Error("expected error")
+						return
+					}
+					access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
 					if err != nil {
 						t.Error(err)
 						return
 					}
-					if access {
-						t.Error(access)
+					if !reflect.DeepEqual(access, map[string]bool{"1": true, "2": true, "3": true}) {
+						t.Errorf("%#v\n", access)
 						return
 					}
-				})
-			}
-
-			t.Run("check after resource delete", func(t *testing.T) {
-				err, _ := c.RemoveResource(TestToken, topicId, "1")
-				if err != nil {
-					t.Error(err)
-					return
-				}
-				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
-				if err != nil {
-					t.Error(err)
-					return
-				}
-				if !reflect.DeepEqual(access, map[string]bool{"2": true, "3": true}) {
-					t.Errorf("%#v\n", access)
-					return
+				} else {
+					err, _ := c.RemoveResource(TestToken, topicId, "1")
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					if !reflect.DeepEqual(access, map[string]bool{"2": true, "3": true}) {
+						t.Errorf("%#v\n", access)
+						return
+					}
 				}
 			})
 

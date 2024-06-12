@@ -102,6 +102,18 @@ func (this *Controller) RemoveResource(tokenStr string, topicId string, id strin
 	if err != nil {
 		return err, http.StatusInternalServerError
 	}
+	err = func() error {
+		this.topicsMux.RLock()
+		defer this.topicsMux.RUnlock()
+		if !this.topics[topicId].NoCqrs {
+			return errors.New("cqrs resources may only deleted by cqrs commands")
+		}
+		return nil
+	}()
+	if err != nil {
+		return err, http.StatusBadRequest
+	}
+
 	err = this.db.DeleteResource(this.getTimeoutContext(), topicId, id)
 	if err != nil {
 		return err, http.StatusInternalServerError
