@@ -50,6 +50,39 @@ func (this *Database) GetResource(ctx context.Context, topicId string, id string
 	return entry.ToResource(), nil
 }
 
+func (this *Database) AdminListResourceIds(ctx context.Context, topicId string, listOptions model.ListOptions) (result []string, err error) {
+	result = []string{}
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
+	}
+
+	opt := options.Find()
+	if listOptions.Limit > 0 {
+		opt.SetLimit(listOptions.Limit)
+	}
+	if listOptions.Offset > 0 {
+		opt.SetSkip(listOptions.Offset)
+	}
+	opt.SetSort(bson.D{{PermissionsEntryBson.Id, 1}})
+
+	filter := bson.M{PermissionsEntryBson.TopicId: topicId}
+	cursor, err := this.permissionsCollection().Find(ctx, filter, opt)
+	if err != nil {
+		return result, err
+	}
+	for cursor.Next(context.Background()) {
+		element := PermissionsEntry{}
+		err = cursor.Decode(&element)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, element.Id)
+	}
+
+	err = cursor.Err()
+	return result, err
+}
+
 func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) ([]string, error) {
 	temp, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, options, permissions...)
 	if err != nil {

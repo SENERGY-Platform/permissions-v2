@@ -27,6 +27,8 @@ import (
 type Database interface {
 	SetResourcePermissions(ctx context.Context, r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error)
 
+	AdminListResourceIds(ctx context.Context, topicId string, options model.ListOptions) ([]string, error)
+
 	ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []model.Resource, err error)
 	ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) ([]string, error)
 

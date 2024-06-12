@@ -954,6 +954,23 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 				}
 			})
 
+			t.Run("admin list", func(t *testing.T) {
+				ids, err, _ := c.AdminListResourceIds(client.InternalAdminToken, topicId, model.ListOptions{})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(ids, []string{"1", "2", "3", "a", "adminless", "b", "buseradmin", "c"}) {
+					t.Errorf("%#v\n", ids)
+					return
+				}
+				_, err, _ = c.AdminListResourceIds(SecondOwnerToken, topicId, model.ListOptions{})
+				if err == nil {
+					t.Error("expect error")
+					return
+				}
+			})
+
 			t.Run("check after resource delete", func(t *testing.T) {
 				if cqrs {
 					err, _ := c.RemoveResource(TestToken, topicId, "1")

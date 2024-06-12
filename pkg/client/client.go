@@ -115,6 +115,21 @@ func (this *Impl) CheckMultiplePermissions(token string, topicId string, ids []s
 	return do[map[string]bool](token, req)
 }
 
+func (this *Impl) AdminListResourceIds(token string, topicId string, options model.ListOptions) (ids []string, err error, code int) {
+	query := url.Values{}
+	if options.Limit > 0 {
+		query.Set("limit", strconv.FormatInt(options.Limit, 10))
+	}
+	if options.Offset > 0 {
+		query.Set("offset", strconv.FormatInt(options.Offset, 10))
+	}
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/admin/resources/%v?%v", this.serverUrl, url.PathEscape(topicId), query.Encode()), nil)
+	if err != nil {
+		return ids, err, 0
+	}
+	return do[[]string](token, req)
+}
+
 func (this *Impl) ListAccessibleResourceIds(token string, topicId string, options model.ListOptions, permissions ...model.Permission) (ids []string, err error, code int) {
 	query := url.Values{}
 	query.Set("permissions", model.PermissionList(permissions).Encode())

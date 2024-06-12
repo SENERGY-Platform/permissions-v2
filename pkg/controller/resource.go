@@ -53,6 +53,23 @@ func (this *Controller) HandleResourceDelete(topic model.Topic, id string) error
 	return this.db.DeleteResource(this.getTimeoutContext(), topic.Id, id)
 }
 
+func (this *Controller) AdminListResourceIds(tokenStr string, topicId string, options model.ListOptions) (ids []string, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return ids, err, http.StatusUnauthorized
+	}
+	if !token.IsAdmin() {
+		return ids, errors.New("only admins may use this method"), http.StatusUnauthorized
+	}
+	ids, err = this.db.AdminListResourceIds(this.getTimeoutContext(), topicId, options)
+	if err != nil {
+		code = http.StatusInternalServerError
+	} else {
+		code = http.StatusOK
+	}
+	return ids, err, code
+}
+
 func (this *Controller) ListAccessibleResourceIds(tokenStr string, topicId string, options model.ListOptions, permission ...model.Permission) (ids []string, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {

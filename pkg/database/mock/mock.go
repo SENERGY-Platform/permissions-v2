@@ -21,6 +21,7 @@ import (
 	"errors"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -152,6 +153,18 @@ func checkPerm(element ResourceWithTime, user string, groups []string, permissio
 		}
 	}
 	return false
+}
+
+func (this *Mock) AdminListResourceIds(ctx context.Context, topicId string, listOptions model.ListOptions) (result []string, err error) {
+	this.mux.Lock()
+	defer this.mux.Unlock()
+	for _, element := range this.resources {
+		if element.TopicId == topicId {
+			result = append(result, element.Id)
+		}
+	}
+	sort.Strings(result)
+	return limitOffset(result, listOptions.Limit, listOptions.Offset), nil
 }
 
 func (this *Mock) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []string, err error) {
