@@ -215,10 +215,10 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					KafkaTopic:         "devices",
 					EnsureTopicInit:    true,
 					KafkaConsumerGroup: "test_cg_1",
-					InitialGroupRights: []model.GroupRight{
+					InitialGroupPermissions: []model.GroupPermissions{
 						{
-							GroupName:   "g1",
-							Permissions: model.Permissions{Read: true},
+							GroupName:      "g1",
+							PermissionsMap: model.PermissionsMap{Read: true},
 						},
 					},
 				})
@@ -249,10 +249,10 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					KafkaTopic:         "devices",
 					EnsureTopicInit:    true,
 					KafkaConsumerGroup: "test_cg_1",
-					InitialGroupRights: []model.GroupRight{
+					InitialGroupPermissions: []model.GroupPermissions{
 						{
-							GroupName:   "g1",
-							Permissions: model.Permissions{Read: true},
+							GroupName:      "g1",
+							PermissionsMap: model.PermissionsMap{Read: true},
 						},
 					},
 				})
@@ -351,10 +351,10 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				result, err, code := c.SetTopic(client.InternalAdminToken, model.Topic{
 					Id:     "foo",
 					NoCqrs: true,
-					InitialGroupRights: []model.GroupRight{
+					InitialGroupPermissions: []model.GroupPermissions{
 						{
-							GroupName:   "g1",
-							Permissions: model.Permissions{Read: true},
+							GroupName:      "g1",
+							PermissionsMap: model.PermissionsMap{Read: true},
 						},
 					},
 				})
@@ -374,7 +374,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", result)
 					return
 				}
-				if len(result.InitialGroupRights) != 1 {
+				if len(result.InitialGroupPermissions) != 1 {
 					t.Errorf("%#v\n", result)
 					return
 				}
@@ -383,10 +383,10 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				result, err, code := c.SetTopic(client.InternalAdminToken, model.Topic{
 					Id:     "foo",
 					NoCqrs: true,
-					InitialGroupRights: []model.GroupRight{
+					InitialGroupPermissions: []model.GroupPermissions{
 						{
-							GroupName:   "g1",
-							Permissions: model.Permissions{Read: true},
+							GroupName:      "g1",
+							PermissionsMap: model.PermissionsMap{Read: true},
 						},
 					},
 				})
@@ -406,7 +406,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", result)
 					return
 				}
-				if len(result.InitialGroupRights) != 1 {
+				if len(result.InitialGroupPermissions) != 1 {
 					t.Errorf("%#v\n", result)
 					return
 				}
@@ -421,7 +421,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", result)
 					return
 				}
-				if len(result.InitialGroupRights) != 1 {
+				if len(result.InitialGroupPermissions) != 1 {
 					t.Errorf("%#v\n", result)
 					return
 				}
@@ -474,7 +474,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 
 		t.Run("try deleted topic", func(t *testing.T) {
 			t.Run("try to_be_deleted", func(t *testing.T) {
-				_, err, code := c.SetPermission(TestToken, "to_be_deleted", "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				_, err, code := c.SetPermission(TestToken, "to_be_deleted", "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
 				if err == nil {
 					t.Error("expect error")
 					return
@@ -484,7 +484,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					return
 				}
 
-				access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted", "2", "r")
+				access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted", "2", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -506,7 +506,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 
 			t.Run("try to_be_deleted_2", func(t *testing.T) {
-				_, err, code := c.SetPermission(TestToken, "to_be_deleted_2", "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				_, err, code := c.SetPermission(TestToken, "to_be_deleted_2", "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
 				if err == nil {
 					t.Error("expect error")
 					return
@@ -516,7 +516,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					return
 				}
 
-				access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted_2", "2", "r")
+				access, err, _ := c.CheckPermission(SecondOwnerToken, "to_be_deleted_2", "2", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -571,13 +571,13 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 				Id:      "a",
 				TopicId: "devices",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{TestTokenUser: {
+					UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {
 						Read:         true,
 						Write:        true,
 						Execute:      true,
 						Administrate: true,
 					}},
-					GroupPermissions: map[string]model.Permissions{"g1": {Read: true}},
+					GroupPermissions: map[string]model.PermissionsMap{"g1": {Read: true}},
 				},
 			}) {
 				t.Errorf("%#v\n", result)
@@ -597,7 +597,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 
 			t.Run("initial permissions set", func(t *testing.T) {
 				_, err, code := c.SetPermission(TestToken, topicId, "b", model.ResourcePermissions{
-					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 					GroupPermissions: nil,
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
@@ -610,8 +610,8 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 				}
 
 				_, err, code = c.SetPermission(TestToken, topicId, "buseradmin", model.ResourcePermissions{
-					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
-					GroupPermissions: map[string]model.Permissions{"user": {true, true, true, true}},
+					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
+					GroupPermissions: map[string]model.PermissionsMap{"user": {true, true, true, true}},
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
 					t.Error(err)
@@ -623,7 +623,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 				}
 
 				_, err, code = c.SetPermission(TestToken, topicId, "c", model.ResourcePermissions{
-					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 					GroupPermissions: nil,
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
@@ -638,7 +638,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 
 			t.Run("update permissions", func(t *testing.T) {
 				_, err, code := c.SetPermission(TestToken, topicId, "a", model.ResourcePermissions{
-					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
+					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
 					GroupPermissions: nil,
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
@@ -650,8 +650,8 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					return
 				}
 				_, err, code = c.SetPermission(TestToken, topicId, "c", model.ResourcePermissions{
-					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
-					GroupPermissions: map[string]model.Permissions{},
+					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
+					GroupPermissions: map[string]model.PermissionsMap{},
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
 					t.Error(err)
@@ -736,8 +736,8 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					user := SecondOwnerToken
 					token, _ := jwt.Parse(user)
 					_, err, code := c.SetPermission(user, topicId, id, model.ResourcePermissions{
-						UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
-						GroupPermissions: map[string]model.Permissions{"user": {true, true, true, true}, "g2": {true, true, true, true}},
+						UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
+						GroupPermissions: map[string]model.PermissionsMap{"user": {true, true, true, true}, "g2": {true, true, true, true}},
 					}, model.SetPermissionOptions{Wait: true})
 					if access {
 						if err != nil {
@@ -765,8 +765,8 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 
 		t.Run("prevent admin less resource", func(t *testing.T) {
 			_, err, _ := c.SetPermission(TestToken, topicId, "adminless", model.ResourcePermissions{
-				UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, false}},
-				GroupPermissions: map[string]model.Permissions{"g2": {true, true, true, true}},
+				UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, false}},
+				GroupPermissions: map[string]model.PermissionsMap{"g2": {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
@@ -774,8 +774,8 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 			}
 
 			_, err, _ = c.SetPermission(TestToken, topicId, "adminless", model.ResourcePermissions{
-				UserPermissions:  map[string]model.Permissions{SecendOwnerTokenUser: {true, true, true, false}},
-				GroupPermissions: map[string]model.Permissions{"g2": {true, true, true, true}},
+				UserPermissions:  map[string]model.PermissionsMap{SecendOwnerTokenUser: {true, true, true, false}},
+				GroupPermissions: map[string]model.PermissionsMap{"g2": {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err == nil {
 				t.Error("expect error")
@@ -783,8 +783,8 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 			}
 
 			_, err, _ = c.SetPermission(TestToken, topicId, "adminless", model.ResourcePermissions{
-				UserPermissions:  map[string]model.Permissions{SecendOwnerTokenUser: {true, true, true, true}},
-				GroupPermissions: map[string]model.Permissions{"g2": {true, true, true, true}},
+				UserPermissions:  map[string]model.PermissionsMap{SecendOwnerTokenUser: {true, true, true, true}},
+				GroupPermissions: map[string]model.PermissionsMap{"g2": {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
@@ -795,22 +795,22 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 		t.Run("check permissions", func(t *testing.T) {
 			t.Run("init permissions", func(t *testing.T) {
 				_, err, _ := c.SetPermission(TestToken, topicId, "1", model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+					UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
 					t.Error(err)
 					return
 				}
 				_, err, _ = c.SetPermission(TestToken, topicId, "2", model.ResourcePermissions{
-					UserPermissions:  map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
-					GroupPermissions: map[string]model.Permissions{"user": {true, true, true, true}},
+					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
+					GroupPermissions: map[string]model.PermissionsMap{"user": {true, true, true, true}},
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
 					t.Error(err)
 					return
 				}
 				_, err, _ = c.SetPermission(TestToken, topicId, "3", model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
+					UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
 				}, model.SetPermissionOptions{Wait: true})
 				if err != nil {
 					t.Error(err)
@@ -819,7 +819,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 			})
 
 			t.Run("check", func(t *testing.T) {
-				access, err, _ := c.CheckPermission(TestToken, topicId, "1", "r")
+				access, err, _ := c.CheckPermission(TestToken, topicId, "1", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -828,7 +828,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(TestToken, topicId, "2", "r")
+				access, err, _ = c.CheckPermission(TestToken, topicId, "2", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -837,7 +837,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(TestToken, topicId, "3", "r")
+				access, err, _ = c.CheckPermission(TestToken, topicId, "3", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -846,7 +846,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(TestToken, topicId, "2", "r")
+				access, err, _ = c.CheckPermission(TestToken, topicId, "2", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -855,7 +855,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(TestToken, topicId, "4", "r")
+				access, err, _ = c.CheckPermission(TestToken, topicId, "4", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -865,7 +865,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					return
 				}
 
-				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "1", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "1", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -874,7 +874,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "2", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "2", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -883,7 +883,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "3", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "3", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -892,7 +892,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "2", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "2", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -901,7 +901,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(access)
 					return
 				}
-				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "4", "r")
+				access, err, _ = c.CheckPermission(SecondOwnerToken, topicId, "4", model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -913,7 +913,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 			})
 
 			t.Run("check multiple", func(t *testing.T) {
-				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
+				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -922,7 +922,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Errorf("%#v\n", access)
 					return
 				}
-				access, err, _ = c.CheckMultiplePermissions(SecondOwnerToken, topicId, []string{"1", "2", "3", "4"}, "r")
+				access, err, _ = c.CheckMultiplePermissions(SecondOwnerToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -934,7 +934,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 			})
 
 			t.Run("list", func(t *testing.T) {
-				ids, err, _ := c.ListAccessibleResourceIds(TestToken, topicId, "r", model.ListOptions{})
+				ids, err, _ := c.ListAccessibleResourceIds(TestToken, topicId, model.ListOptions{}, model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -943,7 +943,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Errorf("%#v\n", ids)
 					return
 				}
-				ids, err, _ = c.ListAccessibleResourceIds(SecondOwnerToken, topicId, "r", model.ListOptions{})
+				ids, err, _ = c.ListAccessibleResourceIds(SecondOwnerToken, topicId, model.ListOptions{}, model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -961,7 +961,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 						t.Error("expected error")
 						return
 					}
-					access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
+					access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
 					if err != nil {
 						t.Error(err)
 						return
@@ -976,7 +976,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 						t.Error(err)
 						return
 					}
-					access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
+					access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
 					if err != nil {
 						t.Error(err)
 						return
@@ -994,7 +994,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(err)
 					return
 				}
-				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, "r")
+				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -1003,7 +1003,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Errorf("%#v\n", access)
 					return
 				}
-				ids, err, _ := c.ListAccessibleResourceIds(TestToken, topicId, "r", model.ListOptions{})
+				ids, err, _ := c.ListAccessibleResourceIds(TestToken, topicId, model.ListOptions{}, model.Read)
 				if err != nil {
 					t.Error(err)
 					return
@@ -1013,7 +1013,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					return
 				}
 
-				_, err, code := c.SetPermission(TestToken, topicId, "nope", model.ResourcePermissions{UserPermissions: map[string]model.Permissions{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				_, err, code := c.SetPermission(TestToken, topicId, "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
 				if err == nil {
 					t.Error("expect error")
 					return

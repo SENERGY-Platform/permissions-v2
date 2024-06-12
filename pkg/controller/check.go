@@ -18,21 +18,22 @@ package controller
 
 import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/idmodifier"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"net/http"
 )
 
-func (this *Controller) CheckPermission(tokenStr string, topicId string, id string, permissions string) (access bool, err error, code int) {
+func (this *Controller) CheckPermission(tokenStr string, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return false, err, http.StatusUnauthorized
 	}
-	return this.checkPermission(token, topicId, id, permissions)
+	return this.checkPermission(token, topicId, id, permissions...)
 }
 
-func (this *Controller) checkPermission(token jwt.Token, topicId string, id string, permissions string) (access bool, err error, code int) {
+func (this *Controller) checkPermission(token jwt.Token, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int) {
 	pureId, _ := idmodifier.SplitModifier(id)
-	access, err = this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), permissions)
+	access, err = this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), permissions...)
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -41,7 +42,7 @@ func (this *Controller) checkPermission(token jwt.Token, topicId string, id stri
 	return access, err, code
 }
 
-func (this *Controller) CheckMultiplePermissions(tokenStr string, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int) {
+func (this *Controller) CheckMultiplePermissions(tokenStr string, topicId string, ids []string, permissions ...model.Permission) (access map[string]bool, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return access, err, http.StatusUnauthorized
@@ -54,7 +55,7 @@ func (this *Controller) CheckMultiplePermissions(tokenStr string, topicId string
 		pureIdToIds[pureId] = append(pureIdToIds[pureId], id)
 	}
 	var pureAccess map[string]bool
-	pureAccess, err = this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, pureIdList, token.GetUserId(), token.GetRoles(), permissions)
+	pureAccess, err = this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, pureIdList, token.GetUserId(), token.GetRoles(), permissions...)
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {

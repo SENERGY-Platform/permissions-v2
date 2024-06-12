@@ -72,11 +72,11 @@ func (this *Mock) SetResourcePermissions(ctx context.Context, r model.Resource, 
 	return false, nil
 }
 
-func (this *Mock) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) (result []model.Resource, err error) {
+func (this *Mock) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []model.Resource, err error) {
 	this.mux.Lock()
 	defer this.mux.Unlock()
 	for _, element := range this.resources {
-		if element.TopicId == topicId && checkPerms(element, userId, groupIds, permissions) {
+		if element.TopicId == topicId && checkPerms(element, userId, groupIds, permissions...) {
 			result = append(result, element.Resource)
 		}
 	}
@@ -103,7 +103,7 @@ func limitOffset[T any](list []T, limit int64, offset int64) (result []T) {
 	return result
 }
 
-func checkPerms(element ResourceWithTime, user string, groups []string, permissions string) bool {
+func checkPerms(element ResourceWithTime, user string, groups []string, permissions ...model.Permission) bool {
 	for _, p := range permissions {
 		if !checkPerm(element, user, groups, p) {
 			return false
@@ -112,9 +112,9 @@ func checkPerms(element ResourceWithTime, user string, groups []string, permissi
 	return true
 }
 
-func checkPerm(element ResourceWithTime, user string, groups []string, permission rune) bool {
+func checkPerm(element ResourceWithTime, user string, groups []string, permission model.Permission) bool {
 	switch permission {
-	case 'r':
+	case model.Read:
 		if element.UserPermissions[user].Read {
 			return true
 		}
@@ -123,7 +123,7 @@ func checkPerm(element ResourceWithTime, user string, groups []string, permissio
 				return true
 			}
 		}
-	case 'w':
+	case model.Write:
 		if element.UserPermissions[user].Write {
 			return true
 		}
@@ -132,7 +132,7 @@ func checkPerm(element ResourceWithTime, user string, groups []string, permissio
 				return true
 			}
 		}
-	case 'x':
+	case model.Execute:
 		if element.UserPermissions[user].Execute {
 			return true
 		}
@@ -141,7 +141,7 @@ func checkPerm(element ResourceWithTime, user string, groups []string, permissio
 				return true
 			}
 		}
-	case 'a':
+	case model.Administrate:
 		if element.UserPermissions[user].Administrate {
 			return true
 		}
@@ -154,8 +154,8 @@ func checkPerm(element ResourceWithTime, user string, groups []string, permissio
 	return false
 }
 
-func (this *Mock) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) (result []string, err error) {
-	list, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, permissions, options)
+func (this *Mock) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []string, err error) {
+	list, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, options, permissions...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (this *Mock) GetResource(ctx context.Context, topicId string, id string, op
 	defer this.mux.Unlock()
 	for _, element := range this.resources {
 		if element.TopicId == topicId && element.Id == id {
-			if options.CheckPermission && !checkPerms(element, options.UserId, options.GroupIds, options.Permission) {
+			if options.CheckPermission && !checkPerms(element, options.UserId, options.GroupIds, options.Permissions...) {
 				return resource, model.PermissionCheckFailed
 			}
 			return element.Resource, nil
@@ -179,14 +179,14 @@ func (this *Mock) GetResource(ctx context.Context, topicId string, id string, op
 	return resource, model.ErrNotFound
 }
 
-func (this *Mock) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error) {
+func (this *Mock) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, permissions ...model.Permission) (result map[string]bool, err error) {
 	result = map[string]bool{}
 	for _, id := range ids {
 		_, err = this.GetResource(ctx, topicId, id, model.GetOptions{
 			CheckPermission: true,
 			UserId:          userId,
 			GroupIds:        groupIds,
-			Permission:      rights,
+			Permissions:     permissions,
 		})
 		if errors.Is(err, model.PermissionCheckFailed) {
 			result[id] = false
@@ -205,12 +205,12 @@ func (this *Mock) CheckMultipleResourcePermissions(ctx context.Context, topicId 
 	return result, nil
 }
 
-func (this *Mock) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, rights string) (result bool, err error) {
+func (this *Mock) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, permissions ...model.Permission) (result bool, err error) {
 	_, err = this.GetResource(ctx, topicId, id, model.GetOptions{
 		CheckPermission: true,
 		UserId:          userId,
 		GroupIds:        groupIds,
-		Permission:      rights,
+		Permissions:     permissions,
 	})
 	if errors.Is(err, model.ErrNotFound) || errors.Is(err, model.PermissionCheckFailed) {
 		return false, nil

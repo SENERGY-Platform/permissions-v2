@@ -63,11 +63,11 @@ func TestResourcePermissions(t *testing.T) {
 				Id:      "a",
 				TopicId: "device",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{
+					UserPermissions: map[string]model.PermissionsMap{
 						"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u2": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
-					GroupPermissions: map[string]model.Permissions{
+					GroupPermissions: map[string]model.PermissionsMap{
 						"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"g2": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
@@ -82,11 +82,11 @@ func TestResourcePermissions(t *testing.T) {
 				Id:      "a",
 				TopicId: "device",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{
+					UserPermissions: map[string]model.PermissionsMap{
 						"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
-					GroupPermissions: map[string]model.Permissions{
+					GroupPermissions: map[string]model.PermissionsMap{
 						"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
@@ -101,12 +101,12 @@ func TestResourcePermissions(t *testing.T) {
 				Id:      "a",
 				TopicId: "device",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{
+					UserPermissions: map[string]model.PermissionsMap{
 						"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
-					GroupPermissions: map[string]model.Permissions{
+					GroupPermissions: map[string]model.PermissionsMap{
 						"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
@@ -122,11 +122,11 @@ func TestResourcePermissions(t *testing.T) {
 				Id:      "b",
 				TopicId: "device",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{
+					UserPermissions: map[string]model.PermissionsMap{
 						"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u2": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
-					GroupPermissions: map[string]model.Permissions{
+					GroupPermissions: map[string]model.PermissionsMap{
 						"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"g2": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
@@ -141,11 +141,11 @@ func TestResourcePermissions(t *testing.T) {
 				Id:      "b",
 				TopicId: "device",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{
+					UserPermissions: map[string]model.PermissionsMap{
 						"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
-					GroupPermissions: map[string]model.Permissions{
+					GroupPermissions: map[string]model.PermissionsMap{
 						"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
@@ -160,12 +160,12 @@ func TestResourcePermissions(t *testing.T) {
 				Id:      "b",
 				TopicId: "device",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{
+					UserPermissions: map[string]model.PermissionsMap{
 						"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
-					GroupPermissions: map[string]model.Permissions{
+					GroupPermissions: map[string]model.PermissionsMap{
 						"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
@@ -180,12 +180,12 @@ func TestResourcePermissions(t *testing.T) {
 				Id:      "c",
 				TopicId: "device",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{
+					UserPermissions: map[string]model.PermissionsMap{
 						"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
-					GroupPermissions: map[string]model.Permissions{
+					GroupPermissions: map[string]model.PermissionsMap{
 						"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 						"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
@@ -200,11 +200,11 @@ func TestResourcePermissions(t *testing.T) {
 				Id:      "d",
 				TopicId: "device",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.Permissions{
+					UserPermissions: map[string]model.PermissionsMap{
 						"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 						"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
-					GroupPermissions: map[string]model.Permissions{
+					GroupPermissions: map[string]model.PermissionsMap{
 						"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 					},
 				},
@@ -233,24 +233,24 @@ func TestResourcePermissions(t *testing.T) {
 		topic          string
 		user           string
 		group          string
-		rights         string
+		rights         model.PermissionList
 		options        model.ListOptions
 		expectedResult []model.Resource
 	}{
 		{
 			topic:  "device",
 			user:   "u1",
-			rights: "r",
+			rights: model.PermissionList{model.Read},
 			expectedResult: []model.Resource{
 				{
 					Id:      "a",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -260,12 +260,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -275,12 +275,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -291,18 +291,18 @@ func TestResourcePermissions(t *testing.T) {
 		{
 			topic:  "device",
 			user:   "u2",
-			rights: "r",
+			rights: model.PermissionList{model.Read},
 			expectedResult: []model.Resource{
 				{
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -312,12 +312,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -327,11 +327,11 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "d",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
 					},
@@ -341,17 +341,17 @@ func TestResourcePermissions(t *testing.T) {
 		{
 			topic:  "device",
 			user:   "u3",
-			rights: "r",
+			rights: model.PermissionList{model.Read},
 			expectedResult: []model.Resource{
 				{
 					Id:      "a",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -361,12 +361,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -376,12 +376,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -391,11 +391,11 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "d",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
 					},
@@ -405,19 +405,19 @@ func TestResourcePermissions(t *testing.T) {
 		{
 			topic:   "device",
 			user:    "u3",
-			rights:  "r",
+			rights:  model.PermissionList{model.Read},
 			options: model.ListOptions{Limit: 2, Offset: 1},
 			expectedResult: []model.Resource{
 				{
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -427,12 +427,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -443,17 +443,17 @@ func TestResourcePermissions(t *testing.T) {
 		{
 			topic:  "device",
 			group:  "g1",
-			rights: "r",
+			rights: model.PermissionList{model.Read},
 			expectedResult: []model.Resource{
 				{
 					Id:      "a",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -463,12 +463,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -478,12 +478,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -494,23 +494,23 @@ func TestResourcePermissions(t *testing.T) {
 		{
 			topic:          "device",
 			group:          "g2",
-			rights:         "r",
+			rights:         model.PermissionList{model.Read},
 			expectedResult: []model.Resource{},
 		},
 		{
 			topic:  "device",
 			group:  "g3",
-			rights: "r",
+			rights: model.PermissionList{model.Read},
 			expectedResult: []model.Resource{
 				{
 					Id:      "a",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -520,12 +520,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -535,12 +535,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -550,11 +550,11 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "d",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
 					},
@@ -565,17 +565,17 @@ func TestResourcePermissions(t *testing.T) {
 		{
 			topic:  "device",
 			user:   "u1",
-			rights: "a",
+			rights: model.PermissionList{model.Administrate},
 			expectedResult: []model.Resource{
 				{
 					Id:      "a",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -585,12 +585,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -600,12 +600,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -616,18 +616,18 @@ func TestResourcePermissions(t *testing.T) {
 		{
 			topic:  "device",
 			user:   "u2",
-			rights: "a",
+			rights: model.PermissionList{model.Administrate},
 			expectedResult: []model.Resource{
 				{
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -637,12 +637,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -652,11 +652,11 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "d",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
 					},
@@ -666,23 +666,23 @@ func TestResourcePermissions(t *testing.T) {
 		{
 			topic:          "device",
 			user:           "u3",
-			rights:         "a",
+			rights:         model.PermissionList{model.Administrate},
 			expectedResult: []model.Resource{},
 		},
 		{
 			topic:  "device",
 			group:  "g1",
-			rights: "a",
+			rights: model.PermissionList{model.Administrate},
 			expectedResult: []model.Resource{
 				{
 					Id:      "a",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -692,12 +692,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -707,12 +707,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -723,13 +723,13 @@ func TestResourcePermissions(t *testing.T) {
 		{
 			topic:          "device",
 			group:          "g2",
-			rights:         "a",
+			rights:         model.PermissionList{model.Administrate},
 			expectedResult: []model.Resource{},
 		},
 		{
 			topic:          "device",
 			group:          "g3",
-			rights:         "a",
+			rights:         model.PermissionList{model.Administrate},
 			expectedResult: []model.Resource{},
 		},
 
@@ -737,17 +737,17 @@ func TestResourcePermissions(t *testing.T) {
 			topic:  "device",
 			user:   "u1",
 			group:  "g3",
-			rights: "r",
+			rights: model.PermissionList{model.Read},
 			expectedResult: []model.Resource{
 				{
 					Id:      "a",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -757,12 +757,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -772,12 +772,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -787,11 +787,11 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "d",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
 					},
@@ -802,17 +802,17 @@ func TestResourcePermissions(t *testing.T) {
 			topic:  "device",
 			user:   "u1",
 			group:  "g3",
-			rights: "ra",
+			rights: model.PermissionList{model.Read, model.Administrate},
 			expectedResult: []model.Resource{
 				{
 					Id:      "a",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -822,12 +822,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "b",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -837,12 +837,12 @@ func TestResourcePermissions(t *testing.T) {
 					Id:      "c",
 					TopicId: "device",
 					ResourcePermissions: model.ResourcePermissions{
-						UserPermissions: map[string]model.Permissions{
+						UserPermissions: map[string]model.PermissionsMap{
 							"u1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u2": {Read: true, Write: true, Execute: true, Administrate: true},
 							"u3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
-						GroupPermissions: map[string]model.Permissions{
+						GroupPermissions: map[string]model.PermissionsMap{
 							"g1": {Read: true, Write: true, Execute: true, Administrate: true},
 							"g3": {Read: true, Write: false, Execute: false, Administrate: false},
 						},
@@ -854,7 +854,7 @@ func TestResourcePermissions(t *testing.T) {
 
 	t.Run("list", func(t *testing.T) {
 		for i, q := range listQueries {
-			result, err := db.ListResourcesByPermissions(nil, q.topic, q.user, []string{q.group}, q.rights, q.options)
+			result, err := db.ListResourcesByPermissions(nil, q.topic, q.user, []string{q.group}, q.options, q.rights...)
 			if err != nil {
 				t.Error(i, err)
 				return
@@ -868,7 +868,7 @@ func TestResourcePermissions(t *testing.T) {
 			for _, e := range q.expectedResult {
 				expectedIds = append(expectedIds, e.Id)
 			}
-			actualIds, err := db.ListResourceIdsByPermissions(nil, q.topic, q.user, []string{q.group}, q.rights, q.options)
+			actualIds, err := db.ListResourceIdsByPermissions(nil, q.topic, q.user, []string{q.group}, q.options, q.rights...)
 			if err != nil {
 				t.Error(i, err)
 				return
@@ -881,7 +881,7 @@ func TestResourcePermissions(t *testing.T) {
 	})
 
 	t.Run("check", func(t *testing.T) {
-		result, err := db.CheckResourcePermissions(nil, "device", "a", "u1", []string{}, "rwxa")
+		result, err := db.CheckResourcePermissions(nil, "device", "a", "u1", []string{}, model.Read, model.Write, model.Administrate, model.Execute)
 		if err != nil {
 			t.Error(err)
 			return
@@ -891,7 +891,7 @@ func TestResourcePermissions(t *testing.T) {
 			return
 		}
 
-		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{}, "rwxa")
+		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{}, model.Read, model.Write, model.Administrate, model.Execute)
 		if err != nil {
 			t.Error(err)
 			return
@@ -901,7 +901,7 @@ func TestResourcePermissions(t *testing.T) {
 			return
 		}
 
-		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{"g1"}, "rwxa")
+		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{"g1"}, model.Read, model.Write, model.Administrate, model.Execute)
 		if err != nil {
 			t.Error(err)
 			return
@@ -911,7 +911,7 @@ func TestResourcePermissions(t *testing.T) {
 			return
 		}
 
-		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{"g1"}, "r")
+		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{"g1"}, model.Read)
 		if err != nil {
 			t.Error(err)
 			return
@@ -921,7 +921,7 @@ func TestResourcePermissions(t *testing.T) {
 			return
 		}
 
-		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{"g1", "g3"}, "r")
+		result, err = db.CheckResourcePermissions(nil, "device", "d", "u1", []string{"g1", "g3"}, model.Read)
 		if err != nil {
 			t.Error(err)
 			return
@@ -933,7 +933,7 @@ func TestResourcePermissions(t *testing.T) {
 	})
 
 	t.Run("check multiple", func(t *testing.T) {
-		result, err := db.CheckMultipleResourcePermissions(nil, "device", []string{"a", "b", "c", "d", "e", "x", "y"}, "u1", []string{}, "rwxa")
+		result, err := db.CheckMultipleResourcePermissions(nil, "device", []string{"a", "b", "c", "d", "e", "x", "y"}, "u1", []string{}, model.Read, model.Write, model.Administrate, model.Execute)
 		if err != nil {
 			t.Error(err)
 			return
@@ -979,8 +979,8 @@ func TestDistributedRights(t *testing.T) {
 		Id:      "a",
 		TopicId: "device",
 		ResourcePermissions: model.ResourcePermissions{
-			UserPermissions:  map[string]model.Permissions{"u1": {Read: true}},
-			GroupPermissions: map[string]model.Permissions{"g1": {Write: true}, "g2": {Administrate: true}, "g3": {Execute: true}},
+			UserPermissions:  map[string]model.PermissionsMap{"u1": {Read: true}},
+			GroupPermissions: map[string]model.PermissionsMap{"g1": {Write: true}, "g2": {Administrate: true}, "g3": {Execute: true}},
 		},
 	}, getTestTime(0), false)
 
@@ -990,7 +990,7 @@ func TestDistributedRights(t *testing.T) {
 	}
 
 	t.Run("check", func(t *testing.T) {
-		result, err := db.CheckResourcePermissions(nil, "device", "a", "u1", []string{}, "r")
+		result, err := db.CheckResourcePermissions(nil, "device", "a", "u1", []string{}, model.Read)
 		if err != nil {
 			t.Error(err)
 			return
@@ -1000,7 +1000,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result, err = db.CheckResourcePermissions(nil, "device", "a", "u2", []string{"g1"}, "w")
+		result, err = db.CheckResourcePermissions(nil, "device", "a", "u2", []string{"g1"}, model.Write)
 		if err != nil {
 			t.Error(err)
 			return
@@ -1010,7 +1010,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result, err = db.CheckResourcePermissions(nil, "device", "a", "u1", []string{}, "rwxa")
+		result, err = db.CheckResourcePermissions(nil, "device", "a", "u1", []string{}, model.Read, model.Write, model.Administrate, model.Execute)
 		if err != nil {
 			t.Error(err)
 			return
@@ -1020,7 +1020,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result, err = db.CheckResourcePermissions(nil, "device", "a", "u1", []string{"g1", "g2", "g3"}, "rwxa")
+		result, err = db.CheckResourcePermissions(nil, "device", "a", "u1", []string{"g1", "g2", "g3"}, model.Read, model.Write, model.Administrate, model.Execute)
 		if err != nil {
 			t.Error(err)
 			return
@@ -1032,7 +1032,7 @@ func TestDistributedRights(t *testing.T) {
 	})
 
 	t.Run("list", func(t *testing.T) {
-		result, err := db.ListResourceIdsByPermissions(nil, "device", "u1", []string{}, "rwxa", model.ListOptions{})
+		result, err := db.ListResourceIdsByPermissions(nil, "device", "u1", []string{}, model.ListOptions{}, model.Read, model.Write, model.Administrate, model.Execute)
 		if err != nil {
 			t.Error(err)
 			return
@@ -1042,7 +1042,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result, err = db.ListResourceIdsByPermissions(nil, "device", "u1", []string{"g1", "g2", "g3"}, "rwxa", model.ListOptions{})
+		result, err = db.ListResourceIdsByPermissions(nil, "device", "u1", []string{"g1", "g2", "g3"}, model.ListOptions{}, model.Read, model.Write, model.Administrate, model.Execute)
 		if err != nil {
 			t.Error(err)
 			return
@@ -1052,7 +1052,7 @@ func TestDistributedRights(t *testing.T) {
 			return
 		}
 
-		result2, err := db.ListResourcesByPermissions(nil, "device", "u1", []string{"g1", "g2", "g3"}, "rwxa", model.ListOptions{})
+		result2, err := db.ListResourcesByPermissions(nil, "device", "u1", []string{"g1", "g2", "g3"}, model.ListOptions{}, model.Read, model.Write, model.Administrate, model.Execute)
 		if err != nil {
 			t.Error(err)
 			return
@@ -1062,8 +1062,8 @@ func TestDistributedRights(t *testing.T) {
 				Id:      "a",
 				TopicId: "device",
 				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions:  map[string]model.Permissions{"u1": {Read: true}},
-					GroupPermissions: map[string]model.Permissions{"g1": {Write: true}, "g2": {Administrate: true}, "g3": {Execute: true}},
+					UserPermissions:  map[string]model.PermissionsMap{"u1": {Read: true}},
+					GroupPermissions: map[string]model.PermissionsMap{"g1": {Write: true}, "g2": {Administrate: true}, "g3": {Execute: true}},
 				},
 			},
 		}) {

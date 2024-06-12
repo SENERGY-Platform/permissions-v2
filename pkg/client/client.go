@@ -96,17 +96,17 @@ func (this *Impl) SetTopic(token string, topic model.Topic) (result model.Topic,
 	return do[model.Topic](token, req)
 }
 
-func (this *Impl) CheckPermission(token string, topicId string, id string, permissions string) (access bool, err error, code int) {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/check/%v/%v?permissions=%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id), permissions), nil)
+func (this *Impl) CheckPermission(token string, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/check/%v/%v?permissions=%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id), model.PermissionList(permissions).Encode()), nil)
 	if err != nil {
 		return access, err, 0
 	}
 	return do[bool](token, req)
 }
 
-func (this *Impl) CheckMultiplePermissions(token string, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int) {
+func (this *Impl) CheckMultiplePermissions(token string, topicId string, ids []string, permissions ...model.Permission) (access map[string]bool, err error, code int) {
 	query := url.Values{}
-	query.Set("permissions", permissions)
+	query.Set("permissions", model.PermissionList(permissions).Encode())
 	query.Set("ids", strings.Join(ids, ","))
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/check/%v?%v", this.serverUrl, url.PathEscape(topicId), query.Encode()), nil)
 	if err != nil {
@@ -115,9 +115,9 @@ func (this *Impl) CheckMultiplePermissions(token string, topicId string, ids []s
 	return do[map[string]bool](token, req)
 }
 
-func (this *Impl) ListAccessibleResourceIds(token string, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int) {
+func (this *Impl) ListAccessibleResourceIds(token string, topicId string, options model.ListOptions, permissions ...model.Permission) (ids []string, err error, code int) {
 	query := url.Values{}
-	query.Set("permissions", permissions)
+	query.Set("permissions", model.PermissionList(permissions).Encode())
 	if options.Limit > 0 {
 		query.Set("limit", strconv.FormatInt(options.Limit, 10))
 	}

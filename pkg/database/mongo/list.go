@@ -43,15 +43,15 @@ func (this *Database) GetResource(ctx context.Context, topicId string, id string
 		return resource, err
 	}
 	if options.CheckPermission {
-		if !checkPermissions(options.UserId, options.GroupIds, entry, options.Permission) {
+		if !checkPermissions(options.UserId, options.GroupIds, entry, options.Permissions...) {
 			return resource, model.PermissionCheckFailed
 		}
 	}
 	return entry.ToResource(), nil
 }
 
-func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) ([]string, error) {
-	temp, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, permissions, options)
+func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) ([]string, error) {
+	temp, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, options, permissions...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId 
 	return result, err
 }
 
-func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, listOptions model.ListOptions) (result []model.Resource, err error) {
+func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, listOptions model.ListOptions, permissions ...model.Permission) (result []model.Resource, err error) {
 	result = []model.Resource{}
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()

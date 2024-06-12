@@ -329,12 +329,12 @@ func permissionsToRights(permissions model.ResourcePermissions) *ResourcePermiss
 
 func rightsToPermissions(permissions *ResourcePermissions) model.ResourcePermissions {
 	result := model.ResourcePermissions{
-		UserPermissions:  map[string]model.Permissions{},
-		GroupPermissions: map[string]model.Permissions{},
+		UserPermissions:  map[string]model.PermissionsMap{},
+		GroupPermissions: map[string]model.PermissionsMap{},
 	}
 	if permissions != nil {
 		for user, perm := range permissions.UserRights {
-			result.UserPermissions[user] = model.Permissions{
+			result.UserPermissions[user] = model.PermissionsMap{
 				Read:         perm.Read,
 				Write:        perm.Write,
 				Execute:      perm.Execute,
@@ -342,7 +342,7 @@ func rightsToPermissions(permissions *ResourcePermissions) model.ResourcePermiss
 			}
 		}
 		for group, perm := range permissions.GroupRights {
-			result.GroupPermissions[group] = model.Permissions{
+			result.GroupPermissions[group] = model.PermissionsMap{
 				Read:         perm.Read,
 				Write:        perm.Write,
 				Execute:      perm.Execute,

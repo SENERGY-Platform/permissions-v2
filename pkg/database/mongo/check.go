@@ -18,19 +18,20 @@ package mongo
 
 import (
 	"context"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"slices"
 )
 
-func (this *Database) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, permissions string) (bool, error) {
-	m, err := this.CheckMultipleResourcePermissions(ctx, topicId, []string{id}, userId, groupIds, permissions)
+func (this *Database) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, permissions ...model.Permission) (bool, error) {
+	m, err := this.CheckMultipleResourcePermissions(ctx, topicId, []string{id}, userId, groupIds, permissions...)
 	if err != nil {
 		return false, err
 	}
 	return m[id], nil
 }
 
-func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, permissions string) (result map[string]bool, err error) {
+func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, permissions ...model.Permission) (result map[string]bool, err error) {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
@@ -45,29 +46,29 @@ func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topi
 		if err != nil {
 			return nil, err
 		}
-		result[element.Id] = checkPermissions(userId, groupIds, element, permissions)
+		result[element.Id] = checkPermissions(userId, groupIds, element, permissions...)
 	}
 
 	err = cursor.Err()
 	return result, err
 }
 
-func checkPermissions(userId string, groupIds []string, element PermissionsEntry, permissions string) bool {
-	for _, p := range permissions {
+func checkPermissions(userId string, groupIds []string, element PermissionsEntry, permission ...model.Permission) bool {
+	for _, p := range permission {
 		switch p {
-		case 'a':
+		case model.Administrate:
 			if !slices.Contains(element.AdminUsers, userId) && !containsAny(element.AdminGroups, groupIds) {
 				return false
 			}
-		case 'r':
+		case model.Read:
 			if !slices.Contains(element.ReadUsers, userId) && !containsAny(element.ReadGroups, groupIds) {
 				return false
 			}
-		case 'w':
+		case model.Write:
 			if !slices.Contains(element.WriteUsers, userId) && !containsAny(element.WriteGroups, groupIds) {
 				return false
 			}
-		case 'x':
+		case model.Execute:
 			if !slices.Contains(element.ExecuteUsers, userId) && !containsAny(element.ExecuteGroups, groupIds) {
 				return false
 			}

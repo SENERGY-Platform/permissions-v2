@@ -37,7 +37,7 @@ type Topic struct {
 
 	KafkaConsumerGroup string `json:"kafka_consumer_group"` //defaults to configured kafka consumer group
 
-	InitialGroupRights []GroupRight `json:"initial_group_rights"`
+	InitialGroupPermissions []GroupPermissions `json:"initial_group_permissions"`
 
 	//if true the user may not set permissions for not existing resources; if false the user may
 	//if true the initial resource must be created by cqrs
@@ -63,7 +63,7 @@ func (this Topic) Validate() error {
 		return errors.New("init_only_by_cqrs can not be true if no_cqrs is true")
 	}
 	usedGroupName := map[string]bool{}
-	for _, g := range this.InitialGroupRights {
+	for _, g := range this.InitialGroupPermissions {
 		if _, ok := usedGroupName[g.GroupName]; ok {
 			return fmt.Errorf("duplicated initial group name '%v'", g.GroupName)
 		}
@@ -94,47 +94,14 @@ func (this Topic) Equal(topic Topic) bool {
 	if this.InitOnlyByCqrs != topic.InitOnlyByCqrs {
 		return false
 	}
-	slices.SortFunc(this.InitialGroupRights, func(a, b GroupRight) int {
+	slices.SortFunc(this.InitialGroupPermissions, func(a, b GroupPermissions) int {
 		return strings.Compare(a.GroupName, b.GroupName)
 	})
-	slices.SortFunc(topic.InitialGroupRights, func(a, b GroupRight) int {
+	slices.SortFunc(topic.InitialGroupPermissions, func(a, b GroupPermissions) int {
 		return strings.Compare(a.GroupName, b.GroupName)
 	})
-	if !reflect.DeepEqual(this.InitialGroupRights, topic.InitialGroupRights) {
+	if !reflect.DeepEqual(this.InitialGroupPermissions, topic.InitialGroupPermissions) {
 		return false
 	}
 	return true
-}
-
-type GroupRight struct {
-	GroupName string `json:"group_name"`
-	Permissions
-}
-
-type Resource struct {
-	Id      string `json:"id"`
-	TopicId string `json:"topic_id"`
-	ResourcePermissions
-}
-
-type ResourcePermissions struct {
-	UserPermissions  map[string]Permissions `json:"user_permissions"`
-	GroupPermissions map[string]Permissions `json:"group_permissions"`
-}
-
-func (this ResourcePermissions) Valid() bool {
-	//needs at least one admin user
-	for _, r := range this.UserPermissions {
-		if r.Administrate {
-			return true
-		}
-	}
-	return false
-}
-
-type Permissions struct {
-	Read         bool `json:"read"`
-	Write        bool `json:"write"`
-	Execute      bool `json:"execute"`
-	Administrate bool `json:"administrate"`
 }

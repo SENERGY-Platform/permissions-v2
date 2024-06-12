@@ -34,12 +34,12 @@ func (this *Controller) HandleResourceUpdate(topic model.Topic, id string, owner
 		Id:      id,
 		TopicId: topic.Id,
 		ResourcePermissions: model.ResourcePermissions{
-			UserPermissions:  map[string]model.Permissions{owner: {Read: true, Write: true, Execute: true, Administrate: true}},
-			GroupPermissions: map[string]model.Permissions{},
+			UserPermissions:  map[string]model.PermissionsMap{owner: {Read: true, Write: true, Execute: true, Administrate: true}},
+			GroupPermissions: map[string]model.PermissionsMap{},
 		},
 	}
-	for _, gr := range topic.InitialGroupRights {
-		resource.GroupPermissions[gr.GroupName] = gr.Permissions
+	for _, gr := range topic.InitialGroupPermissions {
+		resource.GroupPermissions[gr.GroupName] = gr.PermissionsMap
 	}
 	//init resource permissions; with time.Time{} and preventOlderUpdates=true we guarantee that no existing resource is overwritten
 	_, err := this.db.SetResourcePermissions(this.getTimeoutContext(), resource, time.Time{}, true)
@@ -53,12 +53,12 @@ func (this *Controller) HandleResourceDelete(topic model.Topic, id string) error
 	return this.db.DeleteResource(this.getTimeoutContext(), topic.Id, id)
 }
 
-func (this *Controller) ListAccessibleResourceIds(tokenStr string, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int) {
+func (this *Controller) ListAccessibleResourceIds(tokenStr string, topicId string, options model.ListOptions, permission ...model.Permission) (ids []string, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return ids, err, http.StatusUnauthorized
 	}
-	ids, err = this.db.ListResourceIdsByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), permissions, options)
+	ids, err = this.db.ListResourceIdsByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), options, permission...)
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -72,7 +72,7 @@ func (this *Controller) ListResourcesWithAdminPermission(tokenStr string, topicI
 	if err != nil {
 		return result, err, http.StatusUnauthorized
 	}
-	result, err = this.db.ListResourcesByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), "a", options)
+	result, err = this.db.ListResourcesByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), options, model.Administrate)
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -91,7 +91,7 @@ func (this *Controller) RemoveResource(tokenStr string, topicId string, id strin
 		CheckPermission: !token.IsAdmin(), //admins may access without stored permission
 		UserId:          token.GetUserId(),
 		GroupIds:        token.GetRoles(),
-		Permission:      "a",
+		Permissions:     model.PermissionList{model.Administrate},
 	})
 	if errors.Is(err, model.PermissionCheckFailed) {
 		return errors.New("access denied"), http.StatusForbidden
@@ -131,7 +131,7 @@ func (this *Controller) GetResource(tokenStr string, topicId string, id string) 
 		CheckPermission: !token.IsAdmin(), //admins may access without stored permission
 		UserId:          token.GetUserId(),
 		GroupIds:        token.GetRoles(),
-		Permission:      "a",
+		Permissions:     model.PermissionList{model.Administrate},
 	})
 	if errors.Is(err, model.PermissionCheckFailed) {
 		return result, errors.New("access denied"), http.StatusForbidden
@@ -160,7 +160,7 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	}
 	pureId, _ := idmodifier.SplitModifier(id)
 	if !token.IsAdmin() {
-		accessMap, err := this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, []string{pureId}, token.GetUserId(), token.GetRoles(), "a")
+		accessMap, err := this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, []string{pureId}, token.GetUserId(), token.GetRoles(), model.Administrate)
 		if err != nil {
 			return result, err, http.StatusInternalServerError
 		}

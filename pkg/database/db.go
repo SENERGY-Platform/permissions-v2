@@ -27,14 +27,14 @@ import (
 type Database interface {
 	SetResourcePermissions(ctx context.Context, r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error)
 
-	ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) (result []model.Resource, err error)
-	ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, permissions string, options model.ListOptions) ([]string, error)
+	ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []model.Resource, err error)
+	ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) ([]string, error)
 
 	GetResource(ctx context.Context, topicId string, id string, options model.GetOptions) (resource model.Resource, err error)
 	DeleteResource(ctx context.Context, topicId string, id string) error
 
-	CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, rights string) (result map[string]bool, err error)
-	CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, rights string) (result bool, err error)
+	CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, permissions ...model.Permission) (result map[string]bool, err error)
+	CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, permissions ...model.Permission) (result bool, err error)
 
 	SetTopic(ctx context.Context, topic model.Topic) error
 	GetTopic(ctx context.Context, id string) (result model.Topic, exists bool, err error)

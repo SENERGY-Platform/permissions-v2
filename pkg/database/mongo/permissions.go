@@ -60,13 +60,13 @@ func (this *PermissionsEntry) ToResource() model.Resource {
 		Id:      this.Id,
 		TopicId: this.TopicId,
 		ResourcePermissions: model.ResourcePermissions{
-			UserPermissions:  map[string]model.Permissions{},
-			GroupPermissions: map[string]model.Permissions{},
+			UserPermissions:  map[string]model.PermissionsMap{},
+			GroupPermissions: map[string]model.PermissionsMap{},
 		},
 	}
 	for _, user := range this.AdminUsers {
 		if _, ok := result.UserPermissions[user]; !ok {
-			result.UserPermissions[user] = model.Permissions{}
+			result.UserPermissions[user] = model.PermissionsMap{}
 		}
 		permissions := result.UserPermissions[user]
 		permissions.Administrate = true
@@ -74,7 +74,7 @@ func (this *PermissionsEntry) ToResource() model.Resource {
 	}
 	for _, user := range this.ReadUsers {
 		if _, ok := result.UserPermissions[user]; !ok {
-			result.UserPermissions[user] = model.Permissions{}
+			result.UserPermissions[user] = model.PermissionsMap{}
 		}
 		permissions := result.UserPermissions[user]
 		permissions.Read = true
@@ -82,7 +82,7 @@ func (this *PermissionsEntry) ToResource() model.Resource {
 	}
 	for _, user := range this.WriteUsers {
 		if _, ok := result.UserPermissions[user]; !ok {
-			result.UserPermissions[user] = model.Permissions{}
+			result.UserPermissions[user] = model.PermissionsMap{}
 		}
 		permissions := result.UserPermissions[user]
 		permissions.Write = true
@@ -90,17 +90,17 @@ func (this *PermissionsEntry) ToResource() model.Resource {
 	}
 	for _, user := range this.ExecuteUsers {
 		if _, ok := result.UserPermissions[user]; !ok {
-			result.UserPermissions[user] = model.Permissions{}
+			result.UserPermissions[user] = model.PermissionsMap{}
 		}
 		permissions := result.UserPermissions[user]
 		permissions.Execute = true
 		result.UserPermissions[user] = permissions
 	}
 
-	result.GroupPermissions = map[string]model.Permissions{}
+	result.GroupPermissions = map[string]model.PermissionsMap{}
 	for _, group := range this.AdminGroups {
 		if _, ok := result.GroupPermissions[group]; !ok {
-			result.GroupPermissions[group] = model.Permissions{}
+			result.GroupPermissions[group] = model.PermissionsMap{}
 		}
 		permissions := result.GroupPermissions[group]
 		permissions.Administrate = true
@@ -108,7 +108,7 @@ func (this *PermissionsEntry) ToResource() model.Resource {
 	}
 	for _, group := range this.ReadGroups {
 		if _, ok := result.GroupPermissions[group]; !ok {
-			result.GroupPermissions[group] = model.Permissions{}
+			result.GroupPermissions[group] = model.PermissionsMap{}
 		}
 		permissions := result.GroupPermissions[group]
 		permissions.Read = true
@@ -116,7 +116,7 @@ func (this *PermissionsEntry) ToResource() model.Resource {
 	}
 	for _, group := range this.WriteGroups {
 		if _, ok := result.GroupPermissions[group]; !ok {
-			result.GroupPermissions[group] = model.Permissions{}
+			result.GroupPermissions[group] = model.PermissionsMap{}
 		}
 		permissions := result.GroupPermissions[group]
 		permissions.Write = true
@@ -124,7 +124,7 @@ func (this *PermissionsEntry) ToResource() model.Resource {
 	}
 	for _, group := range this.ExecuteGroups {
 		if _, ok := result.GroupPermissions[group]; !ok {
-			result.GroupPermissions[group] = model.Permissions{}
+			result.GroupPermissions[group] = model.PermissionsMap{}
 		}
 		permissions := result.GroupPermissions[group]
 		permissions.Execute = true

@@ -725,7 +725,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "model.GroupRight": {
+        "model.GroupPermissions": {
             "type": "object",
             "properties": {
                 "administrate": {
@@ -745,7 +745,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Permissions": {
+        "model.PermissionsMap": {
             "type": "object",
             "properties": {
                 "administrate": {
@@ -768,7 +768,7 @@ const docTemplate = `{
                 "group_permissions": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/model.Permissions"
+                        "$ref": "#/definitions/model.PermissionsMap"
                     }
                 },
                 "id": {
@@ -780,7 +780,7 @@ const docTemplate = `{
                 "user_permissions": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/model.Permissions"
+                        "$ref": "#/definitions/model.PermissionsMap"
                     }
                 }
             }
@@ -791,13 +791,13 @@ const docTemplate = `{
                 "group_permissions": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/model.Permissions"
+                        "$ref": "#/definitions/model.PermissionsMap"
                     }
                 },
                 "user_permissions": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/model.Permissions"
+                        "$ref": "#/definitions/model.PermissionsMap"
                     }
                 }
             }
@@ -819,10 +819,10 @@ const docTemplate = `{
                     "description": "if true the user may not set permissions for not existing resources; if false the user may\nif true the initial resource must be created by cqrs",
                     "type": "boolean"
                 },
-                "initial_group_rights": {
+                "initial_group_permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.GroupRight"
+                        "$ref": "#/definitions/model.GroupPermissions"
                     }
                 },
                 "kafka_consumer_group": {

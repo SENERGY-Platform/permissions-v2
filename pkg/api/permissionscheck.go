@@ -59,11 +59,18 @@ func (this *PermissionsCheckEndpoints) CheckPermission(config configuration.Conf
 			http.Error(w, "missing id", http.StatusBadRequest)
 			return
 		}
-		permissions := req.URL.Query().Get("permissions")
-		if permissions == "" {
-			permissions = "r"
+
+		permissionsStr := req.URL.Query().Get("permissions")
+		if permissionsStr == "" {
+			permissionsStr = "r"
 		}
-		result, err, code := ctrl.CheckPermission(token, topic, id, permissions)
+		permissions, err := model.PermissionListFromString(permissionsStr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		result, err, code := ctrl.CheckPermission(token, topic, id, permissions...)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -105,11 +112,17 @@ func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configura
 			idList = append(idList, strings.TrimSpace(id))
 		}
 
-		permissions := req.URL.Query().Get("permissions")
-		if permissions == "" {
-			permissions = "r"
+		permissionsStr := req.URL.Query().Get("permissions")
+		if permissionsStr == "" {
+			permissionsStr = "r"
 		}
-		result, err, code := ctrl.CheckMultiplePermissions(token, topic, idList, permissions)
+		permissions, err := model.PermissionListFromString(permissionsStr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		result, err, code := ctrl.CheckMultiplePermissions(token, topic, idList, permissions...)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -146,9 +159,14 @@ func (this *PermissionsCheckEndpoints) ListAccessibleResourceIds(config configur
 			return
 		}
 
-		permissions := req.URL.Query().Get("permissions")
-		if permissions == "" {
-			permissions = "r"
+		permissionsStr := req.URL.Query().Get("permissions")
+		if permissionsStr == "" {
+			permissionsStr = "r"
+		}
+		permissions, err := model.PermissionListFromString(permissionsStr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		listOptions, err := model.ListOptionsFromQuery(req.URL.Query())
@@ -157,7 +175,7 @@ func (this *PermissionsCheckEndpoints) ListAccessibleResourceIds(config configur
 			return
 		}
 
-		result, err, code := ctrl.ListAccessibleResourceIds(token, topic, permissions, listOptions)
+		result, err, code := ctrl.ListAccessibleResourceIds(token, topic, listOptions, permissions...)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return

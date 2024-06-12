@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  model.GroupRight:
+  model.GroupPermissions:
     properties:
       administrate:
         type: boolean
@@ -13,7 +13,7 @@ definitions:
       write:
         type: boolean
     type: object
-  model.Permissions:
+  model.PermissionsMap:
     properties:
       administrate:
         type: boolean
@@ -28,7 +28,7 @@ definitions:
     properties:
       group_permissions:
         additionalProperties:
-          $ref: '#/definitions/model.Permissions'
+          $ref: '#/definitions/model.PermissionsMap'
         type: object
       id:
         type: string
@@ -36,18 +36,18 @@ definitions:
         type: string
       user_permissions:
         additionalProperties:
-          $ref: '#/definitions/model.Permissions'
+          $ref: '#/definitions/model.PermissionsMap'
         type: object
     type: object
   model.ResourcePermissions:
     properties:
       group_permissions:
         additionalProperties:
-          $ref: '#/definitions/model.Permissions'
+          $ref: '#/definitions/model.PermissionsMap'
         type: object
       user_permissions:
         additionalProperties:
-          $ref: '#/definitions/model.Permissions'
+          $ref: '#/definitions/model.PermissionsMap'
         type: object
     type: object
   model.Topic:
@@ -64,9 +64,9 @@ definitions:
           if true the user may not set permissions for not existing resources; if false the user may
           if true the initial resource must be created by cqrs
         type: boolean
-      initial_group_rights:
+      initial_group_permissions:
         items:
-          $ref: '#/definitions/model.GroupRight'
+          $ref: '#/definitions/model.GroupPermissions'
         type: array
       kafka_consumer_group:
         description: defaults to configured kafka consumer group

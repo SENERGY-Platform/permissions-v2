@@ -34,9 +34,9 @@ type AdminInterface interface {
 }
 
 type PermissionsCheckInterface interface {
-	CheckPermission(token string, topicId string, id string, permissions string) (access bool, err error, code int)
-	CheckMultiplePermissions(token string, topicId string, ids []string, permissions string) (access map[string]bool, err error, code int)
-	ListAccessibleResourceIds(token string, topicId string, permissions string, options model.ListOptions) (ids []string, err error, code int)
+	CheckPermission(token string, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int)
+	CheckMultiplePermissions(token string, topicId string, ids []string, permissions ...model.Permission) (access map[string]bool, err error, code int)
+	ListAccessibleResourceIds(token string, topicId string, options model.ListOptions, permissions ...model.Permission) (ids []string, err error, code int)
 }
 
 type PermissionsManagementInterface interface {

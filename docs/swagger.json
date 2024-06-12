@@ -717,7 +717,7 @@
         }
     },
     "definitions": {
-        "model.GroupRight": {
+        "model.GroupPermissions": {
             "type": "object",
             "properties": {
                 "administrate": {
@@ -737,7 +737,7 @@
                 }
             }
         },
-        "model.Permissions": {
+        "model.PermissionsMap": {
             "type": "object",
             "properties": {
                 "administrate": {
@@ -760,7 +760,7 @@
                 "group_permissions": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/model.Permissions"
+                        "$ref": "#/definitions/model.PermissionsMap"
                     }
                 },
                 "id": {
@@ -772,7 +772,7 @@
                 "user_permissions": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/model.Permissions"
+                        "$ref": "#/definitions/model.PermissionsMap"
                     }
                 }
             }
@@ -783,13 +783,13 @@
                 "group_permissions": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/model.Permissions"
+                        "$ref": "#/definitions/model.PermissionsMap"
                     }
                 },
                 "user_permissions": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/model.Permissions"
+                        "$ref": "#/definitions/model.PermissionsMap"
                     }
                 }
             }
@@ -811,10 +811,10 @@
                     "description": "if true the user may not set permissions for not existing resources; if false the user may\nif true the initial resource must be created by cqrs",
                     "type": "boolean"
                 },
-                "initial_group_rights": {
+                "initial_group_permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.GroupRight"
+                        "$ref": "#/definitions/model.GroupPermissions"
                     }
                 },
                 "kafka_consumer_group": {

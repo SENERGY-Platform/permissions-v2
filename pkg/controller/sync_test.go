@@ -182,42 +182,42 @@ func TestTopicSync(t *testing.T) {
 		})
 		t.Run("set permission", func(t *testing.T) {
 			_, err, _ = ctrl.SetPermission(TestToken, "topic1", "a1", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic2", "b1", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic3", "c1", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic4", "d1", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic5", "e1", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic6", "f1", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
@@ -225,7 +225,7 @@ func TestTopicSync(t *testing.T) {
 			}
 		})
 		t.Run("check permission", func(t *testing.T) {
-			access, err, _ := ctrl.CheckPermission(TestToken, "topic1", "a1", "r")
+			access, err, _ := ctrl.CheckPermission(TestToken, "topic1", "a1", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -234,7 +234,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic2", "b1", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic2", "b1", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -243,7 +243,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic3", "c1", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic3", "c1", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -252,7 +252,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic4", "d1", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic4", "d1", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -261,7 +261,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic5", "e1", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic5", "e1", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -270,7 +270,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic6", "f1", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic6", "f1", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -286,10 +286,10 @@ func TestTopicSync(t *testing.T) {
 		err = db.SetTopic(ctrl.getTimeoutContext(), model.Topic{
 			Id:     "topic2",
 			NoCqrs: true,
-			InitialGroupRights: []model.GroupRight{
+			InitialGroupPermissions: []model.GroupPermissions{
 				{
-					GroupName:   "g1",
-					Permissions: model.Permissions{Read: true, Write: true, Execute: true, Administrate: true},
+					GroupName:      "g1",
+					PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true},
 				},
 			},
 		})
@@ -325,10 +325,10 @@ func TestTopicSync(t *testing.T) {
 			Id:              "topic5",
 			KafkaTopic:      "topic5",
 			EnsureTopicInit: true,
-			InitialGroupRights: []model.GroupRight{
+			InitialGroupPermissions: []model.GroupPermissions{
 				{
-					GroupName:   "g1",
-					Permissions: model.Permissions{Read: true, Write: true, Execute: true, Administrate: true},
+					GroupName:      "g1",
+					PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true},
 				},
 			},
 		})
@@ -405,56 +405,56 @@ func TestTopicSync(t *testing.T) {
 		})
 		t.Run("set permission", func(t *testing.T) {
 			_, err, _ = ctrl.SetPermission(TestToken, "topic1", "a2", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic2", "b2", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic3_2", "c2", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic3", "c2", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err == nil {
 				t.Error("expected error")
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic4", "d2", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic5", "e2", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic6", "f2", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err == nil {
 				t.Error("expected error")
 				return
 			}
 			_, err, _ = ctrl.SetPermission(TestToken, "topic6_2", "f2", model.ResourcePermissions{
-				UserPermissions: map[string]model.Permissions{TestTokenUser: {true, true, true, true}},
+				UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 			}, model.SetPermissionOptions{Wait: true})
 			if err != nil {
 				t.Error(err)
@@ -462,7 +462,7 @@ func TestTopicSync(t *testing.T) {
 			}
 		})
 		t.Run("check permission", func(t *testing.T) {
-			access, err, _ := ctrl.CheckPermission(TestToken, "topic1", "a2", "r")
+			access, err, _ := ctrl.CheckPermission(TestToken, "topic1", "a2", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -471,7 +471,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic2", "b2", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic2", "b2", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -480,7 +480,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic3", "c2", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic3", "c2", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -489,7 +489,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("expected no access")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic3_2", "c2", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic3_2", "c2", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -498,7 +498,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic4", "d2", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic4", "d2", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -507,7 +507,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic5", "e2", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic5", "e2", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -516,7 +516,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("access should be true")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic6", "f2", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic6", "f2", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
@@ -525,7 +525,7 @@ func TestTopicSync(t *testing.T) {
 				t.Error("expected no access")
 				return
 			}
-			access, err, _ = ctrl.CheckPermission(TestToken, "topic6_2", "f2", "r")
+			access, err, _ = ctrl.CheckPermission(TestToken, "topic6_2", "f2", model.Read)
 			if err != nil {
 				t.Error(err)
 				return
