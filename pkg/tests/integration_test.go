@@ -988,7 +988,12 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 						return
 					}
 				} else {
-					err, _ := c.RemoveResource(TestToken, topicId, "1")
+					err, _ := c.RemoveResource(TestToken, topicId, "unknown")
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					err, _ = c.RemoveResource(TestToken, topicId, "1")
 					if err != nil {
 						t.Error(err)
 						return
