@@ -138,6 +138,42 @@ paths:
       tags:
       - accessible
       - resource
+  /admin/resources/{topic}:
+    get:
+      description: lists resource ids in topic, requesting user must be in admin group
+      parameters:
+      - description: limits size of result; 0 means unlimited
+        in: query
+        name: limit
+        type: integer
+      - description: offset to be used in combination with limit
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: lists resource ids in topic
+      tags:
+      - topics
+      - resources
+      - admin
   /admin/topics:
     get:
       description: lists topics with their configuration, requesting user must be
