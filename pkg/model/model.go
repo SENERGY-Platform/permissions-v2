@@ -94,6 +94,12 @@ func (this Topic) Equal(topic Topic) bool {
 	if this.InitOnlyByCqrs != topic.InitOnlyByCqrs {
 		return false
 	}
+	if this.InitialGroupPermissions == nil {
+		this.InitialGroupPermissions = []GroupPermissions{}
+	}
+	if topic.InitialGroupPermissions == nil {
+		topic.InitialGroupPermissions = []GroupPermissions{}
+	}
 	slices.SortFunc(this.InitialGroupPermissions, func(a, b GroupPermissions) int {
 		return strings.Compare(a.GroupName, b.GroupName)
 	})
