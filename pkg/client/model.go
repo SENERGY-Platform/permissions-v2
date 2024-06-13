@@ -25,10 +25,10 @@ type Topic = model.Topic
 
 type Permission = model.Permission
 
-const Read = model.Read
-const Write = model.Write
-const Administrate = model.Administrate
-const Execute = model.Execute
+const Read = model.Read                 //user may read the resource (metadata)  (e.g. read device name)
+const Write = model.Write               //user may write the resource (metadata)(e.g. rename device)
+const Administrate = model.Administrate // user may delete resource; user may change resource rights (e.g. delete device)
+const Execute = model.Execute           //user may use the resource (e.g. cmd to device; read device data; read database)
 
 type PermissionList = model.PermissionList
 type GroupPermissions = model.GroupPermissions

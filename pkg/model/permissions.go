@@ -22,10 +22,10 @@ import (
 
 type Permission rune
 
-const Read Permission = 'r'
-const Write Permission = 'w'
-const Administrate Permission = 'a'
-const Execute Permission = 'x'
+const Read Permission = 'r'         //user may read the resource (metadata)  (e.g. read device name)
+const Write Permission = 'w'        //user may write the resource (metadata)(e.g. rename device)
+const Administrate Permission = 'a' // user may delete resource; user may change resource rights (e.g. delete device)
+const Execute Permission = 'x'      //user may use the resource (e.g. cmd to device; read device data; read database)
 
 type PermissionList []Permission
 
