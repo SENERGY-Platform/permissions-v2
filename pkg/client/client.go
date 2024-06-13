@@ -26,7 +26,6 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/database/mock"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"io"
 	"net/http"
 	"net/url"
@@ -39,7 +38,7 @@ type Client interface {
 }
 
 func New(serverUrl string) (client Client) {
-	return &Impl{serverUrl: serverUrl}
+	return &ClientImpl{serverUrl: serverUrl}
 }
 
 func NewTestClient(ctx context.Context) (client Client, err error) {
@@ -49,11 +48,11 @@ func NewTestClient(ctx context.Context) (client Client, err error) {
 		com.NewBypassProvider())
 }
 
-type Impl struct {
+type ClientImpl struct {
 	serverUrl string
 }
 
-func (this *Impl) ListTopics(token string, options model.ListOptions) (result []model.Topic, err error, code int) {
+func (this *ClientImpl) ListTopics(token string, options ListOptions) (result []Topic, err error, code int) {
 	query := url.Values{}
 	if options.Limit > 0 {
 		query.Set("limit", strconv.FormatInt(options.Limit, 10))
@@ -65,18 +64,18 @@ func (this *Impl) ListTopics(token string, options model.ListOptions) (result []
 	if err != nil {
 		return result, err, 0
 	}
-	return do[[]model.Topic](token, req)
+	return do[[]Topic](token, req)
 }
 
-func (this *Impl) GetTopic(token string, id string) (result model.Topic, err error, code int) {
+func (this *ClientImpl) GetTopic(token string, id string) (result Topic, err error, code int) {
 	req, err := http.NewRequest(http.MethodGet, this.serverUrl+"/admin/topics/"+url.PathEscape(id), nil)
 	if err != nil {
 		return result, err, 0
 	}
-	return do[model.Topic](token, req)
+	return do[Topic](token, req)
 }
 
-func (this *Impl) RemoveTopic(token string, id string) (err error, code int) {
+func (this *ClientImpl) RemoveTopic(token string, id string) (err error, code int) {
 	req, err := http.NewRequest(http.MethodDelete, this.serverUrl+"/admin/topics/"+url.PathEscape(id), nil)
 	if err != nil {
 		return err, 0
@@ -84,7 +83,7 @@ func (this *Impl) RemoveTopic(token string, id string) (err error, code int) {
 	return doVoid(token, req)
 }
 
-func (this *Impl) SetTopic(token string, topic model.Topic) (result model.Topic, err error, code int) {
+func (this *ClientImpl) SetTopic(token string, topic Topic) (result Topic, err error, code int) {
 	body, err := json.Marshal(topic)
 	if err != nil {
 		return result, err, 0
@@ -93,20 +92,20 @@ func (this *Impl) SetTopic(token string, topic model.Topic) (result model.Topic,
 	if err != nil {
 		return result, err, 0
 	}
-	return do[model.Topic](token, req)
+	return do[Topic](token, req)
 }
 
-func (this *Impl) CheckPermission(token string, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int) {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/check/%v/%v?permissions=%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id), model.PermissionList(permissions).Encode()), nil)
+func (this *ClientImpl) CheckPermission(token string, topicId string, id string, permissions ...Permission) (access bool, err error, code int) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/check/%v/%v?permissions=%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id), PermissionList(permissions).Encode()), nil)
 	if err != nil {
 		return access, err, 0
 	}
 	return do[bool](token, req)
 }
 
-func (this *Impl) CheckMultiplePermissions(token string, topicId string, ids []string, permissions ...model.Permission) (access map[string]bool, err error, code int) {
+func (this *ClientImpl) CheckMultiplePermissions(token string, topicId string, ids []string, permissions ...Permission) (access map[string]bool, err error, code int) {
 	query := url.Values{}
-	query.Set("permissions", model.PermissionList(permissions).Encode())
+	query.Set("permissions", PermissionList(permissions).Encode())
 	query.Set("ids", strings.Join(ids, ","))
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/check/%v?%v", this.serverUrl, url.PathEscape(topicId), query.Encode()), nil)
 	if err != nil {
@@ -115,7 +114,7 @@ func (this *Impl) CheckMultiplePermissions(token string, topicId string, ids []s
 	return do[map[string]bool](token, req)
 }
 
-func (this *Impl) AdminListResourceIds(token string, topicId string, options model.ListOptions) (ids []string, err error, code int) {
+func (this *ClientImpl) AdminListResourceIds(token string, topicId string, options ListOptions) (ids []string, err error, code int) {
 	query := url.Values{}
 	if options.Limit > 0 {
 		query.Set("limit", strconv.FormatInt(options.Limit, 10))
@@ -130,9 +129,9 @@ func (this *Impl) AdminListResourceIds(token string, topicId string, options mod
 	return do[[]string](token, req)
 }
 
-func (this *Impl) ListAccessibleResourceIds(token string, topicId string, options model.ListOptions, permissions ...model.Permission) (ids []string, err error, code int) {
+func (this *ClientImpl) ListAccessibleResourceIds(token string, topicId string, options ListOptions, permissions ...Permission) (ids []string, err error, code int) {
 	query := url.Values{}
-	query.Set("permissions", model.PermissionList(permissions).Encode())
+	query.Set("permissions", PermissionList(permissions).Encode())
 	if options.Limit > 0 {
 		query.Set("limit", strconv.FormatInt(options.Limit, 10))
 	}
@@ -146,7 +145,7 @@ func (this *Impl) ListAccessibleResourceIds(token string, topicId string, option
 	return do[[]string](token, req)
 }
 
-func (this *Impl) ListResourcesWithAdminPermission(token string, topicId string, options model.ListOptions) (result []model.Resource, err error, code int) {
+func (this *ClientImpl) ListResourcesWithAdminPermission(token string, topicId string, options ListOptions) (result []Resource, err error, code int) {
 	query := url.Values{}
 	if options.Limit > 0 {
 		query.Set("limit", strconv.FormatInt(options.Limit, 10))
@@ -158,18 +157,18 @@ func (this *Impl) ListResourcesWithAdminPermission(token string, topicId string,
 	if err != nil {
 		return result, err, 0
 	}
-	return do[[]model.Resource](token, req)
+	return do[[]Resource](token, req)
 }
 
-func (this *Impl) GetResource(token string, topicId string, id string) (result model.Resource, err error, code int) {
+func (this *ClientImpl) GetResource(token string, topicId string, id string) (result Resource, err error, code int) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%v/manage/%v/%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id)), nil)
 	if err != nil {
 		return result, err, 0
 	}
-	return do[model.Resource](token, req)
+	return do[Resource](token, req)
 }
 
-func (this *Impl) RemoveResource(token string, topicId string, id string) (err error, code int) {
+func (this *ClientImpl) RemoveResource(token string, topicId string, id string) (err error, code int) {
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%v/manage/%v/%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id)), nil)
 	if err != nil {
 		return err, 0
@@ -177,7 +176,7 @@ func (this *Impl) RemoveResource(token string, topicId string, id string) (err e
 	return doVoid(token, req)
 }
 
-func (this *Impl) SetPermission(token string, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int) {
+func (this *ClientImpl) SetPermission(token string, topicId string, id string, permissions ResourcePermissions, options SetPermissionOptions) (result ResourcePermissions, err error, code int) {
 	body, err := json.Marshal(permissions)
 	if err != nil {
 		return result, err, 0
@@ -190,7 +189,7 @@ func (this *Impl) SetPermission(token string, topicId string, id string, permiss
 	if err != nil {
 		return result, err, 0
 	}
-	return do[model.ResourcePermissions](token, req)
+	return do[ResourcePermissions](token, req)
 }
 
 func do[T any](token string, req *http.Request) (result T, err error, code int) {
