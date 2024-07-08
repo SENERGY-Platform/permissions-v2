@@ -30,7 +30,7 @@ import (
 	"time"
 )
 
-type TopicWrapper struct {
+type TopicHandler struct {
 	model.Topic
 	com com.Com
 }
@@ -95,7 +95,7 @@ func (this *Controller) RemoveTopic(tokenStr string, id string) (err error, code
 	if err != nil {
 		return err, http.StatusInternalServerError
 	}
-	err = this.stopTopicHandling(id)
+	err = this.stopTopicHandling(id, true)
 	if err != nil {
 		err = fmt.Errorf("unable to stop topic handling %v: %w", id, err)
 		log.Println("ERROR:", err)
@@ -150,12 +150,12 @@ func (this *Controller) SetTopic(tokenStr string, topic model.Topic) (result mod
 		return result, err, http.StatusInternalServerError
 	}
 
-	err = this.updateTopicHandling(topic)
+	err = this.updateTopicHandling(topic, true)
 	if err != nil {
 		err = fmt.Errorf("unable to update topic handling %v %v: %w", topic.Id, topic.KafkaTopic, err)
 		log.Println("ERROR:", err)
 		this.notifyError(err)
-		log.Println("try to reset old topic", old.Id, old.KafkaTopic, this.db.SetTopic(timeout, old), this.updateTopicHandling(old))
+		log.Println("try to reset old topic", old.Id, old.KafkaTopic, this.db.SetTopic(timeout, old), this.updateTopicHandling(old, true))
 		return result, err, http.StatusInternalServerError
 	}
 
@@ -193,8 +193,9 @@ func (this *Controller) refreshTopics() error {
 	deletes := []string{}
 
 	this.topicsMux.Lock()
+	defer this.topicsMux.Unlock()
 	if this.topics == nil {
-		this.topics = map[string]TopicWrapper{}
+		this.topics = map[string]TopicHandler{}
 	}
 	for _, topic := range dbTopics {
 		if this.topics[topic.Id].LastUpdateUnixTimestamp < topic.LastUpdateUnixTimestamp { //if topic is not in this.topics LastUpdateUnixTimestamp will be initialized as 0 --> new topic wins
@@ -208,10 +209,9 @@ func (this *Controller) refreshTopics() error {
 			deletes = append(deletes, id)
 		}
 	}
-	this.topicsMux.Unlock()
 
 	for _, topic := range updates {
-		err = this.updateTopicHandling(topic)
+		err = this.updateTopicHandling(topic, false)
 		if err != nil {
 			err = fmt.Errorf("unable to update topic %v %v: %w", topic.Id, topic.KafkaTopic, err)
 			log.Println("ERROR:", err)
@@ -220,7 +220,7 @@ func (this *Controller) refreshTopics() error {
 		}
 	}
 	for _, topicId := range deletes {
-		err = this.stopTopicHandling(topicId)
+		err = this.stopTopicHandling(topicId, false)
 		if err != nil {
 			err = fmt.Errorf("unable to stop topic %v: %w", topicId, err)
 			log.Println("ERROR:", err)
@@ -231,13 +231,15 @@ func (this *Controller) refreshTopics() error {
 	return nil
 }
 
-func (this *Controller) updateTopicHandling(topic model.Topic) error {
-	err := this.stopTopicHandling(topic.Id)
+func (this *Controller) updateTopicHandling(topic model.Topic, lock bool) error {
+	if lock {
+		this.topicsMux.Lock()
+		defer this.topicsMux.Unlock()
+	}
+	err := this.stopTopicHandling(topic.Id, false)
 	if err != nil {
 		return fmt.Errorf("unable to stop topic: %w", err)
 	}
-	this.topicsMux.Lock()
-	defer this.topicsMux.Unlock()
 	wrapper, err := this.newTopicWrapper(topic)
 	if err != nil {
 		return fmt.Errorf("unable start topic kafka handling: %w", err)
@@ -246,9 +248,11 @@ func (this *Controller) updateTopicHandling(topic model.Topic) error {
 	return nil
 }
 
-func (this *Controller) stopTopicHandling(id string) error {
-	this.topicsMux.Lock()
-	defer this.topicsMux.Unlock()
+func (this *Controller) stopTopicHandling(id string, lock bool) error {
+	if lock {
+		this.topicsMux.Lock()
+		defer this.topicsMux.Unlock()
+	}
 	topic, ok := this.topics[id]
 	if !ok {
 		return nil
@@ -261,7 +265,7 @@ func (this *Controller) stopTopicHandling(id string) error {
 	return nil
 }
 
-func (this *Controller) newTopicWrapper(topic model.Topic) (result TopicWrapper, err error) {
+func (this *Controller) newTopicWrapper(topic model.Topic) (result TopicHandler, err error) {
 	if this.config.DisableCom {
 		return result, errors.New("com is disabled")
 	}
@@ -269,13 +273,13 @@ func (this *Controller) newTopicWrapper(topic model.Topic) (result TopicWrapper,
 	if err != nil {
 		return result, err
 	}
-	return TopicWrapper{com: c, Topic: topic}, nil
+	return TopicHandler{com: c, Topic: topic}, nil
 }
 
-func (this *TopicWrapper) Close() (err error) {
+func (this *TopicHandler) Close() (err error) {
 	return this.com.Close()
 }
 
-func (this *TopicWrapper) SendPermissions(ctx context.Context, id string, permissions model.ResourcePermissions) (err error) {
+func (this *TopicHandler) SendPermissions(ctx context.Context, id string, permissions model.ResourcePermissions) (err error) {
 	return this.com.SendPermissions(ctx, this.Topic, id, permissions)
 }

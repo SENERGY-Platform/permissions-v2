@@ -33,7 +33,7 @@ type Controller struct {
 	config    configuration.Config
 	db        DB
 	com       com.Provider
-	topics    map[string]TopicWrapper
+	topics    map[string]TopicHandler
 	topicsMux sync.RWMutex
 	notifier  client.Client
 	done      *kafka.Writer
@@ -55,7 +55,7 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 	if c == nil {
 		c = com.NewKafkaComProvider()
 	}
-	result := &Controller{config: config, db: db, topics: map[string]TopicWrapper{}, com: c}
+	result := &Controller{config: config, db: db, topics: map[string]TopicHandler{}, com: c}
 	if config.DevNotifierUrl != "" {
 		result.notifier = client.New(config.DevNotifierUrl)
 	} else {
@@ -73,7 +73,7 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 			for _, topic := range result.topics {
 				log.Printf("close %v %v producer %v", topic.Id, topic.KafkaTopic, topic.Close())
 			}
-			result.topics = map[string]TopicWrapper{}
+			result.topics = map[string]TopicHandler{}
 			if result.done != nil {
 				log.Printf("close done (%v) producer %v", config.DoneTopic, result.done.Close())
 
@@ -111,7 +111,7 @@ func (this *Controller) HandleReceivedCommand(topic model.Topic, resource model.
 
 func (this *Controller) HandleReaderError(topic model.Topic, err error) {
 	log.Printf("ERROR: while consuming topic %v: %v\ntopic-config = %#v\ntry updateTopicHandling()\n", topic.KafkaTopic, err, topic)
-	err = this.updateTopicHandling(topic)
+	err = this.updateTopicHandling(topic, true)
 	if err != nil {
 		log.Fatal("FATAL:", err)
 	}

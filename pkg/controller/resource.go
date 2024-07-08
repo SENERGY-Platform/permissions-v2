@@ -197,11 +197,9 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	wait := func() error { return nil }
 
 	err, code = func() (err error, code int) {
-		this.topicsMux.RLock()
-		defer this.topicsMux.RUnlock()
-		wrapper, ok := this.topics[topicId]
-		if !ok {
-			return errors.New("unknown topic id"), http.StatusBadRequest
+		wrapper, err := this.ensureTopicHandler(topic)
+		if err != nil {
+			return err, http.StatusInternalServerError
 		}
 
 		wait = this.optionalWait(options.Wait && !topic.NoCqrs, wrapper.KafkaTopic, pureId)
@@ -222,4 +220,30 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	}
 
 	return permissions, err, code
+}
+
+func (this *Controller) ensureTopicHandler(topic model.Topic) (TopicHandler, error) {
+	wrapper, ok := this.getTopicWrapper(topic.Id, true)
+	if !ok {
+		this.topicsMux.Lock()
+		defer this.topicsMux.Unlock()
+		err := this.updateTopicHandling(topic, false)
+		if err != nil {
+			return TopicHandler{}, err
+		}
+		wrapper, ok = this.getTopicWrapper(topic.Id, false)
+		if !ok {
+			return TopicHandler{}, errors.New("unable to ensure topic handler")
+		}
+	}
+	return wrapper, nil
+}
+
+func (this *Controller) getTopicWrapper(topicId string, lock bool) (TopicHandler, bool) {
+	if lock {
+		this.topicsMux.RLock()
+		defer this.topicsMux.RUnlock()
+	}
+	wrapper, ok := this.topics[topicId]
+	return wrapper, ok
 }
