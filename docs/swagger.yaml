@@ -1,5 +1,18 @@
 basePath: /
 definitions:
+  model.ComputedPermissions:
+    properties:
+      administrate:
+        type: boolean
+      execute:
+        type: boolean
+      id:
+        type: string
+      read:
+        type: boolean
+      write:
+        type: boolean
+    type: object
   model.GroupPermissions:
     properties:
       administrate:
@@ -579,6 +592,86 @@ paths:
       tags:
       - manage
       - resource-rights
+  /permissions/{topic}:
+    get:
+      description: list the computed permissions to resources of the given topic and
+        ids, group and user permissions are merged, unknown ids will get entries in
+        the result
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: Resource Ids, comma seperated
+        in: query
+        name: ids
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.ComputedPermissions'
+            type: array
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: list the computed permissions to resources of the given topic and ids
+      tags:
+      - permissions
+      - check
+      - list
+  /query/permissions/{topic}:
+    post:
+      description: list the computed permissions to resources of the given topic and
+        ids, group and user permissions are merged, unknown ids will get entries in
+        the result
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: Resource Ids
+        in: body
+        name: ids
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.ComputedPermissions'
+            type: array
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: list the computed permissions to resources of the given topic and ids
+      tags:
+      - permissions
+      - check
+      - list
+      - query
 securityDefinitions:
   Bearer:
     description: Type "Bearer" followed by a space and JWT token.

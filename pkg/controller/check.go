@@ -69,3 +69,61 @@ func (this *Controller) CheckMultiplePermissions(tokenStr string, topicId string
 	}
 	return access, err, code
 }
+
+func (this *Controller) ListComputedPermissions(tokenStr string, topic string, ids []string) (result []model.ComputedPermissions, err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return result, err, http.StatusUnauthorized
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	resources, err := this.db.AdminListResources(this.getTimeoutContext(), topic, model.ListOptions{
+		Ids: ids,
+	})
+	if err != nil {
+		return result, err, http.StatusInternalServerError
+	}
+	done := map[string]bool{}
+	for _, resource := range resources {
+		result = append(result, model.ComputedPermissions{
+			Id:             resource.Id,
+			PermissionsMap: ComputePermissionsMap(token, resource),
+		})
+		done[resource.Id] = true
+	}
+	for _, id := range ids {
+		if !done[id] {
+			result = append(result, model.ComputedPermissions{
+				Id: id,
+				PermissionsMap: model.PermissionsMap{
+					Read:         false,
+					Write:        false,
+					Execute:      false,
+					Administrate: false,
+				},
+			})
+		}
+	}
+	return result, nil, http.StatusOK
+}
+
+func ComputePermissionsMap(token jwt.Token, resource model.Resource) (result model.PermissionsMap) {
+	result = resource.UserPermissions[token.GetUserId()]
+	for _, group := range token.GetRoles() {
+		groupPermissions := resource.GroupPermissions[group]
+		if groupPermissions.Read {
+			result.Read = true
+		}
+		if groupPermissions.Write {
+			result.Write = true
+		}
+		if groupPermissions.Execute {
+			result.Execute = true
+		}
+		if groupPermissions.Administrate {
+			result.Administrate = true
+		}
+	}
+	return result
+}

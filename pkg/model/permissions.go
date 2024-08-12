@@ -77,3 +77,8 @@ type PermissionsMap struct {
 	Execute      bool `json:"execute"`
 	Administrate bool `json:"administrate"`
 }
+
+type ComputedPermissions struct {
+	Id string `json:"id"`
+	PermissionsMap
+}

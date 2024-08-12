@@ -770,9 +770,145 @@
                     }
                 }
             }
+        },
+        "/permissions/{topic}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "list the computed permissions to resources of the given topic and ids, group and user permissions are merged, unknown ids will get entries in the result",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "permissions",
+                    "check",
+                    "list"
+                ],
+                "summary": "list the computed permissions to resources of the given topic and ids",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Topic Id",
+                        "name": "topic",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Resource Ids, comma seperated",
+                        "name": "ids",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.ComputedPermissions"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/query/permissions/{topic}": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "list the computed permissions to resources of the given topic and ids, group and user permissions are merged, unknown ids will get entries in the result",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "permissions",
+                    "check",
+                    "list",
+                    "query"
+                ],
+                "summary": "list the computed permissions to resources of the given topic and ids",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Topic Id",
+                        "name": "topic",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Resource Ids",
+                        "name": "ids",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.ComputedPermissions"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "model.ComputedPermissions": {
+            "type": "object",
+            "properties": {
+                "administrate": {
+                    "type": "boolean"
+                },
+                "execute": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "read": {
+                    "type": "boolean"
+                },
+                "write": {
+                    "type": "boolean"
+                }
+            }
+        },
         "model.GroupPermissions": {
             "type": "object",
             "properties": {

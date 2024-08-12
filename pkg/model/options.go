@@ -24,6 +24,7 @@ import (
 type ListOptions struct {
 	Limit  int64 // 0 -> unlimited
 	Offset int64
+	Ids    []string
 }
 
 func ListOptionsFromQuery(q url.Values) (result ListOptions, err error) {

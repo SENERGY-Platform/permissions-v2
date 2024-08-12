@@ -26,6 +26,7 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/database/mock"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"io"
 	"net/http"
 	"net/url"
@@ -112,6 +113,18 @@ func (this *ClientImpl) CheckMultiplePermissions(token string, topicId string, i
 		return access, err, 0
 	}
 	return do[map[string]bool](token, req)
+}
+
+func (this *ClientImpl) ListComputedPermissions(token string, topicId string, ids []string) (result []model.ComputedPermissions, err error, code int) {
+	body, err := json.Marshal(ids)
+	if err != nil {
+		return result, err, 0
+	}
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%v/query/permissions/%v", this.serverUrl, url.PathEscape(topicId)), bytes.NewReader(body))
+	if err != nil {
+		return result, err, 0
+	}
+	return do[[]model.ComputedPermissions](token, req)
 }
 
 func (this *ClientImpl) AdminListResourceIds(token string, topicId string, options ListOptions) (ids []string, err error, code int) {

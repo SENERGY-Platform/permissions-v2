@@ -38,6 +38,7 @@ type PermissionsCheckInterface interface {
 	CheckPermission(token string, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int)
 	CheckMultiplePermissions(token string, topicId string, ids []string, permissions ...model.Permission) (access map[string]bool, err error, code int)
 	ListAccessibleResourceIds(token string, topicId string, options model.ListOptions, permissions ...model.Permission) (ids []string, err error, code int)
+	ListComputedPermissions(token string, topic string, ids []string) (result []model.ComputedPermissions, err error, code int)
 }
 
 type PermissionsManagementInterface interface {

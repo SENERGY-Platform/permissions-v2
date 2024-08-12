@@ -971,6 +971,81 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 				}
 			})
 
+			t.Run("list computed permissions", func(t *testing.T) {
+				t.Run("admin", func(t *testing.T) {
+					ids := []string{"1", "2", "3", "a", "adminless", "b", "buseradmin", "c", "unknownFoobar"}
+					actual, err, _ := c.ListComputedPermissions(client.InternalAdminToken, topicId, ids)
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					if !reflect.DeepEqual(actual, []model.ComputedPermissions{
+						{Id: "1", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+						{Id: "2", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "3", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+						{Id: "a", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "adminless", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+						{Id: "b", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+						{Id: "buseradmin", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "c", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "unknownFoobar", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+					}) {
+						t.Errorf("%#v\n", actual)
+						return
+					}
+				})
+
+				t.Run("second owner", func(t *testing.T) {
+					ids := []string{"1", "2", "3", "a", "adminless", "b", "buseradmin", "c", "unknownFoobar"}
+					actual, err, _ := c.ListComputedPermissions(SecondOwnerToken, topicId, ids)
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					if !reflect.DeepEqual(actual, []model.ComputedPermissions{
+						{Id: "1", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+						{Id: "2", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "3", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "a", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "adminless", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "b", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+						{Id: "buseradmin", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "c", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "unknownFoobar", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+					}) {
+						t.Errorf("%#v\n", actual)
+						return
+					}
+				})
+
+				t.Run("shorter id list", func(t *testing.T) {
+					ids := []string{"1", "2"}
+					actual, err, _ := c.ListComputedPermissions(SecondOwnerToken, topicId, ids)
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					if !reflect.DeepEqual(actual, []model.ComputedPermissions{
+						{Id: "1", PermissionsMap: model.PermissionsMap{
+							Read:         false,
+							Write:        false,
+							Execute:      false,
+							Administrate: false,
+						}},
+						{Id: "2", PermissionsMap: model.PermissionsMap{
+							Read:         true,
+							Write:        true,
+							Execute:      true,
+							Administrate: true,
+						}},
+					}) {
+						t.Errorf("%#v\n", actual)
+						return
+					}
+				})
+
+			})
+
 			t.Run("check after resource delete", func(t *testing.T) {
 				if cqrs {
 					err, _ := c.RemoveResource(TestToken, topicId, "1")

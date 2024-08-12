@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"runtime/debug"
 )
 
 func (this *Database) GetResource(ctx context.Context, topicId string, id string, options model.GetOptions) (resource model.Resource, err error) {
@@ -66,6 +67,9 @@ func (this *Database) AdminListResourceIds(ctx context.Context, topicId string, 
 	opt.SetSort(bson.D{{PermissionsEntryBson.Id, 1}})
 
 	filter := bson.M{PermissionsEntryBson.TopicId: topicId}
+	if listOptions.Ids != nil {
+		filter[PermissionsEntryBson.Id] = bson.M{"$in": listOptions.Ids}
+	}
 	cursor, err := this.permissionsCollection().Find(ctx, filter, opt)
 	if err != nil {
 		return result, err
@@ -80,6 +84,47 @@ func (this *Database) AdminListResourceIds(ctx context.Context, topicId string, 
 	}
 
 	err = cursor.Err()
+	return result, err
+}
+
+func (this *Database) AdminListResources(ctx context.Context, topicId string, listOptions model.ListOptions) (result []model.Resource, err error) {
+	result = []model.Resource{}
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
+	}
+
+	opt := options.Find()
+	if listOptions.Limit > 0 {
+		opt.SetLimit(listOptions.Limit)
+	}
+	if listOptions.Offset > 0 {
+		opt.SetSkip(listOptions.Offset)
+	}
+	opt.SetSort(bson.D{{PermissionsEntryBson.Id, 1}})
+
+	filter := bson.M{PermissionsEntryBson.TopicId: topicId}
+	if listOptions.Ids != nil {
+		filter[PermissionsEntryBson.Id] = bson.M{"$in": listOptions.Ids}
+	}
+	cursor, err := this.permissionsCollection().Find(ctx, filter, opt)
+	if err != nil {
+		debug.PrintStack()
+		return result, err
+	}
+	for cursor.Next(context.Background()) {
+		element := PermissionsEntry{}
+		err = cursor.Decode(&element)
+		if err != nil {
+			debug.PrintStack()
+			return nil, err
+		}
+		result = append(result, element.ToResource())
+	}
+
+	err = cursor.Err()
+	if err != nil {
+		debug.PrintStack()
+	}
 	return result, err
 }
 

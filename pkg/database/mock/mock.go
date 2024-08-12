@@ -167,6 +167,20 @@ func (this *Mock) AdminListResourceIds(ctx context.Context, topicId string, list
 	return limitOffset(result, listOptions.Limit, listOptions.Offset), nil
 }
 
+func (this *Mock) AdminListResources(ctx context.Context, topicId string, listOptions model.ListOptions) (result []model.Resource, err error) {
+	this.mux.Lock()
+	defer this.mux.Unlock()
+	for _, element := range this.resources {
+		if element.TopicId == topicId && (listOptions.Ids == nil || slices.Contains(listOptions.Ids, element.Id)) {
+			result = append(result, element.Resource)
+		}
+	}
+	slices.SortFunc(result, func(a, b model.Resource) int {
+		return strings.Compare(a.Id, b.Id)
+	})
+	return limitOffset(result, listOptions.Limit, listOptions.Offset), nil
+}
+
 func (this *Mock) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []string, err error) {
 	list, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, options, permissions...)
 	if err != nil {
