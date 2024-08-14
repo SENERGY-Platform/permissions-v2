@@ -49,9 +49,6 @@ type GetOptions struct {
 	CheckPermission bool
 	UserId          string
 	GroupIds        []string
+	RoleIds         []string
 	Permissions     PermissionList
-}
-
-type SetPermissionOptions struct {
-	Wait bool
 }

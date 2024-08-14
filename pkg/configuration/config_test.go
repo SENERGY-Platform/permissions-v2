@@ -24,13 +24,13 @@ import (
 
 func TestLoadDuration(t *testing.T) {
 	config := Config{}
-	err := json.Unmarshal([]byte(`{"check_db_topic_changes_interval": "10m"}`), &config)
+	err := json.Unmarshal([]byte(`{"sync_check_interval": "10m"}`), &config)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	if config.CheckDbTopicChangesInterval.GetDuration() != time.Minute*10 {
-		t.Error(config.CheckDbTopicChangesInterval.GetDuration())
+	if config.SyncCheckInterval.GetDuration() != time.Minute*10 {
+		t.Error(config.SyncCheckInterval.GetDuration())
 		return
 	}
 }
@@ -39,14 +39,14 @@ func TestHandleEnvironmentVars(t *testing.T) {
 	config := Config{}
 
 	testEnv := func(key string) string {
-		if key == fieldNameToEnvName("CheckDbTopicChangesInterval") {
+		if key == fieldNameToEnvName("SyncCheckInterval") {
 			return "10s"
 		}
 		return ""
 	}
 
 	testEnvErr := func(key string) string {
-		if key == fieldNameToEnvName("CheckDbTopicChangesInterval") {
+		if key == fieldNameToEnvName("SyncCheckInterval") {
 			return "foo"
 		}
 		return ""
@@ -57,8 +57,8 @@ func TestHandleEnvironmentVars(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if config.CheckDbTopicChangesInterval.GetDuration() != 10*time.Second {
-		t.Error(config.CheckDbTopicChangesInterval.GetDuration())
+	if config.SyncCheckInterval.GetDuration() != 10*time.Second {
+		t.Error(config.SyncCheckInterval.GetDuration())
 		return
 	}
 

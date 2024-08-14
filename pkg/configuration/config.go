@@ -34,22 +34,15 @@ type Config struct {
 	EditForward     string `json:"edit_forward"`
 	DevNotifierUrl  string `json:"dev_notifier_url"`
 
-	DisableCom bool `json:"disable_com"`
-
-	KafkaUrl                  string `json:"kafka_url"`
-	DefaultKafkaConsumerGroup string `json:"default_kafka_consumer_group"`
-	DoneTopic                 string `json:"done_topic"`
-	HandleDoneWait            bool   `json:"handle_done_wait"`
-	KafkaDoneBatchSize        int    `json:"kafka_done_batch_size"`
+	KafkaUrl string `json:"kafka_url"`
 
 	MongoUrl                   string `json:"mongo_url"`
 	MongoDatabase              string `json:"mongo_database"`
 	MongoPermissionsCollection string `json:"mongo_permissions_collection"`
 	MongoTopicsCollection      string `json:"mongo_topics_collection"`
 
-	DisabledTopicConsumers []string `json:"disabled_topic_consumers"` //may be needed to fix service with broken topic consumer
-
-	CheckDbTopicChangesInterval Duration `json:"check_db_topic_changes_interval"`
+	SyncCheckInterval Duration `json:"sync_check_interval"`
+	SyncAgeLimit      Duration `json:"sync_age_limit"`
 }
 
 // loads config from json in location and used environment variables (e.g KafkaUrl --> KAFKA_URL)

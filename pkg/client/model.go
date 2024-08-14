@@ -20,7 +20,6 @@ import "github.com/SENERGY-Platform/permissions-v2/pkg/model"
 
 type ListOptions = model.ListOptions
 type GetOptions = model.GetOptions
-type SetPermissionOptions = model.SetPermissionOptions
 type Topic = model.Topic
 
 type Permission = model.Permission

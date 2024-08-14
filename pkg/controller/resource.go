@@ -18,6 +18,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/idmodifier"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
@@ -25,33 +26,6 @@ import (
 	"net/http"
 	"time"
 )
-
-func (this *Controller) HandleResourceUpdate(topic model.Topic, id string, owner string) error {
-	if this.config.Debug {
-		log.Println("handle resource update command", topic.Id, id)
-	}
-	resource := model.Resource{
-		Id:      id,
-		TopicId: topic.Id,
-		ResourcePermissions: model.ResourcePermissions{
-			UserPermissions:  map[string]model.PermissionsMap{owner: {Read: true, Write: true, Execute: true, Administrate: true}},
-			GroupPermissions: map[string]model.PermissionsMap{},
-		},
-	}
-	for _, gr := range topic.InitialGroupPermissions {
-		resource.GroupPermissions[gr.GroupName] = gr.PermissionsMap
-	}
-	//init resource permissions; with time.Time{} and preventOlderUpdates=true we guarantee that no existing resource is overwritten
-	_, err := this.db.SetResourcePermissions(this.getTimeoutContext(), resource, time.Time{}, true)
-	return err
-}
-
-func (this *Controller) HandleResourceDelete(topic model.Topic, id string) error {
-	if this.config.Debug {
-		log.Println("handle resource delete command", topic.Id, id)
-	}
-	return this.db.DeleteResource(this.getTimeoutContext(), topic.Id, id)
-}
 
 func (this *Controller) AdminListResourceIds(tokenStr string, topicId string, options model.ListOptions) (ids []string, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
@@ -75,7 +49,7 @@ func (this *Controller) ListAccessibleResourceIds(tokenStr string, topicId strin
 	if err != nil {
 		return ids, err, http.StatusUnauthorized
 	}
-	ids, err = this.db.ListResourceIdsByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), options, permission...)
+	ids, err = this.db.ListResourceIdsByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, permission...)
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -89,7 +63,7 @@ func (this *Controller) ListResourcesWithAdminPermission(tokenStr string, topicI
 	if err != nil {
 		return result, err, http.StatusUnauthorized
 	}
-	result, err = this.db.ListResourcesByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), options, model.Administrate)
+	result, err = this.db.ListResourcesByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, model.Administrate)
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -107,7 +81,8 @@ func (this *Controller) RemoveResource(tokenStr string, topicId string, id strin
 	_, err = this.db.GetResource(this.getTimeoutContext(), topicId, pureId, model.GetOptions{
 		CheckPermission: !token.IsAdmin(), //admins may access without stored permission
 		UserId:          token.GetUserId(),
-		GroupIds:        token.GetRoles(),
+		RoleIds:         token.GetRoles(),
+		GroupIds:        token.GetGroups(),
 		Permissions:     model.PermissionList{model.Administrate},
 	})
 	if errors.Is(err, model.PermissionCheckFailed) {
@@ -118,17 +93,6 @@ func (this *Controller) RemoveResource(tokenStr string, topicId string, id strin
 	}
 	if err != nil {
 		return err, http.StatusInternalServerError
-	}
-	err = func() error {
-		this.topicsMux.RLock()
-		defer this.topicsMux.RUnlock()
-		if !this.topics[topicId].NoCqrs {
-			return errors.New("cqrs resources may only deleted by cqrs commands")
-		}
-		return nil
-	}()
-	if err != nil {
-		return err, http.StatusBadRequest
 	}
 
 	err = this.db.DeleteResource(this.getTimeoutContext(), topicId, id)
@@ -147,7 +111,8 @@ func (this *Controller) GetResource(tokenStr string, topicId string, id string) 
 	result, err = this.db.GetResource(this.getTimeoutContext(), topicId, pureId, model.GetOptions{
 		CheckPermission: !token.IsAdmin(), //admins may access without stored permission
 		UserId:          token.GetUserId(),
-		GroupIds:        token.GetRoles(),
+		RoleIds:         token.GetRoles(),
+		GroupIds:        token.GetGroups(),
 		Permissions:     model.PermissionList{model.Administrate},
 	})
 	if errors.Is(err, model.PermissionCheckFailed) {
@@ -163,7 +128,7 @@ func (this *Controller) GetResource(tokenStr string, topicId string, id string) 
 	return result, nil, http.StatusOK
 }
 
-func (this *Controller) SetPermission(tokenStr string, topicId string, id string, permissions model.ResourcePermissions, options model.SetPermissionOptions) (result model.ResourcePermissions, err error, code int) {
+func (this *Controller) SetPermission(tokenStr string, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return result, err, http.StatusUnauthorized
@@ -177,15 +142,11 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	}
 	pureId, _ := idmodifier.SplitModifier(id)
 	if !token.IsAdmin() {
-		accessMap, err := this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, []string{pureId}, token.GetUserId(), token.GetRoles(), model.Administrate)
+		access, err := this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), token.GetGroups(), model.Administrate)
 		if err != nil {
 			return result, err, http.StatusInternalServerError
 		}
-		access, ok := accessMap[pureId]
-		if !ok && topic.InitOnlyByCqrs {
-			return result, errors.New("resource may only be initialized by resource cqrs command"), http.StatusForbidden
-		}
-		if ok && !access {
+		if !access {
 			return result, errors.New("access denied"), http.StatusForbidden
 		}
 	}
@@ -194,56 +155,31 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 		return result, errors.New("invalid permissions"), http.StatusBadRequest
 	}
 
-	wait := func() error { return nil }
+	publish := topic.PublishToKafkaTopic != "" && topic.PublishToKafkaTopic != "-"
 
-	err, code = func() (err error, code int) {
-		wrapper, err := this.ensureTopicHandler(topic)
-		if err != nil {
-			return err, http.StatusInternalServerError
-		}
+	err = this.db.SetResource(this.getTimeoutContext(), model.Resource{
+		Id:                  pureId,
+		TopicId:             topic.Id,
+		ResourcePermissions: permissions,
+	}, time.Now(), !publish)
 
-		wait = this.optionalWait(options.Wait && !topic.NoCqrs, wrapper.KafkaTopic, pureId)
-
-		err = wrapper.SendPermissions(this.getTimeoutContext(), pureId, permissions)
-		if err != nil {
-			return err, http.StatusInternalServerError
-		}
-		return nil, http.StatusOK
-	}()
 	if err != nil {
-		return permissions, err, code
+		return result, err, http.StatusInternalServerError
 	}
 
-	err = wait()
-	if err != nil {
-		return permissions, err, http.StatusInternalServerError
-	}
-
-	return permissions, err, code
-}
-
-func (this *Controller) ensureTopicHandler(topic model.Topic) (TopicHandler, error) {
-	wrapper, ok := this.getTopicWrapper(topic.Id, true)
-	if !ok {
-		this.topicsMux.Lock()
-		defer this.topicsMux.Unlock()
-		err := this.updateTopicHandling(topic, false)
+	if publish {
+		err = this.publishPermission(topic, pureId, permissions)
 		if err != nil {
-			return TopicHandler{}, err
-		}
-		wrapper, ok = this.getTopicWrapper(topic.Id, false)
-		if !ok {
-			return TopicHandler{}, errors.New("unable to ensure topic handler")
+			log.Println("WARNING: unable to publish permissions update to", topic.PublishToKafkaTopic)
+			this.notifyError(fmt.Errorf("unable to publish permissions update to %v; publish will be retried", topic.PublishToKafkaTopic))
+			return permissions, nil, http.StatusOK
+		} else {
+			err = this.db.MarkResourceAsSynced(this.getTimeoutContext(), topic.Id, pureId)
+			if err != nil {
+				log.Println("WARNING: unable to mark resource as synced", topic.Id, pureId)
+			}
 		}
 	}
-	return wrapper, nil
-}
 
-func (this *Controller) getTopicWrapper(topicId string, lock bool) (TopicHandler, bool) {
-	if lock {
-		this.topicsMux.RLock()
-		defer this.topicsMux.RUnlock()
-	}
-	wrapper, ok := this.topics[topicId]
-	return wrapper, ok
+	return permissions, err, http.StatusOK
 }

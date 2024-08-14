@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com
+package kafka
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/segmentio/kafka-go"
@@ -28,57 +27,41 @@ import (
 	"log"
 	"net"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func NewKafkaComProvider() *KafkaComProvider {
-	return &KafkaComProvider{}
+func NewKafkaProducerProvider() *KafkaProducerProvider {
+	return &KafkaProducerProvider{}
 }
 
-type KafkaComProvider struct{}
+type KafkaProducerProvider struct{}
 
-type KafkaCom struct {
+type KafkaProducer struct {
 	config configuration.Config
 	writer *kafka.Writer
-	reader *kafka.Reader
 }
 
-func (this *KafkaComProvider) Get(config configuration.Config, topic model.Topic, readHandler ReadHandler) (result Com, err error) {
-	if topic.NoCqrs {
-		return NewBypassProvider().Get(config, topic, readHandler)
-	}
-	log.Println("init new com", topic.Id)
-	if topic.EnsureTopicInit {
-		err = InitKafkaTopic(config.KafkaUrl, topic.EnsureTopicInitPartitionNumber, topic.KafkaTopic)
+func (this *KafkaProducerProvider) GetProducer(config configuration.Config, topic model.Topic) (result Producer, err error) {
+	log.Println("init new producer", topic.Id)
+	if topic.EnsureKafkaTopicInit {
+		err = InitKafkaTopic(config.KafkaUrl, topic.EnsureKafkaTopicInitPartitionNumber, topic.PublishToKafkaTopic)
 		if err != nil {
-			log.Println("WARNING: unable to create topic", topic.Id, topic.KafkaTopic, err)
+			log.Println("WARNING: unable to create topic", topic.Id, topic.PublishToKafkaTopic, err)
 		}
 	}
-	temp := &KafkaCom{config: config, writer: NewKafkaWriter(config, topic)}
-	if !slices.Contains(config.DisabledTopicConsumers, topic.Id) && !slices.Contains(config.DisabledTopicConsumers, topic.KafkaTopic) {
-		temp.reader, err = NewKafkaReader(config, topic, readHandler)
-		if err != nil {
-			temp.writer.Close()
-			return nil, err
-		}
-	}
-	return temp, nil
+	return &KafkaProducer{config: config, writer: NewKafkaWriter(config, topic)}, nil
 }
 
-func (this *KafkaCom) Close() (err error) {
+func (this *KafkaProducer) Close() (err error) {
 	if this.writer != nil {
 		err = errors.Join(err, this.writer.Close())
-	}
-	if this.reader != nil {
-		err = errors.Join(err, this.reader.Close())
 	}
 	return err
 }
 
-func (this *KafkaCom) SendPermissions(ctx context.Context, topic model.Topic, id string, permissions model.ResourcePermissions) (err error) {
+func (this *KafkaProducer) SendPermissions(ctx context.Context, topic model.Topic, id string, permissions model.ResourcePermissions) (err error) {
 	if this.writer == nil {
 		log.Println("WARNING: unable to send message to nil topic kafka writer (topic may be disabled by config.DisabledTopicConsumers)")
 		return nil
@@ -95,7 +78,7 @@ func (this *KafkaCom) SendPermissions(ctx context.Context, topic model.Topic, id
 	}
 	key := id + "/rights"
 	if this.config.Debug {
-		log.Println("produce:", id, topic.KafkaTopic, key, string(temp))
+		log.Println("produce:", id, topic.PublishToKafkaTopic, key, string(temp))
 	}
 	return this.writer.WriteMessages(ctx, kafka.Message{
 		Key:   []byte(key),
@@ -113,103 +96,13 @@ func NewKafkaWriter(config configuration.Config, topic model.Topic) *kafka.Write
 	}
 	writer := &kafka.Writer{
 		Addr:        kafka.TCP(config.KafkaUrl),
-		Topic:       topic.KafkaTopic,
+		Topic:       topic.PublishToKafkaTopic,
 		MaxAttempts: 10,
 		Logger:      logger,
 		BatchSize:   1,
 		Balancer:    &KeySeparationBalancer{SubBalancer: &kafka.Hash{}, Seperator: "/"},
 	}
 	return writer
-}
-
-func NewKafkaReader(config configuration.Config, topic model.Topic, handler ReadHandler) (reader *kafka.Reader, err error) {
-	log.Println("new consumer for topic", topic.KafkaTopic)
-	consumerGroup := topic.KafkaConsumerGroup
-	if consumerGroup == "" {
-		consumerGroup = config.DefaultKafkaConsumerGroup
-	}
-	reader = kafka.NewReader(kafka.ReaderConfig{
-		CommitInterval:         0, //synchronous commits
-		Brokers:                []string{config.KafkaUrl},
-		GroupID:                consumerGroup,
-		Topic:                  topic.KafkaTopic,
-		MaxWait:                1 * time.Second,
-		Logger:                 log.New(io.Discard, "", 0),
-		ErrorLogger:            log.New(os.Stdout, "[KAFKA-ERR] ", log.LstdFlags),
-		WatchPartitionChanges:  true,
-		PartitionWatchInterval: time.Minute,
-	})
-	go func() {
-		defer log.Println("close consumer for topic ", topic.KafkaTopic)
-		for {
-			m, err := reader.FetchMessage(context.Background())
-			if err == io.EOF || err == context.Canceled {
-				return
-			}
-			if err != nil {
-				handler.HandleReaderError(topic, fmt.Errorf("unable to fetch message: %w", err))
-				return
-			}
-
-			err = retry(func() error {
-				return handleKafkaMessageAsCommand(handler, topic, m)
-			}, func(n int64) time.Duration {
-				return time.Duration(n) * time.Second
-			}, 10*time.Minute)
-
-			if err != nil {
-				handler.HandleReaderError(topic, fmt.Errorf("unable to handle message (no commit): %w", err))
-			} else {
-				timeout, _ := context.WithTimeout(context.Background(), 10*time.Second)
-				err = reader.CommitMessages(timeout, m)
-				if err != nil {
-					handler.HandleReaderError(topic, fmt.Errorf("unable to commit consumption: %w", err))
-					return
-				}
-			}
-		}
-	}()
-	return reader, nil
-}
-
-func retry(f func() error, waitProvider func(n int64) time.Duration, timeout time.Duration) (err error) {
-	err = errors.New("initial")
-	start := time.Now()
-	for i := int64(1); err != nil && time.Since(start) < timeout; i++ {
-		err = f()
-		if err != nil {
-			log.Println("ERROR: kafka listener error:", err)
-			wait := waitProvider(i)
-			if time.Since(start)+wait < timeout {
-				log.Println("ERROR: retry after:", wait.String())
-				time.Sleep(wait)
-			} else {
-				return err
-			}
-		}
-	}
-	return err
-}
-
-func handleKafkaMessageAsCommand(handler ReadHandler, topic model.Topic, m kafka.Message) error {
-	cmd := Command{}
-	err := json.Unmarshal(m.Value, &cmd)
-	if err != nil {
-		return err
-	}
-	switch cmd.Command {
-	case "RIGHTS":
-		return handler.HandleReceivedCommand(topic, model.Resource{
-			Id:                  cmd.Id,
-			TopicId:             topic.Id,
-			ResourcePermissions: rightsToPermissions(cmd.Rights),
-		}, m.Time)
-	case "PUT", "POST":
-		return handler.HandleResourceUpdate(topic, cmd.Id, cmd.Owner)
-	case "DELETE":
-		return handler.HandleResourceDelete(topic, cmd.Id)
-	}
-	return nil
 }
 
 func InitKafkaTopic(bootstrapUrl string, partitionNumber int, topics ...string) (err error) {
@@ -291,9 +184,18 @@ type Command struct {
 	Owner   string               `json:"owner,omitempty"`
 }
 
+func (this Command) String() string {
+	temp, err := json.Marshal(this)
+	if err != nil {
+		return err.Error()
+	}
+	return string(temp)
+}
+
 type ResourcePermissions struct {
-	UserRights  map[string]Right `json:"user_rights"`
-	GroupRights map[string]Right `json:"group_rights"`
+	UserRights           map[string]Right `json:"user_rights"`
+	GroupRights          map[string]Right `json:"group_rights"`
+	KeycloakGroupsRights map[string]Right `json:"keycloak_groups_rights"`
 }
 
 type Right struct {
@@ -305,8 +207,9 @@ type Right struct {
 
 func permissionsToRights(permissions model.ResourcePermissions) *ResourcePermissions {
 	result := ResourcePermissions{
-		UserRights:  map[string]Right{},
-		GroupRights: map[string]Right{},
+		UserRights:           map[string]Right{},
+		GroupRights:          map[string]Right{},
+		KeycloakGroupsRights: map[string]Right{},
 	}
 	for user, perm := range permissions.UserPermissions {
 		result.UserRights[user] = Right{
@@ -316,8 +219,16 @@ func permissionsToRights(permissions model.ResourcePermissions) *ResourcePermiss
 			Administrate: perm.Administrate,
 		}
 	}
-	for group, perm := range permissions.GroupPermissions {
+	for group, perm := range permissions.RolePermissions {
 		result.GroupRights[group] = Right{
+			Read:         perm.Read,
+			Write:        perm.Write,
+			Execute:      perm.Execute,
+			Administrate: perm.Administrate,
+		}
+	}
+	for group, perm := range permissions.GroupPermissions {
+		result.KeycloakGroupsRights[group] = Right{
 			Read:         perm.Read,
 			Write:        perm.Write,
 			Execute:      perm.Execute,

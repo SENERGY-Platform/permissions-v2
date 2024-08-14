@@ -18,13 +18,11 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"log"
 	"net/http"
-	"strconv"
 )
 
 func init() {
@@ -185,15 +183,6 @@ func (this *PermissionsManagementEndpoints) SetPermission(config configuration.C
 			return
 		}
 
-		options := model.SetPermissionOptions{}
-		if waitQueryParam := req.URL.Query().Get("wait"); waitQueryParam != "" {
-			options.Wait, err = strconv.ParseBool(waitQueryParam)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("invalid wait query parameter %v", err.Error()), http.StatusBadRequest)
-				return
-			}
-		}
-
 		permissions := model.ResourcePermissions{}
 		err = json.NewDecoder(req.Body).Decode(&permissions)
 		if err != nil {
@@ -201,7 +190,7 @@ func (this *PermissionsManagementEndpoints) SetPermission(config configuration.C
 			return
 		}
 
-		result, err, code := ctrl.SetPermission(token, topic, id, permissions, options)
+		result, err, code := ctrl.SetPermission(token, topic, id, permissions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return

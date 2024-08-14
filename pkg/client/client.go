@@ -24,7 +24,7 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/api"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/kafka"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/database/mock"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"io"
@@ -46,7 +46,7 @@ func NewTestClient(ctx context.Context) (client Client, err error) {
 	return controller.NewWithDependencies(ctx,
 		configuration.Config{},
 		mock.New(),
-		com.NewBypassProvider())
+		kafka.NewVoidProducerProvider())
 }
 
 type ClientImpl struct {
@@ -189,16 +189,14 @@ func (this *ClientImpl) RemoveResource(token string, topicId string, id string) 
 	return doVoid(token, req)
 }
 
-func (this *ClientImpl) SetPermission(token string, topicId string, id string, permissions ResourcePermissions, options SetPermissionOptions) (result ResourcePermissions, err error, code int) {
+// SetPermission sets the permissions of a resource.
+// resource initialization needs to be done by an admin; user tokens may update their rights but may not create the initial resource
+func (this *ClientImpl) SetPermission(token string, topicId string, id string, permissions ResourcePermissions) (result ResourcePermissions, err error, code int) {
 	body, err := json.Marshal(permissions)
 	if err != nil {
 		return result, err, 0
 	}
-	query := ""
-	if options.Wait {
-		query = "?wait=true"
-	}
-	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/manage/%v/%v%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id), query), bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%v/manage/%v/%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id)), bytes.NewReader(body))
 	if err != nil {
 		return result, err, 0
 	}

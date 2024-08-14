@@ -21,17 +21,16 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/api"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/kafka"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
-	"sync"
 )
 
-func Start(ctx context.Context, wg *sync.WaitGroup, config configuration.Config) error {
+func Start(ctx context.Context, config configuration.Config) error {
 	db, err := database.New(config)
 	if err != nil {
 		return err
 	}
-	ctrl, err := controller.NewWithDependencies(ctx, config, db, com.NewKafkaComProvider())
+	ctrl, err := controller.NewWithDependencies(ctx, config, db, kafka.NewKafkaProducerProvider())
 	if err != nil {
 		return err
 	}

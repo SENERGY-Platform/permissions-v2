@@ -40,7 +40,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
 
-	err = pkg.Start(ctx, wg, conf)
+	err = pkg.Start(ctx, conf)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -23,15 +23,15 @@ import (
 	"slices"
 )
 
-func (this *Database) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, permissions ...model.Permission) (bool, error) {
-	m, err := this.CheckMultipleResourcePermissions(ctx, topicId, []string{id}, userId, groupIds, permissions...)
+func (this *Database) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, roleIds []string, groupIds []string, permissions ...model.Permission) (bool, error) {
+	m, err := this.CheckMultipleResourcePermissions(ctx, topicId, []string{id}, userId, roleIds, groupIds, permissions...)
 	if err != nil {
 		return false, err
 	}
 	return m[id], nil
 }
 
-func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, permissions ...model.Permission) (result map[string]bool, err error) {
+func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, roleIds []string, groupIds []string, permissions ...model.Permission) (result map[string]bool, err error) {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
@@ -46,30 +46,30 @@ func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topi
 		if err != nil {
 			return nil, err
 		}
-		result[element.Id] = checkPermissions(userId, groupIds, element, permissions...)
+		result[element.Id] = checkPermissions(userId, roleIds, groupIds, element, permissions...)
 	}
 
 	err = cursor.Err()
 	return result, err
 }
 
-func checkPermissions(userId string, groupIds []string, element PermissionsEntry, permission ...model.Permission) bool {
+func checkPermissions(userId string, roleIds []string, groupIds []string, element PermissionsEntry, permission ...model.Permission) bool {
 	for _, p := range permission {
 		switch p {
 		case model.Administrate:
-			if !slices.Contains(element.AdminUsers, userId) && !containsAny(element.AdminGroups, groupIds) {
+			if !slices.Contains(element.AdminUsers, userId) && !containsAny(element.AdminGroups, groupIds) && !containsAny(element.AdminRoles, roleIds) {
 				return false
 			}
 		case model.Read:
-			if !slices.Contains(element.ReadUsers, userId) && !containsAny(element.ReadGroups, groupIds) {
+			if !slices.Contains(element.ReadUsers, userId) && !containsAny(element.ReadGroups, groupIds) && !containsAny(element.ReadRoles, roleIds) {
 				return false
 			}
 		case model.Write:
-			if !slices.Contains(element.WriteUsers, userId) && !containsAny(element.WriteGroups, groupIds) {
+			if !slices.Contains(element.WriteUsers, userId) && !containsAny(element.WriteGroups, groupIds) && !containsAny(element.WriteRoles, roleIds) {
 				return false
 			}
 		case model.Execute:
-			if !slices.Contains(element.ExecuteUsers, userId) && !containsAny(element.ExecuteGroups, groupIds) {
+			if !slices.Contains(element.ExecuteUsers, userId) && !containsAny(element.ExecuteGroups, groupIds) && !containsAny(element.ExecuteRoles, roleIds) {
 				return false
 			}
 		}

@@ -17,13 +17,18 @@
 package mongo
 
 import (
+	"context"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 var PermissionsEntryBson = getBsonFieldObject[PermissionsEntry]()
 
 const PermissionsEntryTimestampBson = "timestamp"
+const PermissionsEntrySyncedBson = "synced"
 
 func init() {
 	CreateCollections = append(CreateCollections, func(db *Database) error {
@@ -33,22 +38,67 @@ func init() {
 		if err != nil {
 			return err
 		}
+
+		err = migrateOldGroupToRole(db, collection)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 }
 
+func migrateOldGroupToRole(db *Database, collection *mongo.Collection) error {
+	ctx, _ := context.WithTimeout(context.Background(), time.Minute)
+	opt := options.Find()
+	opt.SetSort(bson.D{{PermissionsEntryBson.Id, 1}})
+	cursor, err := collection.Find(ctx, bson.M{PermissionsEntrySyncedBson: bson.M{"$exists": false}}, opt)
+	if err != nil {
+		return err
+	}
+	for cursor.Next(context.Background()) {
+		element := PermissionsEntry{}
+		err = cursor.Decode(&element)
+		if err != nil {
+			return err
+		}
+		element.Timestamp = time.Now().UnixMilli()
+		element.Synced = true
+		element.AdminRoles = element.AdminGroups
+		element.AdminGroups = []string{}
+		element.ReadRoles = element.ReadGroups
+		element.ReadGroups = []string{}
+		element.WriteRoles = element.WriteGroups
+		element.WriteGroups = []string{}
+		element.ExecuteRoles = element.ExecuteGroups
+		element.ExecuteGroups = []string{}
+
+		_, err = collection.ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
+		if err != nil {
+			return err
+		}
+	}
+
+	err = cursor.Err()
+	return err
+}
+
 type PermissionsEntry struct {
-	Timestamp     int64    `json:"timestamp"`
 	TopicId       string   `json:"topic_id" bson:"topic_id"`
 	Id            string   `json:"id" bson:"id"`
+	Timestamp     int64    `json:"timestamp" bson:"timestamp"`
+	Synced        bool     `json:"synced" bson:"synced"`
 	AdminUsers    []string `json:"admin_users" bson:"admin_users"`
 	AdminGroups   []string `json:"admin_groups" bson:"admin_groups"`
+	AdminRoles    []string `json:"admin_roles" bson:"admin_roles"`
 	ReadUsers     []string `json:"read_users" bson:"read_users"`
 	ReadGroups    []string `json:"read_groups" bson:"read_groups"`
+	ReadRoles     []string `json:"read_roles" bson:"read_roles"`
 	WriteUsers    []string `json:"write_users" bson:"write_users"`
 	WriteGroups   []string `json:"write_groups" bson:"write_groups"`
+	WriteRoles    []string `json:"write_roles" bson:"write_roles"`
 	ExecuteUsers  []string `json:"execute_users" bson:"execute_users"`
 	ExecuteGroups []string `json:"execute_groups" bson:"execute_groups"`
+	ExecuteRoles  []string `json:"execute_roles" bson:"execute_roles"`
 }
 
 func (this *Database) permissionsCollection() *mongo.Collection {
@@ -129,6 +179,40 @@ func (this *PermissionsEntry) ToResource() model.Resource {
 		permissions := result.GroupPermissions[group]
 		permissions.Execute = true
 		result.GroupPermissions[group] = permissions
+	}
+
+	result.RolePermissions = map[string]model.PermissionsMap{}
+	for _, role := range this.AdminRoles {
+		if _, ok := result.RolePermissions[role]; !ok {
+			result.RolePermissions[role] = model.PermissionsMap{}
+		}
+		permissions := result.RolePermissions[role]
+		permissions.Administrate = true
+		result.RolePermissions[role] = permissions
+	}
+	for _, role := range this.ReadRoles {
+		if _, ok := result.RolePermissions[role]; !ok {
+			result.RolePermissions[role] = model.PermissionsMap{}
+		}
+		permissions := result.RolePermissions[role]
+		permissions.Read = true
+		result.RolePermissions[role] = permissions
+	}
+	for _, role := range this.WriteRoles {
+		if _, ok := result.RolePermissions[role]; !ok {
+			result.RolePermissions[role] = model.PermissionsMap{}
+		}
+		permissions := result.RolePermissions[role]
+		permissions.Write = true
+		result.RolePermissions[role] = permissions
+	}
+	for _, role := range this.ExecuteRoles {
+		if _, ok := result.RolePermissions[role]; !ok {
+			result.RolePermissions[role] = model.PermissionsMap{}
+		}
+		permissions := result.RolePermissions[role]
+		permissions.Execute = true
+		result.RolePermissions[role] = permissions
 	}
 	return result
 }

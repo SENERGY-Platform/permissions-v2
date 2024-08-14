@@ -59,6 +59,7 @@ type Resource struct {
 type ResourcePermissions struct {
 	UserPermissions  map[string]PermissionsMap `json:"user_permissions"`
 	GroupPermissions map[string]PermissionsMap `json:"group_permissions"`
+	RolePermissions  map[string]PermissionsMap `json:"role_permissions"`
 }
 
 func (this ResourcePermissions) Valid() bool {

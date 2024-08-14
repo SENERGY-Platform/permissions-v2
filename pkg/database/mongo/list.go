@@ -44,7 +44,7 @@ func (this *Database) GetResource(ctx context.Context, topicId string, id string
 		return resource, err
 	}
 	if options.CheckPermission {
-		if !checkPermissions(options.UserId, options.GroupIds, entry, options.Permissions...) {
+		if !checkPermissions(options.UserId, options.RoleIds, options.GroupIds, entry, options.Permissions...) {
 			return resource, model.PermissionCheckFailed
 		}
 	}
@@ -128,8 +128,8 @@ func (this *Database) AdminListResources(ctx context.Context, topicId string, li
 	return result, err
 }
 
-func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) ([]string, error) {
-	temp, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, options, permissions...)
+func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, roleIds []string, groupIds []string, options model.ListOptions, permissions ...model.Permission) ([]string, error) {
+	temp, err := this.ListResourcesByPermissions(ctx, topicId, userId, roleIds, groupIds, options, permissions...)
 	if err != nil {
 		return nil, err
 	}
@@ -140,22 +140,28 @@ func (this *Database) ListResourceIdsByPermissions(ctx context.Context, topicId 
 	return result, err
 }
 
-func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, listOptions model.ListOptions, permissions ...model.Permission) (result []model.Resource, err error) {
+func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, roleIds []string, groupIds []string, listOptions model.ListOptions, permissions ...model.Permission) (result []model.Resource, err error) {
 	result = []model.Resource{}
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
+	}
+	if groupIds == nil {
+		groupIds = []string{}
+	}
+	if roleIds == nil {
+		roleIds = []string{}
 	}
 	permissionsFilter := bson.A{}
 	for _, r := range permissions {
 		switch r {
 		case 'r':
-			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.ReadUsers[0]: userId}, bson.M{PermissionsEntryBson.ReadGroups[0]: bson.M{"$in": groupIds}}}})
+			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.ReadUsers[0]: userId}, bson.M{PermissionsEntryBson.ReadGroups[0]: bson.M{"$in": groupIds}}, bson.M{PermissionsEntryBson.ReadRoles[0]: bson.M{"$in": roleIds}}}})
 		case 'w':
-			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.WriteUsers[0]: userId}, bson.M{PermissionsEntryBson.WriteGroups[0]: bson.M{"$in": groupIds}}}})
+			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.WriteUsers[0]: userId}, bson.M{PermissionsEntryBson.WriteGroups[0]: bson.M{"$in": groupIds}}, bson.M{PermissionsEntryBson.WriteRoles[0]: bson.M{"$in": roleIds}}}})
 		case 'x':
-			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.ExecuteUsers[0]: userId}, bson.M{PermissionsEntryBson.ExecuteGroups[0]: bson.M{"$in": groupIds}}}})
+			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.ExecuteUsers[0]: userId}, bson.M{PermissionsEntryBson.ExecuteGroups[0]: bson.M{"$in": groupIds}}, bson.M{PermissionsEntryBson.ExecuteRoles[0]: bson.M{"$in": roleIds}}}})
 		case 'a':
-			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.AdminUsers[0]: userId}, bson.M{PermissionsEntryBson.AdminGroups[0]: bson.M{"$in": groupIds}}}})
+			permissionsFilter = append(permissionsFilter, bson.M{"$or": bson.A{bson.M{PermissionsEntryBson.AdminUsers[0]: userId}, bson.M{PermissionsEntryBson.AdminGroups[0]: bson.M{"$in": groupIds}}, bson.M{PermissionsEntryBson.AdminRoles[0]: bson.M{"$in": roleIds}}}})
 		default:
 			return []model.Resource{}, errors.New("invalid permissions parameter")
 		}

@@ -14,27 +14,19 @@
  * limitations under the License.
  */
 
-package com
+package kafka
 
 import (
 	"context"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"time"
 )
 
-type Com interface {
+type Producer interface {
 	Close() error
 	SendPermissions(ctx context.Context, topic model.Topic, id string, permissions model.ResourcePermissions) (err error)
 }
 
-type ReadHandler interface {
-	HandleReceivedCommand(topic model.Topic, r model.Resource, t time.Time) error
-	HandleReaderError(topic model.Topic, err error)
-	HandleResourceUpdate(topic model.Topic, id string, owner string) error
-	HandleResourceDelete(topic model.Topic, id string) error
-}
-
 type Provider interface {
-	Get(config configuration.Config, topic model.Topic, readHandler ReadHandler) (Com, error)
+	GetProducer(config configuration.Config, topic model.Topic) (Producer, error)
 }

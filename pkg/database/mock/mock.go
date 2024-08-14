@@ -42,6 +42,14 @@ type ResourceWithTime struct {
 	time time.Time
 }
 
+func (this *Mock) MarkResourceAsSynced(ctx context.Context, topicId string, id string) error {
+	return nil
+}
+
+func (this *Mock) ListUnsyncedResources(ctx context.Context) ([]model.Resource, error) {
+	return []model.Resource{}, nil
+}
+
 func (this *Mock) DeleteResource(ctx context.Context, topicId string, id string) error {
 	this.mux.Lock()
 	defer this.mux.Unlock()
@@ -51,33 +59,30 @@ func (this *Mock) DeleteResource(ctx context.Context, topicId string, id string)
 	return nil
 }
 
-func (this *Mock) SetResourcePermissions(ctx context.Context, r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error) {
+func (this *Mock) SetResource(ctx context.Context, r model.Resource, t time.Time, synced bool) (err error) {
 	this.mux.Lock()
 	defer this.mux.Unlock()
 	for i, element := range this.resources {
 		if element.Id == r.Id && element.TopicId == r.TopicId {
-			if preventOlderUpdates && element.time.After(t) {
-				return true, nil
-			}
 			this.resources[i] = ResourceWithTime{
 				Resource: r,
 				time:     t,
 			}
-			return false, nil
+			return nil
 		}
 	}
 	this.resources = append(this.resources, ResourceWithTime{
 		Resource: r,
 		time:     t,
 	})
-	return false, nil
+	return nil
 }
 
-func (this *Mock) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []model.Resource, err error) {
+func (this *Mock) ListResourcesByPermissions(ctx context.Context, topicId string, userId string, roleIds []string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []model.Resource, err error) {
 	this.mux.Lock()
 	defer this.mux.Unlock()
 	for _, element := range this.resources {
-		if element.TopicId == topicId && checkPerms(element, userId, groupIds, permissions...) {
+		if element.TopicId == topicId && checkPerms(element, userId, roleIds, groupIds, permissions...) {
 			result = append(result, element.Resource)
 		}
 	}
@@ -104,16 +109,16 @@ func limitOffset[T any](list []T, limit int64, offset int64) (result []T) {
 	return result
 }
 
-func checkPerms(element ResourceWithTime, user string, groups []string, permissions ...model.Permission) bool {
+func checkPerms(element ResourceWithTime, user string, roles []string, groups []string, permissions ...model.Permission) bool {
 	for _, p := range permissions {
-		if !checkPerm(element, user, groups, p) {
+		if !checkPerm(element, user, roles, groups, p) {
 			return false
 		}
 	}
 	return true
 }
 
-func checkPerm(element ResourceWithTime, user string, groups []string, permission model.Permission) bool {
+func checkPerm(element ResourceWithTime, user string, roles []string, groups []string, permission model.Permission) bool {
 	switch permission {
 	case model.Read:
 		if element.UserPermissions[user].Read {
@@ -121,6 +126,11 @@ func checkPerm(element ResourceWithTime, user string, groups []string, permissio
 		}
 		for _, g := range groups {
 			if element.GroupPermissions[g].Read {
+				return true
+			}
+		}
+		for _, g := range roles {
+			if element.RolePermissions[g].Read {
 				return true
 			}
 		}
@@ -133,6 +143,11 @@ func checkPerm(element ResourceWithTime, user string, groups []string, permissio
 				return true
 			}
 		}
+		for _, g := range roles {
+			if element.RolePermissions[g].Write {
+				return true
+			}
+		}
 	case model.Execute:
 		if element.UserPermissions[user].Execute {
 			return true
@@ -142,12 +157,22 @@ func checkPerm(element ResourceWithTime, user string, groups []string, permissio
 				return true
 			}
 		}
+		for _, g := range roles {
+			if element.RolePermissions[g].Execute {
+				return true
+			}
+		}
 	case model.Administrate:
 		if element.UserPermissions[user].Administrate {
 			return true
 		}
 		for _, g := range groups {
 			if element.GroupPermissions[g].Administrate {
+				return true
+			}
+		}
+		for _, g := range roles {
+			if element.RolePermissions[g].Administrate {
 				return true
 			}
 		}
@@ -181,8 +206,8 @@ func (this *Mock) AdminListResources(ctx context.Context, topicId string, listOp
 	return limitOffset(result, listOptions.Limit, listOptions.Offset), nil
 }
 
-func (this *Mock) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []string, err error) {
-	list, err := this.ListResourcesByPermissions(ctx, topicId, userId, groupIds, options, permissions...)
+func (this *Mock) ListResourceIdsByPermissions(ctx context.Context, topicId string, userId string, roleIds []string, groupIds []string, options model.ListOptions, permissions ...model.Permission) (result []string, err error) {
+	list, err := this.ListResourcesByPermissions(ctx, topicId, userId, roleIds, groupIds, options, permissions...)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +222,7 @@ func (this *Mock) GetResource(ctx context.Context, topicId string, id string, op
 	defer this.mux.Unlock()
 	for _, element := range this.resources {
 		if element.TopicId == topicId && element.Id == id {
-			if options.CheckPermission && !checkPerms(element, options.UserId, options.GroupIds, options.Permissions...) {
+			if options.CheckPermission && !checkPerms(element, options.UserId, options.RoleIds, options.GroupIds, options.Permissions...) {
 				return resource, model.PermissionCheckFailed
 			}
 			return element.Resource, nil
@@ -206,12 +231,13 @@ func (this *Mock) GetResource(ctx context.Context, topicId string, id string, op
 	return resource, model.ErrNotFound
 }
 
-func (this *Mock) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, groupIds []string, permissions ...model.Permission) (result map[string]bool, err error) {
+func (this *Mock) CheckMultipleResourcePermissions(ctx context.Context, topicId string, ids []string, userId string, roleIds []string, groupIds []string, permissions ...model.Permission) (result map[string]bool, err error) {
 	result = map[string]bool{}
 	for _, id := range ids {
 		_, err = this.GetResource(ctx, topicId, id, model.GetOptions{
 			CheckPermission: true,
 			UserId:          userId,
+			RoleIds:         roleIds,
 			GroupIds:        groupIds,
 			Permissions:     permissions,
 		})
@@ -232,10 +258,11 @@ func (this *Mock) CheckMultipleResourcePermissions(ctx context.Context, topicId 
 	return result, nil
 }
 
-func (this *Mock) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, groupIds []string, permissions ...model.Permission) (result bool, err error) {
+func (this *Mock) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, roleIds []string, groupIds []string, permissions ...model.Permission) (result bool, err error) {
 	_, err = this.GetResource(ctx, topicId, id, model.GetOptions{
 		CheckPermission: true,
 		UserId:          userId,
+		RoleIds:         roleIds,
 		GroupIds:        groupIds,
 		Permissions:     permissions,
 	})

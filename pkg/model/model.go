@@ -18,30 +18,17 @@ package model
 
 import (
 	"errors"
-	"fmt"
-	"reflect"
 	"regexp"
-	"slices"
 	"strings"
 )
 
 type Topic struct {
-	//at least one of Id and KafkaTopic must be set
-	Id     string `json:"id"`
-	NoCqrs bool   `json:"no_cqrs"`
+	Id string `json:"id"`
 
-	KafkaTopic string `json:"kafka_topic"`
+	PublishToKafkaTopic string `json:"publish_to_kafka_topic"`
 
-	EnsureTopicInit                bool `json:"ensure_topic_init"`
-	EnsureTopicInitPartitionNumber int  `json:"ensure_topic_init_partition_number"`
-
-	KafkaConsumerGroup string `json:"kafka_consumer_group"` //defaults to configured kafka consumer group
-
-	InitialGroupPermissions []GroupPermissions `json:"initial_group_permissions"`
-
-	//if true the user may not set permissions for not existing resources; if false the user may
-	//if true the initial resource must be created by cqrs
-	InitOnlyByCqrs bool `json:"init_only_by_cqrs"`
+	EnsureKafkaTopicInit                bool `json:"ensure_kafka_topic_init"`
+	EnsureKafkaTopicInitPartitionNumber int  `json:"ensure_kafka_topic_init_partition_number"`
 
 	LastUpdateUnixTimestamp int64 `json:"last_update_unix_timestamp"` //should be ignored by the user; is set by db
 }
@@ -50,24 +37,11 @@ func (this Topic) Validate() error {
 	if this.Id == "" {
 		return errors.New("id is required")
 	}
-	if this.KafkaTopic == "" && !this.NoCqrs {
-		return errors.New("kafka topic is required")
+	if strings.TrimSpace(this.PublishToKafkaTopic) != this.PublishToKafkaTopic {
+		return errors.New("publish_to_kafka_topic contains space pre/suffix")
 	}
-	if strings.TrimSpace(this.KafkaTopic) != this.KafkaTopic {
-		return errors.New("kafka_topic contains space pre/suffix")
-	}
-	if this.KafkaTopic != "" && !regexp.MustCompile("^[a-zA-Z0-9\\._\\-]+$").MatchString(this.KafkaTopic) {
+	if this.PublishToKafkaTopic != "" && !regexp.MustCompile("^[a-zA-Z0-9\\._\\-]+$").MatchString(this.PublishToKafkaTopic) {
 		return errors.New("kafka topic contains invalid characters")
-	}
-	if this.NoCqrs && this.InitOnlyByCqrs {
-		return errors.New("init_only_by_cqrs can not be true if no_cqrs is true")
-	}
-	usedGroupName := map[string]bool{}
-	for _, g := range this.InitialGroupPermissions {
-		if _, ok := usedGroupName[g.GroupName]; ok {
-			return fmt.Errorf("duplicated initial group name '%v'", g.GroupName)
-		}
-		usedGroupName[g.GroupName] = true
 	}
 	return nil
 }
@@ -76,37 +50,13 @@ func (this Topic) Equal(topic Topic) bool {
 	if this.Id != topic.Id {
 		return false
 	}
-	if this.NoCqrs != topic.NoCqrs {
+	if this.PublishToKafkaTopic != topic.PublishToKafkaTopic {
 		return false
 	}
-	if this.KafkaTopic != topic.KafkaTopic {
+	if this.EnsureKafkaTopicInit != topic.EnsureKafkaTopicInit {
 		return false
 	}
-	if this.EnsureTopicInit != topic.EnsureTopicInit {
-		return false
-	}
-	if this.EnsureTopicInitPartitionNumber != topic.EnsureTopicInitPartitionNumber {
-		return false
-	}
-	if this.KafkaConsumerGroup != topic.KafkaConsumerGroup {
-		return false
-	}
-	if this.InitOnlyByCqrs != topic.InitOnlyByCqrs {
-		return false
-	}
-	if this.InitialGroupPermissions == nil {
-		this.InitialGroupPermissions = []GroupPermissions{}
-	}
-	if topic.InitialGroupPermissions == nil {
-		topic.InitialGroupPermissions = []GroupPermissions{}
-	}
-	slices.SortFunc(this.InitialGroupPermissions, func(a, b GroupPermissions) int {
-		return strings.Compare(a.GroupName, b.GroupName)
-	})
-	slices.SortFunc(topic.InitialGroupPermissions, func(a, b GroupPermissions) int {
-		return strings.Compare(a.GroupName, b.GroupName)
-	})
-	if !reflect.DeepEqual(this.InitialGroupPermissions, topic.InitialGroupPermissions) {
+	if this.EnsureKafkaTopicInitPartitionNumber != topic.EnsureKafkaTopicInitPartitionNumber {
 		return false
 	}
 	return true

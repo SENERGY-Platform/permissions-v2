@@ -20,23 +20,21 @@ import (
 	"context"
 	"github.com/SENERGY-Platform/developer-notifications/pkg/client"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/kafka"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/segmentio/kafka-go"
 	"log"
 	"sync"
 	"time"
 )
 
 type Controller struct {
-	config    configuration.Config
-	db        DB
-	com       com.Provider
-	topics    map[string]TopicHandler
-	topicsMux sync.RWMutex
-	notifier  client.Client
-	done      *kafka.Writer
+	config           configuration.Config
+	db               DB
+	notifier         client.Client
+	producerMux      sync.Mutex
+	producer         map[string]kafka.Producer
+	producerProvider kafka.Provider
 }
 
 type DB = database.Database
@@ -48,73 +46,22 @@ func (this LogNotifier) SendMessage(message client.Message) error {
 	return nil
 }
 
-func NewWithDependencies(ctx context.Context, config configuration.Config, db DB, c com.Provider) (*Controller, error) {
-	if config.DisableCom {
-		config.HandleDoneWait = false
+func NewWithDependencies(ctx context.Context, config configuration.Config, db DB, producerProvider kafka.Provider) (*Controller, error) {
+	if producerProvider == nil {
+		producerProvider = kafka.NewKafkaProducerProvider()
 	}
-	if c == nil {
-		c = com.NewKafkaComProvider()
-	}
-	result := &Controller{config: config, db: db, topics: map[string]TopicHandler{}, com: c}
+	result := &Controller{config: config, db: db, producer: map[string]kafka.Producer{}, producerProvider: producerProvider}
 	if config.DevNotifierUrl != "" {
 		result.notifier = client.New(config.DevNotifierUrl)
 	} else {
 		result.notifier = LogNotifier{}
 	}
-	if !config.DisableCom {
-		err := result.initDoneHandling(ctx)
-		if err != nil {
-			return nil, err
-		}
-		go func() {
-			<-ctx.Done()
-			result.topicsMux.Lock()
-			defer result.topicsMux.Unlock()
-			for _, topic := range result.topics {
-				log.Printf("close %v %v producer %v", topic.Id, topic.KafkaTopic, topic.Close())
-			}
-			result.topics = map[string]TopicHandler{}
-			if result.done != nil {
-				log.Printf("close done (%v) producer %v", config.DoneTopic, result.done.Close())
-
-			}
-		}()
-		result.startTopicUpdateWatcher(ctx)
-		err = result.refreshTopics()
-		if err != nil {
-			return nil, err
-		}
+	err := result.RetryPublishOfUnsyncedResources()
+	if err != nil {
+		return nil, err
 	}
-
+	result.StartSyncLoop(ctx)
 	return result, nil
-}
-
-func (this *Controller) HandleReceivedCommand(topic model.Topic, resource model.Resource, t time.Time) error {
-	if this.config.Debug {
-		log.Println("handle permissions command", topic.Id, resource.Id)
-	}
-	updateIgnored, err := this.db.SetResourcePermissions(this.getTimeoutContext(), resource, t, true)
-	if err != nil {
-		return err
-	}
-	if updateIgnored {
-		log.Println("WARNING: old kafka command to update permissions ignored", topic.Id, resource.Id, t)
-	}
-	go func() {
-		err := this.sendDone(topic, resource.Id)
-		if err != nil {
-			log.Println("ERROR: unable to send done signal", err)
-		}
-	}()
-	return nil
-}
-
-func (this *Controller) HandleReaderError(topic model.Topic, err error) {
-	log.Printf("ERROR: while consuming topic %v: %v\ntopic-config = %#v\ntry updateTopicHandling()\n", topic.KafkaTopic, err, topic)
-	err = this.updateTopicHandling(topic, true)
-	if err != nil {
-		log.Fatal("FATAL:", err)
-	}
 }
 
 func (this *Controller) getTimeoutContext() context.Context {
@@ -132,4 +79,84 @@ func (this *Controller) notifyError(info error) {
 	if err != nil {
 		log.Println("ERROR: unable to send notification", err)
 	}
+}
+
+func (this *Controller) publishPermission(topic model.Topic, id string, permissions model.ResourcePermissions) error {
+	if topic.PublishToKafkaTopic == "" || topic.PublishToKafkaTopic == "-" {
+		return nil
+	}
+	producer, err := this.getProducer(topic)
+	if err != nil {
+		return err
+	}
+	err = producer.SendPermissions(this.getTimeoutContext(), topic, id, permissions)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *Controller) getProducer(topic model.Topic) (producer kafka.Producer, err error) {
+	this.producerMux.Lock()
+	defer this.producerMux.Unlock()
+	if this.producer == nil {
+		this.producer = map[string]kafka.Producer{}
+	}
+	var ok bool
+	if producer, ok = this.producer[topic.PublishToKafkaTopic]; ok {
+		return producer, nil
+	}
+	producer, err = this.producerProvider.GetProducer(this.config, topic)
+	if err != nil {
+		return nil, err
+	}
+	this.producer[topic.PublishToKafkaTopic] = producer
+	return producer, nil
+}
+
+func (this *Controller) RetryPublishOfUnsyncedResources() error {
+	list, err := this.db.ListUnsyncedResources(this.getTimeoutContext())
+	if err != nil {
+		return err
+	}
+	for _, e := range list {
+		log.Println("retry to publish resource to kafka", e.TopicId, e.Id)
+		topic, exists, err := this.db.GetTopic(this.getTimeoutContext(), e.TopicId)
+		if err != nil {
+			log.Println("WARNING: RetryPublishOfUnsyncedResources: unable to get topic", e.TopicId, err)
+			continue
+		}
+		if !exists {
+			continue
+		}
+		err = this.publishPermission(topic, e.Id, e.ResourcePermissions)
+		if err != nil {
+			log.Println("WARNING: RetryPublishOfUnsyncedResources: unable to publishPermission()", e.TopicId, e.Id, err)
+			continue
+		}
+		err = this.db.MarkResourceAsSynced(this.getTimeoutContext(), topic.Id, e.Id)
+		if err != nil {
+			log.Println("WARNING: RetryPublishOfUnsyncedResources: unable to mark resource as synced", topic.Id, e.Id)
+		}
+	}
+	return nil
+}
+
+func (this *Controller) StartSyncLoop(ctx context.Context) {
+	dur := this.config.SyncCheckInterval.GetDuration()
+	if dur == 0 {
+		return
+	}
+	ticker := time.NewTicker(dur)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				log.Println("refresh unsynced resources:", this.RetryPublishOfUnsyncedResources())
+			case <-ctx.Done():
+				ticker.Stop()
+				return
+			}
+		}
+	}()
 }

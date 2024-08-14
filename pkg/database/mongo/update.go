@@ -18,28 +18,17 @@ package mongo
 
 import (
 	"context"
-	"errors"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
-func (this *Database) SetResourcePermissions(ctx context.Context, r model.Resource, t time.Time, preventOlderUpdates bool) (updateIgnored bool, err error) {
+func (this *Database) SetResource(ctx context.Context, r model.Resource, t time.Time, synced bool) (err error) {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
-	if preventOlderUpdates {
-		updateIgnored, err = this.newerResourceExists(ctx, r.TopicId, r.Id, t)
-		if err != nil {
-			return updateIgnored, err
-		}
-		if updateIgnored {
-			return updateIgnored, nil
-		}
-	}
-	return false, this.SetPermissions(ctx, r.TopicId, r.Id, r.ResourcePermissions, t)
+	return this.SetPermissions(ctx, r.TopicId, r.Id, r.ResourcePermissions, t, synced)
 }
 
 func (this *Database) DeleteResource(ctx context.Context, topicId string, id string) error {
@@ -50,33 +39,63 @@ func (this *Database) DeleteResource(ctx context.Context, topicId string, id str
 	return err
 }
 
-func (this *Database) newerResourceExists(ctx context.Context, topicId string, id string, t time.Time) (exists bool, err error) {
-	err = this.permissionsCollection().FindOne(ctx, bson.M{PermissionsEntryBson.TopicId: topicId, PermissionsEntryBson.Id: id, PermissionsEntryTimestampBson: bson.M{"$gte": t.UnixMilli()}}).Err()
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		return false, nil
+func (this *Database) MarkResourceAsSynced(ctx context.Context, topicId string, id string) error {
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
 	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	_, err := this.permissionsCollection().UpdateMany(ctx, bson.M{
+		PermissionsEntryBson.TopicId: topicId,
+		PermissionsEntryBson.Id:      id,
+	}, bson.M{"$set": bson.M{PermissionsEntrySyncedBson: true}})
+	return err
 }
 
-func (this *Database) SetPermissions(ctx context.Context, topic string, id string, permissions model.ResourcePermissions, t time.Time) (err error) {
+func (this *Database) ListUnsyncedResources(ctx context.Context) (result []model.Resource, err error) {
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
+	}
+	opt := options.Find()
+	opt.SetSort(bson.D{{PermissionsEntryBson.Id, 1}})
+	cursor, err := this.permissionsCollection().Find(ctx, bson.M{
+		PermissionsEntrySyncedBson:    false,
+		PermissionsEntryTimestampBson: bson.M{"$lt": time.Now().Add(-1 * this.config.SyncAgeLimit.GetDuration()).UnixMilli()},
+	}, opt)
+	if err != nil {
+		return result, err
+	}
+	for cursor.Next(context.Background()) {
+		element := PermissionsEntry{}
+		err = cursor.Decode(&element)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, element.ToResource())
+	}
+	err = cursor.Err()
+	return result, err
+}
+
+func (this *Database) SetPermissions(ctx context.Context, topic string, id string, permissions model.ResourcePermissions, t time.Time, synced bool) (err error) {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()
 	}
 	element := PermissionsEntry{
 		Timestamp:     t.UnixMilli(),
+		Synced:        synced,
 		TopicId:       topic,
 		Id:            id,
 		AdminUsers:    []string{},
 		AdminGroups:   []string{},
+		AdminRoles:    []string{},
 		ReadUsers:     []string{},
 		ReadGroups:    []string{},
+		ReadRoles:     []string{},
 		WriteUsers:    []string{},
 		WriteGroups:   []string{},
+		WriteRoles:    []string{},
 		ExecuteUsers:  []string{},
 		ExecuteGroups: []string{},
+		ExecuteRoles:  []string{},
 	}
 	element.setResourcePermissions(permissions)
 	_, err = this.permissionsCollection().ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
@@ -96,6 +115,20 @@ func (this *PermissionsEntry) setResourcePermissions(permissions model.ResourceP
 		}
 		if permission.Read {
 			this.ReadGroups = append(this.ReadGroups, group)
+		}
+	}
+	for role, permission := range permissions.RolePermissions {
+		if permission.Administrate {
+			this.AdminRoles = append(this.AdminRoles, role)
+		}
+		if permission.Execute {
+			this.ExecuteRoles = append(this.ExecuteRoles, role)
+		}
+		if permission.Write {
+			this.WriteRoles = append(this.WriteRoles, role)
+		}
+		if permission.Read {
+			this.ReadRoles = append(this.ReadRoles, role)
 		}
 	}
 	for user, permission := range permissions.UserPermissions {

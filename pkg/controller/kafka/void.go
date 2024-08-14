@@ -14,39 +14,30 @@
  * limitations under the License.
  */
 
-package com
+package kafka
 
 import (
 	"context"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"log"
-	"time"
 )
 
-func NewBypassProvider() *BypassProvider {
-	return &BypassProvider{}
+func NewVoidProducerProvider() *VoidProducerProvider {
+	return &VoidProducerProvider{}
 }
 
-type BypassProvider struct{}
+type VoidProducerProvider struct{}
 
-func (this *BypassProvider) Get(config configuration.Config, topic model.Topic, readHandler ReadHandler) (Com, error) {
-	log.Println("init new bypass com", topic.Id)
-	return &Bypass{readHandler: readHandler}, nil
+type VoidProducer struct{}
+
+func (this *VoidProducerProvider) GetProducer(config configuration.Config, topic model.Topic) (result Producer, err error) {
+	return &VoidProducer{}, nil
 }
 
-type Bypass struct {
-	readHandler ReadHandler
-}
-
-func (this *Bypass) Close() error {
+func (this *VoidProducer) Close() (err error) {
 	return nil
 }
 
-func (this *Bypass) SendPermissions(ctx context.Context, topic model.Topic, id string, permissions model.ResourcePermissions) (err error) {
-	return this.readHandler.HandleReceivedCommand(topic, model.Resource{
-		Id:                  id,
-		TopicId:             topic.Id,
-		ResourcePermissions: permissions,
-	}, time.Now())
+func (this *VoidProducer) SendPermissions(ctx context.Context, topic model.Topic, id string, permissions model.ResourcePermissions) (err error) {
+	return nil
 }

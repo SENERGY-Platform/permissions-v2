@@ -22,12 +22,12 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/client"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/com"
+	kafka2 "github.com/SENERGY-Platform/permissions-v2/pkg/controller/kafka"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/tests/docker"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
-	"github.com/segmentio/kafka-go"
+	"github.com/SENERGY-Platform/service-commons/pkg/kafka"
 	"net/http"
 	"reflect"
 	"slices"
@@ -36,6 +36,320 @@ import (
 	"testing"
 	"time"
 )
+
+const GroupTestToken = `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjM1MzMzNjMsImlhdCI6MCwianRpIjoiMCIsImlzcyI6InRlc3QiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiZ3JvdXB1c2VyIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiZnJvbnRlbmQiLCJub25jZSI6IjAiLCJzZXNzaW9uX3N0YXRlIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6W119LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6W119fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInNpZCI6IjAiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsInJvbGVzIjpbXSwiZ3JvdXBzIjpbIi90ZXN0MSIsIi90ZXN0MS90ZXN0MiIsIi90ZXN0MS90ZXN0MyJdLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiIiLCJnaXZlbl9uYW1lIjoiIiwibG9jYWxlIjoiZGUiLCJmYW1pbHlfbmFtZSI6IiJ9.tcuCCDEa0kohl1HN22GQfkaK4zo4vQtz7P0fM_sSLNs`
+const GroupTestTokenGroup = "/test1"
+
+func TestGroupInToken(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	config, err := configuration.Load("../../config.json")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	config.Debug = true
+	config.DevNotifierUrl = ""
+
+	dockerPort, _, err := docker.MongoDB(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	config.MongoUrl = "mongodb://localhost:" + dockerPort
+
+	freePort, err := docker.GetFreePort()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	config.Port = strconv.Itoa(freePort)
+
+	err = pkg.Start(ctx, config)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	c := client.New("http://localhost:" + config.Port)
+
+	_, err, _ = c.SetTopic(client.InternalAdminToken, model.Topic{
+		Id: "a",
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	_, err, _ = c.SetPermission(client.InternalAdminToken, "a", "a1", model.ResourcePermissions{
+		UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {Read: true, Write: true, Execute: true, Administrate: true}},
+		GroupPermissions: map[string]model.PermissionsMap{GroupTestTokenGroup: {Read: true, Write: true, Execute: true, Administrate: true}},
+		RolePermissions:  map[string]model.PermissionsMap{},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	_, err, _ = c.SetPermission(GroupTestToken, "a", "a1", model.ResourcePermissions{
+		UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {Read: false, Write: false, Execute: false, Administrate: true}},
+		GroupPermissions: map[string]model.PermissionsMap{GroupTestTokenGroup: {Read: true, Write: true, Execute: true, Administrate: true}},
+		RolePermissions:  map[string]model.PermissionsMap{},
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	access, err, _ := c.CheckPermission(GroupTestToken, "a", "a1", model.Administrate)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if !access {
+		t.Error("access should be true")
+		return
+	}
+
+	accessMap, err, _ := c.CheckMultiplePermissions(GroupTestToken, "a", []string{"a1"}, model.Administrate)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if !reflect.DeepEqual(accessMap, map[string]bool{"a1": true}) {
+		t.Error(accessMap)
+		return
+	}
+
+	computed, err, _ := c.ListComputedPermissions(GroupTestToken, "a", []string{"a1"})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if !reflect.DeepEqual(computed, []model.ComputedPermissions{
+		{
+			Id:             "a1",
+			PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true},
+		},
+	}) {
+		t.Error(accessMap)
+	}
+
+	ids, err, _ := c.ListAccessibleResourceIds(GroupTestToken, "a", model.ListOptions{}, model.Administrate)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if !reflect.DeepEqual(ids, []string{"a1"}) {
+		t.Error(ids)
+		return
+	}
+
+	list, err, _ := c.ListResourcesWithAdminPermission(GroupTestToken, "a", model.ListOptions{})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if len(list) != 1 || list[0].Id != "a1" {
+		t.Error(list)
+		return
+	}
+
+	_, err, _ = c.GetResource(GroupTestToken, "a", "a1")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err, _ = c.RemoveResource(GroupTestToken, "a", "a1")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestOptionalPublish(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	config, err := configuration.Load("../../config.json")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	config.Debug = true
+	config.DevNotifierUrl = ""
+
+	_, zkIp, err := docker.Zookeeper(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	config.KafkaUrl = zkIp + ":2181"
+
+	//kafka
+	config.KafkaUrl, err = docker.Kafka(ctx, wg, config.KafkaUrl)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	dockerPort, _, err := docker.MongoDB(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	config.MongoUrl = "mongodb://localhost:" + dockerPort
+
+	freePort, err := docker.GetFreePort()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	config.Port = strconv.Itoa(freePort)
+
+	err = pkg.Start(ctx, config)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	consumed := []kafka2.Command{}
+	err = kafka.NewMultiConsumer(ctx, kafka.Config{
+		KafkaUrl: config.KafkaUrl,
+		Wg:       wg,
+		OnError: func(err error) {
+			t.Error(err)
+		},
+	}, []string{"a", "b"}, func(delivery kafka.Message) error {
+		if delivery.Topic != "a" {
+			t.Error(delivery)
+			return nil
+		}
+		cmd := kafka2.Command{}
+		err = json.Unmarshal(delivery.Value, &cmd)
+		if err != nil {
+			t.Error(err)
+			return nil
+		}
+		cmd.Owner = ""
+		consumed = append(consumed, cmd)
+		return nil
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	c := client.New("http://localhost:" + config.Port)
+
+	t.Run("create topics", func(t *testing.T) {
+		_, err, _ = c.SetTopic(client.InternalAdminToken, model.Topic{
+			Id:                   "a",
+			PublishToKafkaTopic:  "a",
+			EnsureKafkaTopicInit: true,
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		_, err, _ = c.SetTopic(client.InternalAdminToken, model.Topic{
+			Id: "b",
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+
+	t.Run("send permissions", func(t *testing.T) {
+		t.Run("init with kafka", func(t *testing.T) {
+			_, err, _ = c.SetPermission(client.InternalAdminToken, "a", "a1", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{"user": {Read: true, Administrate: true}}})
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		})
+		t.Run("init without kafka", func(t *testing.T) {
+			_, err, _ = c.SetPermission(client.InternalAdminToken, "b", "b1", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{"user": {Read: true, Administrate: true}}})
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		})
+		t.Run("update with kafka", func(t *testing.T) {
+			_, err, _ = c.SetPermission(client.InternalAdminToken, "a", "a1", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{"user": {Read: true, Write: true, Administrate: true}}})
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		})
+
+		t.Run("update without kafka", func(t *testing.T) {
+			_, err, _ = c.SetPermission(client.InternalAdminToken, "b", "b1", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{"user": {Read: true, Write: true, Administrate: true}}})
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		})
+	})
+
+	t.Run("check synced marks", func(t *testing.T) {
+		db, err := database.New(config)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		list, err := db.ListUnsyncedResources(nil)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(list) > 0 {
+			t.Error(list)
+			return
+		}
+	})
+
+	t.Run("check consumed", func(t *testing.T) {
+		time.Sleep(time.Second)
+		expected := []kafka2.Command{
+			{
+				Command: "RIGHTS",
+				Id:      "a1",
+				Rights: &kafka2.ResourcePermissions{
+					UserRights: map[string]kafka2.Right{
+						"user": {Read: true, Administrate: true},
+					},
+					GroupRights:          map[string]kafka2.Right{},
+					KeycloakGroupsRights: map[string]kafka2.Right{},
+				},
+			},
+			{
+				Command: "RIGHTS",
+				Id:      "a1",
+				Rights: &kafka2.ResourcePermissions{
+					UserRights: map[string]kafka2.Right{
+						"user": {Read: true, Write: true, Administrate: true},
+					},
+					GroupRights:          map[string]kafka2.Right{},
+					KeycloakGroupsRights: map[string]kafka2.Right{},
+				},
+			},
+		}
+		if !reflect.DeepEqual(consumed, expected) {
+			t.Errorf("\n%v\n%v\n", expected, consumed)
+		}
+	})
+}
 
 func TestIntegration(t *testing.T) {
 	wg := &sync.WaitGroup{}
@@ -80,7 +394,7 @@ func TestIntegration(t *testing.T) {
 	}
 	config.Port = strconv.Itoa(freePort)
 
-	err = pkg.Start(ctx, wg, config)
+	err = pkg.Start(ctx, config)
 	if err != nil {
 		t.Error(err)
 		return
@@ -152,7 +466,7 @@ func TestForward(t *testing.T) {
 	}
 	config.Port = strconv.Itoa(freePort)
 
-	err = pkg.Start(ctx, wg, config)
+	err = pkg.Start(ctx, config)
 	if err != nil {
 		t.Error(err)
 		return
@@ -166,10 +480,8 @@ func TestForward(t *testing.T) {
 	}
 	forwardConfig.Port = strconv.Itoa(freePort2)
 	forwardConfig.EditForward = "http://localhost:" + config.Port
-	forwardConfig.HandleDoneWait = false
-	forwardConfig.DisableCom = true
 	forwardConfig.KafkaUrl = ""
-	err = pkg.Start(ctx, wg, forwardConfig)
+	err = pkg.Start(ctx, forwardConfig)
 	if err != nil {
 		t.Error(err)
 		return
@@ -187,6 +499,7 @@ func TestForward(t *testing.T) {
 const TestTokenUser = "testOwner"
 const TestToken = `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwOGM0N2E4OC0yYzc5LTQyMGYtODEwNC02NWJkOWViYmU0MWUiLCJleHAiOjE1NDY1MDcyMzMsIm5iZiI6MCwiaWF0IjoxNTQ2NTA3MTczLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXV0aC9yZWFsbXMvbWFzdGVyIiwiYXVkIjoiZnJvbnRlbmQiLCJzdWIiOiJ0ZXN0T3duZXIiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJmcm9udGVuZCIsIm5vbmNlIjoiOTJjNDNjOTUtNzViMC00NmNmLTgwYWUtNDVkZDk3M2I0YjdmIiwiYXV0aF90aW1lIjoxNTQ2NTA3MDA5LCJzZXNzaW9uX3N0YXRlIjoiNWRmOTI4ZjQtMDhmMC00ZWI5LTliNjAtM2EwYWUyMmVmYzczIiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsibWFzdGVyLXJlYWxtIjp7InJvbGVzIjpbInZpZXctcmVhbG0iLCJ2aWV3LWlkZW50aXR5LXByb3ZpZGVycyIsIm1hbmFnZS1pZGVudGl0eS1wcm92aWRlcnMiLCJpbXBlcnNvbmF0aW9uIiwiY3JlYXRlLWNsaWVudCIsIm1hbmFnZS11c2VycyIsInF1ZXJ5LXJlYWxtcyIsInZpZXctYXV0aG9yaXphdGlvbiIsInF1ZXJ5LWNsaWVudHMiLCJxdWVyeS11c2VycyIsIm1hbmFnZS1ldmVudHMiLCJtYW5hZ2UtcmVhbG0iLCJ2aWV3LWV2ZW50cyIsInZpZXctdXNlcnMiLCJ2aWV3LWNsaWVudHMiLCJtYW5hZ2UtYXV0aG9yaXphdGlvbiIsIm1hbmFnZS1jbGllbnRzIiwicXVlcnktZ3JvdXBzIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJyb2xlcyI6WyJ1c2VyIl19.ykpuOmlpzj75ecSI6cHbCATIeY4qpyut2hMc1a67Ycg`
 
+// has role user
 const SecendOwnerTokenUser = "secondOwner"
 const SecondOwnerToken = `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwOGM0N2E4OC0yYzc5LTQyMGYtODEwNC02NWJkOWViYmU0MWUiLCJleHAiOjE1NDY1MDcyMzMsIm5iZiI6MCwiaWF0IjoxNTQ2NTA3MTczLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEvYXV0aC9yZWFsbXMvbWFzdGVyIiwiYXVkIjoiZnJvbnRlbmQiLCJzdWIiOiJzZWNvbmRPd25lciIsInR5cCI6IkJlYXJlciIsImF6cCI6ImZyb250ZW5kIiwibm9uY2UiOiI5MmM0M2M5NS03NWIwLTQ2Y2YtODBhZS00NWRkOTczYjRiN2YiLCJhdXRoX3RpbWUiOjE1NDY1MDcwMDksInNlc3Npb25fc3RhdGUiOiI1ZGY5MjhmNC0wOGYwLTRlYjktOWI2MC0zYTBhZTIyZWZjNzMiLCJhY3IiOiIwIiwiYWxsb3dlZC1vcmlnaW5zIjpbIioiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbInVzZXIiXX0sInJlc291cmNlX2FjY2VzcyI6eyJtYXN0ZXItcmVhbG0iOnsicm9sZXMiOlsidmlldy1yZWFsbSIsInZpZXctaWRlbnRpdHktcHJvdmlkZXJzIiwibWFuYWdlLWlkZW50aXR5LXByb3ZpZGVycyIsImltcGVyc29uYXRpb24iLCJjcmVhdGUtY2xpZW50IiwibWFuYWdlLXVzZXJzIiwicXVlcnktcmVhbG1zIiwidmlldy1hdXRob3JpemF0aW9uIiwicXVlcnktY2xpZW50cyIsInF1ZXJ5LXVzZXJzIiwibWFuYWdlLWV2ZW50cyIsIm1hbmFnZS1yZWFsbSIsInZpZXctZXZlbnRzIiwidmlldy11c2VycyIsInZpZXctY2xpZW50cyIsIm1hbmFnZS1hdXRob3JpemF0aW9uIiwibWFuYWdlLWNsaWVudHMiLCJxdWVyeS1ncm91cHMiXX0sImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInJvbGVzIjpbInVzZXIiXX0.cq8YeUuR0jSsXCEzp634fTzNbGkq_B8KbVrwBPgceJ4`
 
@@ -195,10 +508,9 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 		t.Run("cqrs topic crud", func(t *testing.T) {
 			t.Run("create topic", func(t *testing.T) {
 				result, err, _ := c.SetTopic(client.InternalAdminToken, model.Topic{
-					Id:                 "devices",
-					KafkaTopic:         "nopedevices",
-					EnsureTopicInit:    true,
-					KafkaConsumerGroup: "",
+					Id:                   "devices",
+					PublishToKafkaTopic:  "nopedevices",
+					EnsureKafkaTopicInit: true,
 				})
 				if err != nil {
 					t.Error(err)
@@ -211,16 +523,9 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 			t.Run("update topic", func(t *testing.T) {
 				result, err, code := c.SetTopic(client.InternalAdminToken, model.Topic{
-					Id:                 "devices",
-					KafkaTopic:         "devices",
-					EnsureTopicInit:    true,
-					KafkaConsumerGroup: "test_cg_1",
-					InitialGroupPermissions: []model.GroupPermissions{
-						{
-							GroupName:      "g1",
-							PermissionsMap: model.PermissionsMap{Read: true},
-						},
-					},
+					Id:                   "devices",
+					PublishToKafkaTopic:  "devices",
+					EnsureKafkaTopicInit: true,
 				})
 				if err != nil {
 					t.Error(err)
@@ -234,27 +539,16 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", result)
 					return
 				}
-				if result.KafkaTopic != "devices" {
-					t.Errorf("%#v\n", result)
-					return
-				}
-				if result.KafkaConsumerGroup != "test_cg_1" {
+				if result.PublishToKafkaTopic != "devices" {
 					t.Errorf("%#v\n", result)
 					return
 				}
 			})
 			t.Run("unchanged topic", func(t *testing.T) {
 				result, err, code := c.SetTopic(client.InternalAdminToken, model.Topic{
-					Id:                 "devices",
-					KafkaTopic:         "devices",
-					EnsureTopicInit:    true,
-					KafkaConsumerGroup: "test_cg_1",
-					InitialGroupPermissions: []model.GroupPermissions{
-						{
-							GroupName:      "g1",
-							PermissionsMap: model.PermissionsMap{Read: true},
-						},
-					},
+					Id:                   "devices",
+					PublishToKafkaTopic:  "devices",
+					EnsureKafkaTopicInit: true,
 				})
 				if err != nil {
 					t.Error(err)
@@ -268,11 +562,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", result)
 					return
 				}
-				if result.KafkaTopic != "devices" {
-					t.Errorf("%#v\n", result)
-					return
-				}
-				if result.KafkaConsumerGroup != "test_cg_1" {
+				if result.PublishToKafkaTopic != "devices" {
 					t.Errorf("%#v\n", result)
 					return
 				}
@@ -287,17 +577,12 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", result)
 					return
 				}
-				if result.KafkaConsumerGroup != "test_cg_1" {
-					t.Errorf("%#v\n", result)
-					return
-				}
 			})
 			t.Run("delete topic", func(t *testing.T) {
 				temp, err, _ := c.SetTopic(client.InternalAdminToken, model.Topic{
-					Id:                 "to_be_deleted",
-					KafkaTopic:         "to_be_deleted",
-					EnsureTopicInit:    true,
-					KafkaConsumerGroup: "",
+					Id:                   "to_be_deleted",
+					PublishToKafkaTopic:  "to_be_deleted",
+					EnsureKafkaTopicInit: true,
 				})
 				if err != nil {
 					t.Error(err)
@@ -335,60 +620,20 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 		t.Run("none-cqrs topic crud", func(t *testing.T) {
 			t.Run("create topic", func(t *testing.T) {
 				result, err, _ := c.SetTopic(client.InternalAdminToken, model.Topic{
-					Id:     "foo",
-					NoCqrs: true,
+					Id: "foo",
 				})
 				if err != nil {
 					t.Error(err)
 					return
 				}
 				if result.Id != "foo" {
-					t.Errorf("%#v\n", result)
-					return
-				}
-			})
-			t.Run("update topic", func(t *testing.T) {
-				result, err, code := c.SetTopic(client.InternalAdminToken, model.Topic{
-					Id:     "foo",
-					NoCqrs: true,
-					InitialGroupPermissions: []model.GroupPermissions{
-						{
-							GroupName:      "g1",
-							PermissionsMap: model.PermissionsMap{Read: true},
-						},
-					},
-				})
-				if err != nil {
-					t.Error(err)
-					return
-				}
-				if code != http.StatusOK {
-					t.Error(code)
-					return
-				}
-				if result.Id != "foo" {
-					t.Errorf("%#v\n", result)
-					return
-				}
-				if result.KafkaTopic != "" {
-					t.Errorf("%#v\n", result)
-					return
-				}
-				if len(result.InitialGroupPermissions) != 1 {
 					t.Errorf("%#v\n", result)
 					return
 				}
 			})
 			t.Run("unchanged topic", func(t *testing.T) {
 				result, err, code := c.SetTopic(client.InternalAdminToken, model.Topic{
-					Id:     "foo",
-					NoCqrs: true,
-					InitialGroupPermissions: []model.GroupPermissions{
-						{
-							GroupName:      "g1",
-							PermissionsMap: model.PermissionsMap{Read: true},
-						},
-					},
+					Id: "foo",
 				})
 				if err != nil {
 					t.Error(err)
@@ -402,11 +647,48 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", result)
 					return
 				}
-				if result.KafkaTopic != "" {
+				if result.PublishToKafkaTopic != "" {
 					t.Errorf("%#v\n", result)
 					return
 				}
-				if len(result.InitialGroupPermissions) != 1 {
+			})
+			t.Run("update topic", func(t *testing.T) {
+				result, err, code := c.SetTopic(client.InternalAdminToken, model.Topic{
+					Id:                  "foo",
+					PublishToKafkaTopic: "foo",
+				})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if code != http.StatusOK {
+					t.Error(code)
+					return
+				}
+				if result.Id != "foo" {
+					t.Errorf("%#v\n", result)
+					return
+				}
+				if result.PublishToKafkaTopic != "foo" {
+					t.Errorf("%#v\n", result)
+					return
+				}
+				result, err, code = c.SetTopic(client.InternalAdminToken, model.Topic{
+					Id: "foo",
+				})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if code != http.StatusOK {
+					t.Error(code)
+					return
+				}
+				if result.Id != "foo" {
+					t.Errorf("%#v\n", result)
+					return
+				}
+				if result.PublishToKafkaTopic != "" {
 					t.Errorf("%#v\n", result)
 					return
 				}
@@ -421,17 +703,12 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Errorf("%#v\n", result)
 					return
 				}
-				if len(result.InitialGroupPermissions) != 1 {
-					t.Errorf("%#v\n", result)
-					return
-				}
 			})
 			t.Run("delete topic", func(t *testing.T) {
 				temp, err, _ := c.SetTopic(client.InternalAdminToken, model.Topic{
-					Id:                 "to_be_deleted_2",
-					KafkaTopic:         "to_be_deleted_2",
-					EnsureTopicInit:    true,
-					KafkaConsumerGroup: "",
+					Id:                   "to_be_deleted_2",
+					PublishToKafkaTopic:  "to_be_deleted_2",
+					EnsureKafkaTopicInit: true,
 				})
 				if err != nil {
 					t.Error(err)
@@ -474,7 +751,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 
 		t.Run("try deleted topic", func(t *testing.T) {
 			t.Run("try to_be_deleted", func(t *testing.T) {
-				_, err, code := c.SetPermission(TestToken, "to_be_deleted", "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				_, err, code := c.SetPermission(TestToken, "to_be_deleted", "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}})
 				if err == nil {
 					t.Error("expect error")
 					return
@@ -506,7 +783,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 
 			t.Run("try to_be_deleted_2", func(t *testing.T) {
-				_, err, code := c.SetPermission(TestToken, "to_be_deleted_2", "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				_, err, code := c.SetPermission(TestToken, "to_be_deleted_2", "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}})
 				if err == nil {
 					t.Error("expect error")
 					return
@@ -538,68 +815,20 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 			})
 		})
 
-		t.Run("initial cqrs resource", func(t *testing.T) {
-			if _, ok := c.(*controller.Controller); ok {
-				t.Skip("skip for test client")
-				return
-			}
-			writer := com.NewKafkaWriter(config, model.Topic{KafkaTopic: "devices"})
-			buf, err := json.Marshal(com.Command{Command: "PUT", Id: "a", Owner: TestTokenUser})
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			err = writer.WriteMessages(context.Background(), kafka.Message{
-				Key:   []byte("a"),
-				Value: buf,
-				Time:  time.Now(),
-			})
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			time.Sleep(2 * time.Second)
-
-			result, err, _ := c.GetResource(TestToken, "devices", "a")
-			if err != nil {
-				t.Error(err)
-				return
-			}
-
-			if !reflect.DeepEqual(result, model.Resource{
-				Id:      "a",
-				TopicId: "devices",
-				ResourcePermissions: model.ResourcePermissions{
-					UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {
-						Read:         true,
-						Write:        true,
-						Execute:      true,
-						Administrate: true,
-					}},
-					GroupPermissions: map[string]model.PermissionsMap{"g1": {Read: true}},
-				},
-			}) {
-				t.Errorf("%#v\n", result)
-			}
-
-		})
-
-		t.Run("cqrs", RunTestsWithTopic(config, c, "devices", true))
-
-		t.Run("without cqrs", RunTestsWithTopic(config, c, "foo", false))
+		t.Run("foo", RunTestsWithTopic(config, c, "foo"))
 	}
 }
 
-func RunTestsWithTopic(config configuration.Config, c client.Client, topicId string, cqrs bool) func(t *testing.T) {
+func RunTestsWithTopic(config configuration.Config, c client.Client, topicId string) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Run("manage permissions", func(t *testing.T) {
 
 			t.Run("initial permissions set", func(t *testing.T) {
-				_, err, code := c.SetPermission(TestToken, topicId, "b", model.ResourcePermissions{
+				_, err, code := c.SetPermission(client.InternalAdminToken, topicId, "b", model.ResourcePermissions{
 					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 					GroupPermissions: nil,
-				}, model.SetPermissionOptions{Wait: true})
+					RolePermissions:  nil,
+				})
 				if err != nil {
 					t.Error(err)
 					return
@@ -609,10 +838,11 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					return
 				}
 
-				_, err, code = c.SetPermission(TestToken, topicId, "buseradmin", model.ResourcePermissions{
+				_, err, code = c.SetPermission(client.InternalAdminToken, topicId, "buseradmin", model.ResourcePermissions{
 					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
-					GroupPermissions: map[string]model.PermissionsMap{"user": {true, true, true, true}},
-				}, model.SetPermissionOptions{Wait: true})
+					GroupPermissions: nil,
+					RolePermissions:  map[string]model.PermissionsMap{"user": {true, true, true, true}},
+				})
 				if err != nil {
 					t.Error(err)
 					return
@@ -622,10 +852,11 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					return
 				}
 
-				_, err, code = c.SetPermission(TestToken, topicId, "c", model.ResourcePermissions{
+				_, err, code = c.SetPermission(client.InternalAdminToken, topicId, "c", model.ResourcePermissions{
 					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
 					GroupPermissions: nil,
-				}, model.SetPermissionOptions{Wait: true})
+					RolePermissions:  nil,
+				})
 				if err != nil {
 					t.Error(err)
 					return
@@ -637,10 +868,11 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 			})
 
 			t.Run("update permissions", func(t *testing.T) {
-				_, err, code := c.SetPermission(TestToken, topicId, "a", model.ResourcePermissions{
+				_, err, code := c.SetPermission(client.InternalAdminToken, topicId, "a", model.ResourcePermissions{
 					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
 					GroupPermissions: nil,
-				}, model.SetPermissionOptions{Wait: true})
+					RolePermissions:  nil,
+				})
 				if err != nil {
 					t.Error(err)
 					return
@@ -651,8 +883,9 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 				}
 				_, err, code = c.SetPermission(TestToken, topicId, "c", model.ResourcePermissions{
 					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
-					GroupPermissions: map[string]model.PermissionsMap{},
-				}, model.SetPermissionOptions{Wait: true})
+					GroupPermissions: nil,
+					RolePermissions:  map[string]model.PermissionsMap{},
+				})
 				if err != nil {
 					t.Error(err)
 					return
@@ -737,8 +970,9 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					token, _ := jwt.Parse(user)
 					_, err, code := c.SetPermission(user, topicId, id, model.ResourcePermissions{
 						UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
-						GroupPermissions: map[string]model.PermissionsMap{"user": {true, true, true, true}, "g2": {true, true, true, true}},
-					}, model.SetPermissionOptions{Wait: true})
+						GroupPermissions: nil,
+						RolePermissions:  map[string]model.PermissionsMap{"user": {true, true, true, true}, "g2": {true, true, true, true}},
+					})
 					if access {
 						if err != nil {
 							t.Error(token.GetUserId(), id, access, err)
@@ -764,10 +998,11 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 		})
 
 		t.Run("prevent admin less resource", func(t *testing.T) {
-			_, err, _ := c.SetPermission(TestToken, topicId, "adminless", model.ResourcePermissions{
+			_, err, _ := c.SetPermission(client.InternalAdminToken, topicId, "adminless", model.ResourcePermissions{
 				UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, false}},
-				GroupPermissions: map[string]model.PermissionsMap{"g2": {true, true, true, true}},
-			}, model.SetPermissionOptions{Wait: true})
+				GroupPermissions: nil,
+				RolePermissions:  map[string]model.PermissionsMap{"g2": {true, true, true, true}},
+			})
 			if err != nil {
 				t.Error(err)
 				return
@@ -775,8 +1010,9 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 
 			_, err, _ = c.SetPermission(TestToken, topicId, "adminless", model.ResourcePermissions{
 				UserPermissions:  map[string]model.PermissionsMap{SecendOwnerTokenUser: {true, true, true, false}},
-				GroupPermissions: map[string]model.PermissionsMap{"g2": {true, true, true, true}},
-			}, model.SetPermissionOptions{Wait: true})
+				GroupPermissions: nil,
+				RolePermissions:  map[string]model.PermissionsMap{"g2": {true, true, true, true}},
+			})
 			if err == nil {
 				t.Error("expect error")
 				return
@@ -784,8 +1020,9 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 
 			_, err, _ = c.SetPermission(TestToken, topicId, "adminless", model.ResourcePermissions{
 				UserPermissions:  map[string]model.PermissionsMap{SecendOwnerTokenUser: {true, true, true, true}},
-				GroupPermissions: map[string]model.PermissionsMap{"g2": {true, true, true, true}},
-			}, model.SetPermissionOptions{Wait: true})
+				GroupPermissions: nil,
+				RolePermissions:  map[string]model.PermissionsMap{"g2": {true, true, true, true}},
+			})
 			if err != nil {
 				t.Error(err)
 				return
@@ -794,24 +1031,25 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 
 		t.Run("check permissions", func(t *testing.T) {
 			t.Run("init permissions", func(t *testing.T) {
-				_, err, _ := c.SetPermission(TestToken, topicId, "1", model.ResourcePermissions{
+				_, err, _ := c.SetPermission(client.InternalAdminToken, topicId, "1", model.ResourcePermissions{
 					UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
-				}, model.SetPermissionOptions{Wait: true})
+				})
 				if err != nil {
 					t.Error(err)
 					return
 				}
-				_, err, _ = c.SetPermission(TestToken, topicId, "2", model.ResourcePermissions{
+				_, err, _ = c.SetPermission(client.InternalAdminToken, topicId, "2", model.ResourcePermissions{
 					UserPermissions:  map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
-					GroupPermissions: map[string]model.PermissionsMap{"user": {true, true, true, true}},
-				}, model.SetPermissionOptions{Wait: true})
+					GroupPermissions: nil,
+					RolePermissions:  map[string]model.PermissionsMap{"user": {true, true, true, true}},
+				})
 				if err != nil {
 					t.Error(err)
 					return
 				}
-				_, err, _ = c.SetPermission(TestToken, topicId, "3", model.ResourcePermissions{
+				_, err, _ = c.SetPermission(client.InternalAdminToken, topicId, "3", model.ResourcePermissions{
 					UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}, SecendOwnerTokenUser: {true, true, true, true}},
-				}, model.SetPermissionOptions{Wait: true})
+				})
 				if err != nil {
 					t.Error(err)
 					return
@@ -1047,41 +1285,24 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 			})
 
 			t.Run("check after resource delete", func(t *testing.T) {
-				if cqrs {
-					err, _ := c.RemoveResource(TestToken, topicId, "1")
-					if err == nil {
-						t.Error("expected error")
-						return
-					}
-					access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
-					if err != nil {
-						t.Error(err)
-						return
-					}
-					if !reflect.DeepEqual(access, map[string]bool{"1": true, "2": true, "3": true}) {
-						t.Errorf("%#v\n", access)
-						return
-					}
-				} else {
-					err, _ := c.RemoveResource(TestToken, topicId, "unknown")
-					if err != nil {
-						t.Error(err)
-						return
-					}
-					err, _ = c.RemoveResource(TestToken, topicId, "1")
-					if err != nil {
-						t.Error(err)
-						return
-					}
-					access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
-					if err != nil {
-						t.Error(err)
-						return
-					}
-					if !reflect.DeepEqual(access, map[string]bool{"2": true, "3": true}) {
-						t.Errorf("%#v\n", access)
-						return
-					}
+				err, _ := c.RemoveResource(TestToken, topicId, "unknown")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				err, _ = c.RemoveResource(TestToken, topicId, "1")
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(access, map[string]bool{"2": true, "3": true}) {
+					t.Errorf("%#v\n", access)
+					return
 				}
 			})
 
@@ -1110,7 +1331,7 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					return
 				}
 
-				_, err, code := c.SetPermission(TestToken, topicId, "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}}, model.SetPermissionOptions{Wait: true})
+				_, err, code := c.SetPermission(TestToken, topicId, "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}})
 				if err == nil {
 					t.Error("expect error")
 					return

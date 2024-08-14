@@ -33,7 +33,7 @@ func (this *Controller) CheckPermission(tokenStr string, topicId string, id stri
 
 func (this *Controller) checkPermission(token jwt.Token, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int) {
 	pureId, _ := idmodifier.SplitModifier(id)
-	access, err = this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), permissions...)
+	access, err = this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), token.GetGroups(), permissions...)
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -55,7 +55,7 @@ func (this *Controller) CheckMultiplePermissions(tokenStr string, topicId string
 		pureIdToIds[pureId] = append(pureIdToIds[pureId], id)
 	}
 	var pureAccess map[string]bool
-	pureAccess, err = this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, pureIdList, token.GetUserId(), token.GetRoles(), permissions...)
+	pureAccess, err = this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, pureIdList, token.GetUserId(), token.GetRoles(), token.GetGroups(), permissions...)
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -110,7 +110,22 @@ func (this *Controller) ListComputedPermissions(tokenStr string, topic string, i
 
 func ComputePermissionsMap(token jwt.Token, resource model.Resource) (result model.PermissionsMap) {
 	result = resource.UserPermissions[token.GetUserId()]
-	for _, group := range token.GetRoles() {
+	for _, role := range token.GetRoles() {
+		rolePermissions := resource.RolePermissions[role]
+		if rolePermissions.Read {
+			result.Read = true
+		}
+		if rolePermissions.Write {
+			result.Write = true
+		}
+		if rolePermissions.Execute {
+			result.Execute = true
+		}
+		if rolePermissions.Administrate {
+			result.Administrate = true
+		}
+	}
+	for _, group := range token.GetGroups() {
 		groupPermissions := resource.GroupPermissions[group]
 		if groupPermissions.Read {
 			result.Read = true
