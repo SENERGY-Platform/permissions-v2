@@ -205,6 +205,12 @@ func (this *ClientImpl) SetPermission(token string, topicId string, id string, p
 
 func do[T any](token string, req *http.Request) (result T, err error, code int) {
 	req.Header.Set("Authorization", token)
+
+	//add version query param
+	query := req.URL.Query()
+	query.Set("version", ClientVersion)
+	req.URL.RawQuery = query.Encode()
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return result, err, http.StatusInternalServerError
@@ -224,6 +230,12 @@ func do[T any](token string, req *http.Request) (result T, err error, code int) 
 
 func doVoid(token string, req *http.Request) (err error, code int) {
 	req.Header.Set("Authorization", token)
+
+	//add version query param
+	query := req.URL.Query()
+	query.Set("version", ClientVersion)
+	req.URL.RawQuery = query.Encode()
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err, http.StatusInternalServerError

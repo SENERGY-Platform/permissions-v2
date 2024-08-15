@@ -75,6 +75,8 @@ func TestGroupInToken(t *testing.T) {
 		return
 	}
 
+	time.Sleep(time.Second)
+
 	c := client.New("http://localhost:" + config.Port)
 
 	_, err, _ = c.SetTopic(client.InternalAdminToken, model.Topic{

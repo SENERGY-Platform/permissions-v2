@@ -22,6 +22,8 @@ import (
 	"strings"
 )
 
+const ClientVersion = "2" //increment on breaking changes to prevent old client access
+
 type Topic struct {
 	Id string `json:"id"`
 

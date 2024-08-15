@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/api/util"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/accesslog"
 	"log"
 	"net/http"
@@ -79,7 +80,8 @@ func GetRouter(config configuration.Config, command Controller) http.Handler {
 			return r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodDelete
 		})
 	}
-	handler = accesslog.New(util.NewCors(handler))
+
+	handler = accesslog.New(util.NewVersionCheck(util.NewCors(handler), model.ClientVersion))
 	return handler
 }
 

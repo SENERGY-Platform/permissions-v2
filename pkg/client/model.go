@@ -34,3 +34,5 @@ type GroupPermissions = model.GroupPermissions
 type Resource = model.Resource
 type ResourcePermissions = model.ResourcePermissions
 type PermissionsMap = model.PermissionsMap
+
+const ClientVersion = model.ClientVersion
