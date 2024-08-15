@@ -18,6 +18,7 @@ package model
 
 import (
 	"errors"
+	"reflect"
 	"regexp"
 	"strings"
 )
@@ -33,6 +34,8 @@ type Topic struct {
 	EnsureKafkaTopicInitPartitionNumber int  `json:"ensure_kafka_topic_init_partition_number"`
 
 	LastUpdateUnixTimestamp int64 `json:"last_update_unix_timestamp"` //should be ignored by the user; is set by db
+
+	DefaultPermissions ResourcePermissions `json:"default_permissions"`
 }
 
 func (this Topic) Validate() error {
@@ -59,6 +62,30 @@ func (this Topic) Equal(topic Topic) bool {
 		return false
 	}
 	if this.EnsureKafkaTopicInitPartitionNumber != topic.EnsureKafkaTopicInitPartitionNumber {
+		return false
+	}
+
+	if this.DefaultPermissions.UserPermissions == nil {
+		this.DefaultPermissions.UserPermissions = map[string]PermissionsMap{}
+	}
+	if this.DefaultPermissions.GroupPermissions == nil {
+		this.DefaultPermissions.GroupPermissions = map[string]PermissionsMap{}
+	}
+	if this.DefaultPermissions.RolePermissions == nil {
+		this.DefaultPermissions.RolePermissions = map[string]PermissionsMap{}
+	}
+
+	if topic.DefaultPermissions.UserPermissions == nil {
+		topic.DefaultPermissions.UserPermissions = map[string]PermissionsMap{}
+	}
+	if topic.DefaultPermissions.GroupPermissions == nil {
+		topic.DefaultPermissions.GroupPermissions = map[string]PermissionsMap{}
+	}
+	if topic.DefaultPermissions.RolePermissions == nil {
+		topic.DefaultPermissions.RolePermissions = map[string]PermissionsMap{}
+	}
+
+	if !reflect.DeepEqual(this.DefaultPermissions, topic.DefaultPermissions) {
 		return false
 	}
 	return true

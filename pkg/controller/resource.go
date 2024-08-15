@@ -49,7 +49,15 @@ func (this *Controller) ListAccessibleResourceIds(tokenStr string, topicId strin
 	if err != nil {
 		return ids, err, http.StatusUnauthorized
 	}
-	ids, err = this.db.ListResourceIdsByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, permission...)
+	access, err, code := this.CheckTopicDefaultPermission(token, topicId, permission)
+	if err != nil {
+		return ids, err, code
+	}
+	if access {
+		ids, err = this.db.AdminListResourceIds(this.getTimeoutContext(), topicId, options)
+	} else {
+		ids, err = this.db.ListResourceIdsByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, permission...)
+	}
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -63,7 +71,17 @@ func (this *Controller) ListResourcesWithAdminPermission(tokenStr string, topicI
 	if err != nil {
 		return result, err, http.StatusUnauthorized
 	}
-	result, err = this.db.ListResourcesByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, model.Administrate)
+
+	access, err, code := this.CheckTopicDefaultPermission(token, topicId, model.PermissionList{model.Administrate})
+	if err != nil {
+		return result, err, code
+	}
+	if access {
+		result, err = this.db.AdminListResources(this.getTimeoutContext(), topicId, options)
+	} else {
+		result, err = this.db.ListResourcesByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, model.Administrate)
+	}
+
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -77,9 +95,15 @@ func (this *Controller) RemoveResource(tokenStr string, topicId string, id strin
 	if err != nil {
 		return err, http.StatusUnauthorized
 	}
+
+	access, err, code := this.CheckTopicDefaultPermission(token, topicId, model.PermissionList{model.Administrate})
+	if err != nil {
+		return err, code
+	}
+
 	pureId, _ := idmodifier.SplitModifier(id)
 	_, err = this.db.GetResource(this.getTimeoutContext(), topicId, pureId, model.GetOptions{
-		CheckPermission: !token.IsAdmin(), //admins may access without stored permission
+		CheckPermission: !access, //admins may access without stored permission
 		UserId:          token.GetUserId(),
 		RoleIds:         token.GetRoles(),
 		GroupIds:        token.GetGroups(),
@@ -108,8 +132,14 @@ func (this *Controller) GetResource(tokenStr string, topicId string, id string) 
 		return result, err, http.StatusUnauthorized
 	}
 	pureId, _ := idmodifier.SplitModifier(id)
+
+	access, err, code := this.CheckTopicDefaultPermission(token, topicId, model.PermissionList{model.Administrate})
+	if err != nil {
+		return result, err, code
+	}
+
 	result, err = this.db.GetResource(this.getTimeoutContext(), topicId, pureId, model.GetOptions{
-		CheckPermission: !token.IsAdmin(), //admins may access without stored permission
+		CheckPermission: !access, //admins may access without stored permission
 		UserId:          token.GetUserId(),
 		RoleIds:         token.GetRoles(),
 		GroupIds:        token.GetGroups(),
@@ -133,15 +163,22 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	if err != nil {
 		return result, err, http.StatusUnauthorized
 	}
+
 	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(), topicId)
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
 	if !exists {
-		return result, errors.New("topic does not exist"), http.StatusBadRequest
+		return result, errors.New("unknown topic"), http.StatusNotFound
 	}
+
+	access, err := this.checkTopicDefaultPermission(token, topic, model.PermissionList{model.Administrate})
+	if err != nil {
+		return result, err, http.StatusInternalServerError
+	}
+	
 	pureId, _ := idmodifier.SplitModifier(id)
-	if !token.IsAdmin() {
+	if !access {
 		access, err := this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), token.GetGroups(), model.Administrate)
 		if err != nil {
 			return result, err, http.StatusInternalServerError

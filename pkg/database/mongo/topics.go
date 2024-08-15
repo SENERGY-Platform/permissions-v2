@@ -30,8 +30,8 @@ var TopicBson = getBsonFieldObject[model.Topic]()
 func init() {
 	CreateCollections = append(CreateCollections, func(db *Database) error {
 		var err error
-		collection := db.client.Database(db.config.MongoDatabase).Collection(db.config.MongoPermissionsCollection)
-		err = db.ensureIndex(collection, "topicbyid", TopicBson.Id, true, true)
+		collection := db.client.Database(db.config.MongoDatabase).Collection(db.config.MongoTopicsCollection)
+		err = db.ensureIndex(collection, "fixedtopicbyid", TopicBson.Id, true, true)
 		if err != nil {
 			return err
 		}

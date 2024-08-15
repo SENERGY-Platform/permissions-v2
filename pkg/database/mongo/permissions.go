@@ -38,6 +38,10 @@ func init() {
 		if err != nil {
 			return err
 		}
+		err = db.removeIndex(collection, "topicbyid")
+		if err != nil {
+			return err
+		}
 
 		err = migrateOldGroupToRole(db, collection)
 		if err != nil {

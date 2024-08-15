@@ -93,6 +93,19 @@ func (this *Database) ensureCompoundIndex(collection *mongo.Collection, indexnam
 	return err
 }
 
+func (this *Database) removeIndex(collection *mongo.Collection, indexname string) error {
+	_, err := collection.Indexes().DropOne(context.Background(), indexname)
+	if err != nil {
+		if strings.Contains(err.Error(), "IndexNotFound") {
+			return nil
+		} else {
+			debug.PrintStack()
+			return err
+		}
+	}
+	return nil
+}
+
 func (this *Database) Disconnect() {
 	timeout, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	log.Println(this.client.Disconnect(timeout))

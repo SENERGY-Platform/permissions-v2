@@ -758,7 +758,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error("expect error")
 					return
 				}
-				if code != http.StatusBadRequest {
+				if code != http.StatusBadRequest && code != http.StatusNotFound {
 					t.Error(code)
 					return
 				}
@@ -790,7 +790,7 @@ func RunTestsWithClient(config configuration.Config, c client.Client) func(t *te
 					t.Error("expect error")
 					return
 				}
-				if code != http.StatusBadRequest {
+				if code != http.StatusBadRequest && code != http.StatusNotFound {
 					t.Error(code)
 					return
 				}
@@ -1220,12 +1220,12 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 						return
 					}
 					if !reflect.DeepEqual(actual, []model.ComputedPermissions{
-						{Id: "1", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+						{Id: "1", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
 						{Id: "2", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
-						{Id: "3", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+						{Id: "3", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
 						{Id: "a", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
-						{Id: "adminless", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
-						{Id: "b", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
+						{Id: "adminless", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
+						{Id: "b", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
 						{Id: "buseradmin", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
 						{Id: "c", PermissionsMap: model.PermissionsMap{Read: true, Write: true, Execute: true, Administrate: true}},
 						{Id: "unknownFoobar", PermissionsMap: model.PermissionsMap{Read: false, Write: false, Execute: false, Administrate: false}},
@@ -1314,18 +1314,26 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					t.Error(err)
 					return
 				}
-				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
-				if err != nil {
-					t.Error(err)
+				access, err, code := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4"}, model.Read)
+				if err == nil {
+					t.Error("expect error")
+					return
+				}
+				if code != http.StatusBadRequest && code != http.StatusNotFound {
+					t.Error(code)
 					return
 				}
 				if len(access) > 0 {
 					t.Errorf("%#v\n", access)
 					return
 				}
-				ids, err, _ := c.ListAccessibleResourceIds(TestToken, topicId, model.ListOptions{}, model.Read)
-				if err != nil {
-					t.Error(err)
+				ids, err, code := c.ListAccessibleResourceIds(TestToken, topicId, model.ListOptions{}, model.Read)
+				if err == nil {
+					t.Error("expect error")
+					return
+				}
+				if code != http.StatusBadRequest && code != http.StatusNotFound {
+					t.Error(code)
 					return
 				}
 				if len(ids) > 0 {
@@ -1333,12 +1341,12 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 					return
 				}
 
-				_, err, code := c.SetPermission(TestToken, topicId, "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}})
+				_, err, code = c.SetPermission(TestToken, topicId, "nope", model.ResourcePermissions{UserPermissions: map[string]model.PermissionsMap{SecendOwnerTokenUser: {Read: true}, TestTokenUser: {true, true, true, true}}})
 				if err == nil {
 					t.Error("expect error")
 					return
 				}
-				if code != http.StatusBadRequest {
+				if code != http.StatusBadRequest && code != http.StatusNotFound {
 					t.Error(code)
 					return
 				}
