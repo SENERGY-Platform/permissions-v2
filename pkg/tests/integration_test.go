@@ -168,8 +168,8 @@ func TestGroupInToken(t *testing.T) {
 	}
 
 	err, _ = c.RemoveResource(GroupTestToken, "a", "a1")
-	if err != nil {
-		t.Error(err)
+	if err == nil {
+		t.Error("only admins may delete")
 		return
 	}
 }
@@ -1287,12 +1287,12 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 			})
 
 			t.Run("check after resource delete", func(t *testing.T) {
-				err, _ := c.RemoveResource(TestToken, topicId, "unknown")
+				err, _ := c.RemoveResource(client.InternalAdminToken, topicId, "unknown")
 				if err != nil {
 					t.Error(err)
 					return
 				}
-				err, _ = c.RemoveResource(TestToken, topicId, "1")
+				err, _ = c.RemoveResource(client.InternalAdminToken, topicId, "1")
 				if err != nil {
 					t.Error(err)
 					return

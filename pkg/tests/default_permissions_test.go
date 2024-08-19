@@ -1793,6 +1793,20 @@ func TestDefaultPermissions(t *testing.T) {
 		t.Run("full", func(t *testing.T) {
 			t.Run("group", func(t *testing.T) {
 				err, _ = c.RemoveResource(GroupTestToken, "full", "a")
+				if err == nil {
+					t.Error("expected error")
+					return
+				}
+			})
+			t.Run("user", func(t *testing.T) {
+				err, _ = c.RemoveResource(TestToken, "full", "a")
+				if err == nil {
+					t.Error("expected error")
+					return
+				}
+			})
+			t.Run("admin", func(t *testing.T) {
+				err, _ = c.RemoveResource(client.InternalAdminToken, "full", "a")
 				if err != nil {
 					t.Error(err)
 					return

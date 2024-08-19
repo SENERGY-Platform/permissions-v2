@@ -96,27 +96,9 @@ func (this *Controller) RemoveResource(tokenStr string, topicId string, id strin
 		return err, http.StatusUnauthorized
 	}
 
-	access, err, code := this.CheckTopicDefaultPermission(token, topicId, model.PermissionList{model.Administrate})
-	if err != nil {
-		return err, code
-	}
-
-	pureId, _ := idmodifier.SplitModifier(id)
-	_, err = this.db.GetResource(this.getTimeoutContext(), topicId, pureId, model.GetOptions{
-		CheckPermission: !access, //admins may access without stored permission
-		UserId:          token.GetUserId(),
-		RoleIds:         token.GetRoles(),
-		GroupIds:        token.GetGroups(),
-		Permissions:     model.PermissionList{model.Administrate},
-	})
-	if errors.Is(err, model.PermissionCheckFailed) {
-		return errors.New("access denied"), http.StatusForbidden
-	}
-	if errors.Is(err, model.ErrNotFound) {
-		return nil, http.StatusOK
-	}
-	if err != nil {
-		return err, http.StatusInternalServerError
+	access := token.IsAdmin()
+	if !access {
+		return errors.New("access denied: only admin roles may delete resources"), http.StatusForbidden
 	}
 
 	err = this.db.DeleteResource(this.getTimeoutContext(), topicId, id)
@@ -176,7 +158,7 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
-	
+
 	pureId, _ := idmodifier.SplitModifier(id)
 	if !access {
 		access, err := this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), token.GetGroups(), model.Administrate)
