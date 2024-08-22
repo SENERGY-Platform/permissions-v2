@@ -1,6 +1,6 @@
 module github.com/SENERGY-Platform/permissions-v2
 
-go 1.22
+go 1.23
 
 require (
 	github.com/SENERGY-Platform/developer-notifications v0.0.4

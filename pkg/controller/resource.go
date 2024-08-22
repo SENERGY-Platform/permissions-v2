@@ -17,13 +17,16 @@
 package controller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/idmodifier"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
+	"io"
 	"log"
 	"net/http"
+	"slices"
 	"time"
 )
 
@@ -173,6 +176,10 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	if !permissions.Valid() {
 		return result, errors.New("invalid permissions"), http.StatusBadRequest
 	}
+	err, code = this.checkGroupMembership(token, topic.Id, id, permissions)
+	if err != nil {
+		return result, err, code
+	}
 
 	publish := topic.PublishToKafkaTopic != "" && topic.PublishToKafkaTopic != "-"
 
@@ -201,4 +208,82 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	}
 
 	return permissions, err, http.StatusOK
+}
+
+func (this *Controller) checkGroupMembership(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (error, int) {
+	if token.IsAdmin() {
+		return nil, http.StatusOK
+	}
+	current, err := this.db.GetResource(this.getTimeoutContext(), topicId, id, model.GetOptions{})
+	if err != nil && !errors.Is(err, model.ErrNotFound) {
+		return err, http.StatusInternalServerError
+	}
+	if current.UserPermissions == nil {
+		current.UserPermissions = map[string]model.PermissionsMap{}
+	}
+	if current.GroupPermissions == nil {
+		current.GroupPermissions = map[string]model.PermissionsMap{}
+	}
+	addedUsers := []string{}
+	addedGroups := []string{}
+	for user, _ := range permissions.UserPermissions {
+		if _, ok := current.UserPermissions[user]; !ok {
+			addedUsers = append(addedUsers, user)
+		}
+	}
+	for group, _ := range permissions.GroupPermissions {
+		if _, ok := current.GroupPermissions[group]; !ok {
+			addedGroups = append(addedGroups, group)
+		}
+	}
+	for _, group := range addedGroups {
+		if !token.HasGroup(group) {
+			return fmt.Errorf("requesting user not in added group '%v'", group), http.StatusBadRequest
+		}
+	}
+	if len(addedUsers) > 0 && this.config.UserManagementUrl != "" && this.config.UserManagementUrl != "-" {
+		usersInSameGroup, err := this.getUsersInSameGroup(token)
+		if err != nil {
+			return err, http.StatusInternalServerError
+		}
+		for _, addedUser := range addedUsers {
+			if !slices.ContainsFunc(usersInSameGroup, func(user User) bool {
+				return user.Id == addedUser
+			}) {
+				return fmt.Errorf("added user '%v' nat in the same group as the requesting user", addedUser), http.StatusBadRequest
+			}
+		}
+	}
+
+	return nil, http.StatusOK
+}
+
+type User struct {
+	Id   string `json:"id"`
+	Name string `json:"username"`
+}
+
+func (this *Controller) getUsersInSameGroup(token jwt.Token) (users []User, err error) {
+	req, err := http.NewRequest("GET", this.config.UserManagementUrl+"/user-list", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token.Jwt())
+	client := &http.Client{
+		Timeout: time.Minute,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		msg, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("error in user-management /user-list request: %v %v", resp.StatusCode, string(msg))
+	}
+	err = json.NewDecoder(resp.Body).Decode(&users)
+	if err != nil {
+		return nil, fmt.Errorf("error while decoding user-management /user-list response: %w", err)
+	}
+	return users, nil
 }

@@ -43,6 +43,8 @@ type Config struct {
 
 	SyncCheckInterval Duration `json:"sync_check_interval"`
 	SyncAgeLimit      Duration `json:"sync_age_limit"`
+
+	UserManagementUrl string `json:"user_management_url"`
 }
 
 // loads config from json in location and used environment variables (e.g KafkaUrl --> KAFKA_URL)
