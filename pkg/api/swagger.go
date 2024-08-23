@@ -17,6 +17,7 @@
 package api
 
 import (
+	_ "github.com/SENERGY-Platform/permissions-v2/docs"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
