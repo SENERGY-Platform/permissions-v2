@@ -67,14 +67,7 @@ func Start(ctx context.Context, config configuration.Config, ctrl Controller) (e
 // @name Authorization
 // @description Type "Bearer" followed by a space and JWT token.
 func GetRouter(config configuration.Config, command Controller) http.Handler {
-	router := http.NewServeMux()
-	for _, e := range endpoints {
-		for name, call := range getEndpointMethods(e) {
-			log.Println("add endpoint " + name)
-			call(config, router, command)
-		}
-	}
-	var handler http.Handler = router
+	handler := GetRouterWithoutMiddleware(config, command)
 	if config.EditForward != "" && config.EditForward != "-" {
 		handler = util.NewConditionalForward(handler, config.EditForward, func(r *http.Request) bool {
 			return r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodDelete
@@ -83,6 +76,17 @@ func GetRouter(config configuration.Config, command Controller) http.Handler {
 
 	handler = accesslog.New(util.NewVersionCheck(util.NewCors(handler), model.ClientVersion))
 	return handler
+}
+
+func GetRouterWithoutMiddleware(config configuration.Config, command Controller) http.Handler {
+	router := http.NewServeMux()
+	for _, e := range endpoints {
+		for name, call := range getEndpointMethods(e) {
+			log.Println("add endpoint " + name)
+			call(config, router, command)
+		}
+	}
+	return router
 }
 
 func getEndpointMethods(e interface{}) map[string]func(config configuration.Config, router *http.ServeMux, ctrl Controller) {

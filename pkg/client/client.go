@@ -38,11 +38,11 @@ type Client interface {
 	api.Controller
 }
 
-func New(serverUrl string) (client Client) {
+func New(serverUrl string) (client *ClientImpl) {
 	return &ClientImpl{serverUrl: serverUrl}
 }
 
-func NewTestClient(ctx context.Context) (client Client, err error) {
+func NewTestClient(ctx context.Context) (client *controller.Controller, err error) {
 	return controller.NewWithDependencies(ctx,
 		configuration.Config{},
 		mock.New(),

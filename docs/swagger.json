@@ -909,26 +909,6 @@
                 }
             }
         },
-        "model.GroupPermissions": {
-            "type": "object",
-            "properties": {
-                "administrate": {
-                    "type": "boolean"
-                },
-                "execute": {
-                    "type": "boolean"
-                },
-                "group_name": {
-                    "type": "string"
-                },
-                "read": {
-                    "type": "boolean"
-                },
-                "write": {
-                    "type": "boolean"
-                }
-            }
-        },
         "model.PermissionsMap": {
             "type": "object",
             "properties": {
@@ -958,6 +938,12 @@
                 "id": {
                     "type": "string"
                 },
+                "role_permissions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/model.PermissionsMap"
+                    }
+                },
                 "topic_id": {
                     "type": "string"
                 },
@@ -978,6 +964,12 @@
                         "$ref": "#/definitions/model.PermissionsMap"
                     }
                 },
+                "role_permissions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/model.PermissionsMap"
+                    }
+                },
                 "user_permissions": {
                     "type": "object",
                     "additionalProperties": {
@@ -989,39 +981,24 @@
         "model.Topic": {
             "type": "object",
             "properties": {
-                "ensure_topic_init": {
+                "default_permissions": {
+                    "$ref": "#/definitions/model.ResourcePermissions"
+                },
+                "ensure_kafka_topic_init": {
                     "type": "boolean"
                 },
-                "ensure_topic_init_partition_number": {
+                "ensure_kafka_topic_init_partition_number": {
                     "type": "integer"
                 },
                 "id": {
-                    "description": "at least one of Id and KafkaTopic must be set",
-                    "type": "string"
-                },
-                "init_only_by_cqrs": {
-                    "description": "if true the user may not set permissions for not existing resources; if false the user may\nif true the initial resource must be created by cqrs",
-                    "type": "boolean"
-                },
-                "initial_group_permissions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.GroupPermissions"
-                    }
-                },
-                "kafka_consumer_group": {
-                    "description": "defaults to configured kafka consumer group",
-                    "type": "string"
-                },
-                "kafka_topic": {
                     "type": "string"
                 },
                 "last_update_unix_timestamp": {
                     "description": "should be ignored by the user; is set by db",
                     "type": "integer"
                 },
-                "no_cqrs": {
-                    "type": "boolean"
+                "publish_to_kafka_topic": {
+                    "type": "string"
                 }
             }
         }
