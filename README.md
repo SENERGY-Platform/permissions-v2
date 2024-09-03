@@ -80,10 +80,10 @@ import "github.com/SENERGY-Platform/permissions-v2/pkg/client"
 
 //go:generate go run gen.go
 //go:generate go install github.com/swaggo/swag/cmd/swag@latest
-//go:generate swag init -o ../../../docs --parseDependency -d .. -g api.go
+//go:generate swag init --instanceName devicerepository -o ../../../docs --parseDependency -d .. -g api.go
 
 // generates lib/api/permissions.go
-// which enables 'swag init --parseDependency -d ./lib/api -g api.go' to generate documentation for permissions endpoints
+// which enables swag init to generate documentation for permissions endpoints
 // which are added by 'permForward := client.New(config.PermissionsV2Url).EmbedPermissionsRequestForwarding("/permissions/", router)'
 func main() {
 	err := client.GenerateGoFileWithSwaggoCommentsForEmbededPermissionsClient("api", "permissions", "../generated_permissions.go")
@@ -97,6 +97,11 @@ this generator:
 1. creates with `GenerateGoFileWithSwaggoCommentsForEmbededPermissionsClient()` a `generated_permissions.go` file with swaggo/swag comments
 2. installs swaggo/swag
 3. generates swagger docs
+
+to run this generator execute:
+```
+go generate ./...
+```
 
 ## OpenAPI
 uses https://github.com/swaggo/swag

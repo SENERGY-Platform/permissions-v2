@@ -21,6 +21,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log"
 	"os"
 	"slices"
 	"strings"
@@ -29,13 +30,14 @@ import (
 
 //go:generate go run main.go
 //go:generate go install github.com/swaggo/swag/cmd/swag@latest
-//go:generate swag init -o ../../docs --parseDependency -d .. -g ../pkg/api/api.go
+//go:generate swag init --instanceName permissionsv2 -o ../../docs --parseDependency -d .. -g ../pkg/api/api.go
 
 func main() {
 	GenerateClientDocFile()
 }
 
 func GenerateClientDocFile() {
+	log.Println("Generate pkg/client/swaggo_comments_file.tmpl")
 	f, err := parser.ParseDir(token.NewFileSet(), "../api", nil, parser.ParseComments)
 	if err != nil {
 		panic(err)

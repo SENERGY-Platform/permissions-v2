@@ -23,8 +23,85 @@ package {{.PackageName}}
 
 
 
+// GeneratedAdminListResourceIds godoc
+// @Summary      lists resource ids in topic
+// @Description  lists resource ids in topic, requesting user must be in admin group
+// @Tags         topics, resources, admin
+// @Security Bearer
+// @Param        limit query integer false "limits size of result; 0 means unlimited"
+// @Param        offset query integer false "offset to be used in combination with limit"
+// @Produce      json
+// @Success      200 {array}  string
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Failure      500
+// @Router       /{{.PrefixWithoutSlash}}/admin/resources/{topic} [get]
+func GeneratedAdminListResourceIds(){
+	//this method is only used as anchor for swagger documentation
+	panic("this method is only used as anchor for swagger documentation")
+}
 
-func GeneratedSwagger(){
+
+
+// GeneratedCheckPermission godoc
+// @Summary      check permission
+// @Description  check permission
+// @Tags         check
+// @Security Bearer
+// @Param        topic path string true "Topic Id"
+// @Param        id path string true "Resource Id"
+// @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
+// @Produce      json
+// @Success      200 {object} bool
+// @Failure      400
+// @Failure      401
+// @Failure      500
+// @Router       /{{.PrefixWithoutSlash}}/check/{topic}/{id} [get]
+func GeneratedCheckPermission(){
+	//this method is only used as anchor for swagger documentation
+	panic("this method is only used as anchor for swagger documentation")
+}
+
+
+
+// GeneratedCheckMultiplePermissions godoc
+// @Summary      check multiple permissions
+// @Description  check multiple permissions
+// @Tags         check
+// @Security Bearer
+// @Param        topic path string true "Topic Id"
+// @Param        ids query string true "Resource Ids, comma seperated"
+// @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
+// @Produce      json
+// @Success      200 {object} map[string]bool
+// @Failure      400
+// @Failure      401
+// @Failure      500
+// @Router       /{{.PrefixWithoutSlash}}/check/{topic} [get]
+func GeneratedCheckMultiplePermissions(){
+	//this method is only used as anchor for swagger documentation
+	panic("this method is only used as anchor for swagger documentation")
+}
+
+
+
+// GeneratedListAccessibleResourceIds godoc
+// @Summary      list accessible resource ids
+// @Description  list accessible resource ids
+// @Tags         accessible, resource
+// @Security Bearer
+// @Param        topic path string true "Topic Id"
+// @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
+// @Param        limit query integer false "limits size of result; 0 means unlimited"
+// @Param        offset query integer false "offset to be used in combination with limit"
+// @Produce      json
+// @Success      200 {array} string
+// @Failure      400
+// @Failure      401
+// @Failure      500
+// @Router       /{{.PrefixWithoutSlash}}/accessible/{topic} [get]
+func GeneratedListAccessibleResourceIds(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }
@@ -139,6 +216,14 @@ func GeneratedDeleteTopic(){
 
 
 
+
+func GeneratedSwagger(){
+	//this method is only used as anchor for swagger documentation
+	panic("this method is only used as anchor for swagger documentation")
+}
+
+
+
 // GeneratedListComputedPermissions godoc
 // @Summary      list the computed permissions to resources of the given topic and ids
 // @Description  list the computed permissions to resources of the given topic and ids, group and user permissions are merged, unknown ids will get entries in the result
@@ -173,70 +258,6 @@ func GeneratedListComputedPermissions(){
 // @Failure      500
 // @Router       /{{.PrefixWithoutSlash}}/query/permissions/{topic} [post]
 func GeneratedQueryListComputedPermissions(){
-	//this method is only used as anchor for swagger documentation
-	panic("this method is only used as anchor for swagger documentation")
-}
-
-
-
-// GeneratedCheckPermission godoc
-// @Summary      check permission
-// @Description  check permission
-// @Tags         check
-// @Security Bearer
-// @Param        topic path string true "Topic Id"
-// @Param        id path string true "Resource Id"
-// @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
-// @Produce      json
-// @Success      200 {object} bool
-// @Failure      400
-// @Failure      401
-// @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/check/{topic}/{id} [get]
-func GeneratedCheckPermission(){
-	//this method is only used as anchor for swagger documentation
-	panic("this method is only used as anchor for swagger documentation")
-}
-
-
-
-// GeneratedCheckMultiplePermissions godoc
-// @Summary      check multiple permissions
-// @Description  check multiple permissions
-// @Tags         check
-// @Security Bearer
-// @Param        topic path string true "Topic Id"
-// @Param        ids query string true "Resource Ids, comma seperated"
-// @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
-// @Produce      json
-// @Success      200 {object} map[string]bool
-// @Failure      400
-// @Failure      401
-// @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/check/{topic} [get]
-func GeneratedCheckMultiplePermissions(){
-	//this method is only used as anchor for swagger documentation
-	panic("this method is only used as anchor for swagger documentation")
-}
-
-
-
-// GeneratedListAccessibleResourceIds godoc
-// @Summary      list accessible resource ids
-// @Description  list accessible resource ids
-// @Tags         accessible, resource
-// @Security Bearer
-// @Param        topic path string true "Topic Id"
-// @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"
-// @Param        limit query integer false "limits size of result; 0 means unlimited"
-// @Param        offset query integer false "offset to be used in combination with limit"
-// @Produce      json
-// @Success      200 {array} string
-// @Failure      400
-// @Failure      401
-// @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/accessible/{topic} [get]
-func GeneratedListAccessibleResourceIds(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }
@@ -324,27 +345,6 @@ func GeneratedDeleteResource(){
 // @Failure      500
 // @Router       /{{.PrefixWithoutSlash}}/manage/{topic}/{id} [put]
 func GeneratedSetPermission(){
-	//this method is only used as anchor for swagger documentation
-	panic("this method is only used as anchor for swagger documentation")
-}
-
-
-
-// GeneratedAdminListResourceIds godoc
-// @Summary      lists resource ids in topic
-// @Description  lists resource ids in topic, requesting user must be in admin group
-// @Tags         topics, resources, admin
-// @Security Bearer
-// @Param        limit query integer false "limits size of result; 0 means unlimited"
-// @Param        offset query integer false "offset to be used in combination with limit"
-// @Produce      json
-// @Success      200 {array}  string
-// @Failure      400
-// @Failure      401
-// @Failure      403
-// @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/admin/resources/{topic} [get]
-func GeneratedAdminListResourceIds(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }

@@ -3,7 +3,7 @@ package docs
 
 import "github.com/swaggo/swag"
 
-const docTemplate = `{
+const docTemplatepermissionsv2 = `{
     "schemes": {{ marshal .Schemes }},
     "swagger": "2.0",
     "info": {
@@ -1021,20 +1021,20 @@ const docTemplate = `{
     }
 }`
 
-// SwaggerInfo holds exported Swagger Info so clients can modify it
-var SwaggerInfo = &swag.Spec{
+// SwaggerInfopermissionsv2 holds exported Swagger Info so clients can modify it
+var SwaggerInfopermissionsv2 = &swag.Spec{
 	Version:          "0.1",
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Permissions API",
 	Description:      "",
-	InfoInstanceName: "swagger",
-	SwaggerTemplate:  docTemplate,
+	InfoInstanceName: "permissionsv2",
+	SwaggerTemplate:  docTemplatepermissionsv2,
 	LeftDelim:        "{{",
 	RightDelim:       "}}",
 }
 
 func init() {
-	swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
+	swag.Register(SwaggerInfopermissionsv2.InstanceName(), SwaggerInfopermissionsv2)
 }

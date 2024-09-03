@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/api"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -56,6 +57,7 @@ func EmbedPermissionsClientIntoRouter(client Client, router http.Handler, prefix
 var docFileTempl string
 
 func GenerateGoFileWithSwaggoCommentsForEmbededPermissionsClient(packageName string, prefix string, location string) error {
+	log.Println("Generate " + location)
 	t, err := template.New("").Parse(docFileTempl)
 	if err != nil {
 		return err

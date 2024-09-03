@@ -40,7 +40,7 @@ func (this *SwaggerEndpoints) Swagger(config configuration.Config, router *http.
 
 	router.HandleFunc("GET /doc", func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-		doc, err := swag.ReadDoc()
+		doc, err := swag.ReadDoc("permissionsv2")
 		if err != nil {
 			http.Error(writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
