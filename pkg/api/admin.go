@@ -36,6 +36,7 @@ type AdminEndpoints struct{}
 // @Description  lists resource ids in topic, requesting user must be in admin group
 // @Tags         topics, resources, admin
 // @Security Bearer
+// @Param        topic path string true "Topic Id"
 // @Param        limit query integer false "limits size of result; 0 means unlimited"
 // @Param        offset query integer false "offset to be used in combination with limit"
 // @Produce      json

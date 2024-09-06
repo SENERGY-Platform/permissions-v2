@@ -63,6 +63,7 @@ func (this *Database) ListUnsyncedResources(ctx context.Context) (result []model
 	if err != nil {
 		return result, err
 	}
+	defer cursor.Close(context.Background())
 	for cursor.Next(context.Background()) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)

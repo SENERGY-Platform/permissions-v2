@@ -74,6 +74,7 @@ func (this *Database) AdminListResourceIds(ctx context.Context, topicId string, 
 	if err != nil {
 		return result, err
 	}
+	defer cursor.Close(context.Background())
 	for cursor.Next(context.Background()) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)
@@ -111,6 +112,7 @@ func (this *Database) AdminListResources(ctx context.Context, topicId string, li
 		debug.PrintStack()
 		return result, err
 	}
+	defer cursor.Close(context.Background())
 	for cursor.Next(context.Background()) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)
@@ -181,6 +183,7 @@ func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId st
 	if err != nil {
 		return result, err
 	}
+	defer cursor.Close(context.Background())
 	for cursor.Next(context.Background()) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)

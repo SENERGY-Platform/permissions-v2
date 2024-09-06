@@ -39,6 +39,7 @@ func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topi
 	if err != nil {
 		return result, err
 	}
+	defer cursor.Close(context.Background())
 	result = map[string]bool{}
 	for cursor.Next(context.Background()) {
 		element := PermissionsEntry{}

@@ -87,6 +87,7 @@ func (this *Database) ListTopics(ctx context.Context, listOptions model.ListOpti
 	if err != nil {
 		return result, err
 	}
+	defer cursor.Close(context.Background())
 	for cursor.Next(context.Background()) {
 		element := model.Topic{}
 		err = cursor.Decode(&element)
