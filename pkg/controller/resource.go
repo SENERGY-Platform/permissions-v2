@@ -181,33 +181,39 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 		return result, err, code
 	}
 
-	publish := topic.PublishToKafkaTopic != "" && topic.PublishToKafkaTopic != "-"
-
-	err = this.db.SetResource(this.getTimeoutContext(), model.Resource{
+	err = this.setPermission(topic, model.Resource{
 		Id:                  pureId,
 		TopicId:             topic.Id,
 		ResourcePermissions: permissions,
-	}, time.Now(), !publish)
-
+	})
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
+	return permissions, nil, http.StatusOK
+}
+
+func (this *Controller) setPermission(topic model.Topic, resource model.Resource) (err error) {
+	publish := topic.PublishToKafkaTopic != "" && topic.PublishToKafkaTopic != "-"
+
+	err = this.db.SetResource(this.getTimeoutContext(), resource, time.Now(), !publish)
+	if err != nil {
+		return err
+	}
 
 	if publish {
-		err = this.publishPermission(topic, pureId, permissions)
+		err = this.publishPermission(topic, resource.Id, resource.ResourcePermissions)
 		if err != nil {
 			log.Println("WARNING: unable to publish permissions update to", topic.PublishToKafkaTopic)
 			this.notifyError(fmt.Errorf("unable to publish permissions update to %v; publish will be retried", topic.PublishToKafkaTopic))
-			return permissions, nil, http.StatusOK
+			return nil
 		} else {
-			err = this.db.MarkResourceAsSynced(this.getTimeoutContext(), topic.Id, pureId)
+			err = this.db.MarkResourceAsSynced(this.getTimeoutContext(), topic.Id, resource.Id)
 			if err != nil {
-				log.Println("WARNING: unable to mark resource as synced", topic.Id, pureId)
+				log.Println("WARNING: unable to mark resource as synced", topic.Id, resource.Id)
 			}
 		}
 	}
-
-	return permissions, err, http.StatusOK
+	return err
 }
 
 func (this *Controller) checkGroupMembership(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (error, int) {

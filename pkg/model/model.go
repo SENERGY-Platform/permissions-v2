@@ -90,3 +90,11 @@ func (this Topic) Equal(topic Topic) bool {
 	}
 	return true
 }
+
+type AdminLoadPermSearchRequest struct {
+	PermissionSearchUrl string `json:"permission_search_url"`
+	Token               string `json:"token"`
+	TopicId             string `json:"topic_id"`           //topic as used in permissions-v2
+	OverwriteExisting   bool   `json:"overwrite_existing"` //false -> skip known elements; true -> force state of permission-search
+	DryRun              bool   `json:"dry_run"`            //true -> log changes without executing them
+}

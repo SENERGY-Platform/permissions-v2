@@ -32,6 +32,7 @@ type AdminInterface interface {
 	RemoveTopic(token string, id string) (err error, code int)
 	SetTopic(token string, topic model.Topic) (result model.Topic, err error, code int)
 	AdminListResourceIds(tokenStr string, topicId string, options model.ListOptions) (ids []string, err error, code int)
+	AdminLoadFromPermissionSearch(req model.AdminLoadPermSearchRequest) (updateCount int, err error, code int)
 }
 
 type PermissionsCheckInterface interface {

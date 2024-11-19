@@ -1,5 +1,21 @@
 basePath: /
 definitions:
+  model.AdminLoadPermSearchRequest:
+    properties:
+      dry_run:
+        description: true -> log changes without executing them
+        type: boolean
+      overwrite_existing:
+        description: false -> skip known elements; true -> force state of permission-search
+        type: boolean
+      permission_search_url:
+        type: string
+      token:
+        type: string
+      topic_id:
+        description: topic as used in permissions-v2
+        type: string
+    type: object
   model.ComputedPermissions:
     properties:
       administrate:
@@ -133,6 +149,39 @@ paths:
       tags:
       - accessible
       - resource
+  /admin/load/permission-search:
+    post:
+      consumes:
+      - application/json
+      description: load rights from permission-search, requesting user must have admin
+        right
+      parameters:
+      - description: load configuration
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/model.AdminLoadPermSearchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: update count
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: load rights from permission-search
+      tags:
+      - admin
   /admin/resources/{topic}:
     get:
       description: lists resource ids in topic, requesting user must be in admin group

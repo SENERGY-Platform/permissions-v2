@@ -98,6 +98,57 @@ const docTemplatepermissionsv2 = `{
                 }
             }
         },
+        "/admin/load/permission-search": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "load rights from permission-search, requesting user must have admin right",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "load rights from permission-search",
+                "parameters": [
+                    {
+                        "description": "load configuration",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AdminLoadPermSearchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "update count",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/admin/resources/{topic}": {
             "get": {
                 "security": [
@@ -904,6 +955,29 @@ const docTemplatepermissionsv2 = `{
         }
     },
     "definitions": {
+        "model.AdminLoadPermSearchRequest": {
+            "type": "object",
+            "properties": {
+                "dry_run": {
+                    "description": "true -\u003e log changes without executing them",
+                    "type": "boolean"
+                },
+                "overwrite_existing": {
+                    "description": "false -\u003e skip known elements; true -\u003e force state of permission-search",
+                    "type": "boolean"
+                },
+                "permission_search_url": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "topic_id": {
+                    "description": "topic as used in permissions-v2",
+                    "type": "string"
+                }
+            }
+        },
         "model.ComputedPermissions": {
             "type": "object",
             "properties": {

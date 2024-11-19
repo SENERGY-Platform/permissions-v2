@@ -71,3 +71,54 @@ func (this *TopicsEndpoints) AdminListResourceIds(config configuration.Config, r
 		}
 	})
 }
+
+// AdminLoadFromPermissionSearch godoc
+// @Summary      load rights from permission-search
+// @Description  load rights from permission-search, requesting user must have admin right
+// @Tags         admin
+// @Security Bearer
+// @Param        message body model.AdminLoadPermSearchRequest true "load configuration"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object}  integer "update count"
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Failure      500
+// @Router       /admin/load/permission-search [post]
+func (this *TopicsEndpoints) AdminLoadFromPermissionSearch(config configuration.Config, router *http.ServeMux, ctrl Controller) {
+	router.HandleFunc("POST /admin/load/permission-search", func(w http.ResponseWriter, req *http.Request) {
+		token, err := jwt.GetParsedToken(req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		if !token.IsAdmin() {
+			http.Error(w, "only admins may load from permission-search", http.StatusForbidden)
+			return
+		}
+		loadReq := model.AdminLoadPermSearchRequest{}
+		err = json.NewDecoder(req.Body).Decode(&loadReq)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if loadReq.PermissionSearchUrl == "" {
+			http.Error(w, "missing permission_search_url", http.StatusBadRequest)
+			return
+		}
+		if loadReq.Token == "" {
+			loadReq.Token = token.Jwt()
+		}
+		if loadReq.TopicId == "" {
+			http.Error(w, "missing topic_id", http.StatusBadRequest)
+			return
+		}
+		updateCount, err, code := ctrl.AdminLoadFromPermissionSearch(loadReq)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+			return
+		}
+		json.NewEncoder(w).Encode(updateCount)
+	})
+}

@@ -203,6 +203,12 @@ func (this *ClientImpl) SetPermission(token string, topicId string, id string, p
 	return do[ResourcePermissions](token, req)
 }
 
+// AdminLoadFromPermissionSearch is not supported by the client
+// because this request should never be automated
+func (this *ClientImpl) AdminLoadFromPermissionSearch(req model.AdminLoadPermSearchRequest) (updateCount int, err error, code int) {
+	panic("no client support: this request should never be automated")
+}
+
 func do[T any](token string, req *http.Request) (result T, err error, code int) {
 	req.Header.Set("Authorization", token)
 
