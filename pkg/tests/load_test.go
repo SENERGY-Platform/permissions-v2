@@ -38,6 +38,7 @@ import (
 )
 
 func TestAdminLoadFromPermissionSearch(t *testing.T) {
+	t.Skip("permission-search is deprecated")
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -79,7 +80,7 @@ func TestAdminLoadFromPermissionSearch(t *testing.T) {
 	}
 	config.MongoUrl = "mongodb://localhost:" + dockerPort
 
-	kafka.InitTopic(config.KafkaUrl, "locations")
+	err = kafka.InitTopic(config.KafkaUrl, "locations")
 	if err != nil {
 		t.Error(err)
 		return
