@@ -256,7 +256,7 @@ func (this *Controller) checkGroupMembership(token jwt.Token, topicId string, id
 			if !slices.ContainsFunc(usersInSameGroup, func(user User) bool {
 				return user.Id == addedUser
 			}) {
-				return fmt.Errorf("added user '%v' nat in the same group as the requesting user", addedUser), http.StatusBadRequest
+				return fmt.Errorf("added user '%v' not in the same group as the requesting user", addedUser), http.StatusBadRequest
 			}
 		}
 	}

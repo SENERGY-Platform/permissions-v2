@@ -18,6 +18,7 @@ package mongo
 
 import (
 	"context"
+	"errors"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -58,14 +59,14 @@ func (this *Database) GetTopic(ctx context.Context, id string) (result model.Top
 	}
 	temp := this.topicsCollection().FindOne(ctx, bson.M{TopicBson.Id: id})
 	err = temp.Err()
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return result, false, nil
 	}
 	if err != nil {
 		return
 	}
 	err = temp.Decode(&result)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return result, false, nil
 	}
 	return result, true, err
@@ -83,7 +84,13 @@ func (this *Database) ListTopics(ctx context.Context, listOptions model.ListOpti
 		opt.SetSkip(listOptions.Offset)
 	}
 	opt.SetSort(bson.D{{TopicBson.Id, 1}})
-	cursor, err := this.topicsCollection().Find(ctx, bson.M{}, opt)
+
+	filter := bson.M{}
+	if listOptions.Ids != nil {
+		filter[TopicBson.Id] = bson.M{"$in": listOptions.Ids}
+	}
+
+	cursor, err := this.topicsCollection().Find(ctx, filter, opt)
 	if err != nil {
 		return result, err
 	}

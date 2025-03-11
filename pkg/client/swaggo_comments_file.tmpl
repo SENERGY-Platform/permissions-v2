@@ -23,108 +23,83 @@ package {{.PackageName}}
 
 
 
-// GeneratedListTopics godoc
-// @Summary      lists topics with their configuration
-// @Description  lists topics with their configuration, requesting user must be admin
-// @Tags         topics
+// GeneratedAdminListResourceIds godoc
+// @Summary      lists resource ids in topic
+// @Description  lists resource ids in topic, requesting user must be in admin group
+// @Tags         topics, resources, admin
 // @Security Bearer
+// @Param        topic path string true "Topic Id"
 // @Param        limit query integer false "limits size of result; 0 means unlimited"
 // @Param        offset query integer false "offset to be used in combination with limit"
 // @Produce      json
-// @Success      200 {array}  model.Topic
+// @Success      200 {array}  string
 // @Failure      400
 // @Failure      401
 // @Failure      403
 // @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/admin/topics [get]
-func GeneratedListTopics(){
+// @Router       /{{.PrefixWithoutSlash}}/admin/resources/{topic} [get]
+func GeneratedAdminListResourceIds(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }
 
 
 
-// GeneratedGetTopic godoc
-// @Summary      get topic config
-// @Description  get topic config, requesting user must be admin
-// @Tags         topics
+// GeneratedAdminLoadFromPermissionSearch godoc
+// @Summary      load rights from permission-search
+// @Description  load rights from permission-search, requesting user must have admin right
+// @Tags         admin
 // @Security Bearer
-// @Param        id path string true "Topic Id"
-// @Produce      json
-// @Success      200 {object}  model.Topic
-// @Failure      400
-// @Failure      401
-// @Failure      403
-// @Failure      404
-// @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/admin/topics/{id} [get]
-func GeneratedGetTopic(){
-	//this method is only used as anchor for swagger documentation
-	panic("this method is only used as anchor for swagger documentation")
-}
-
-
-
-// GeneratedSetTopic godoc
-// @Summary      set topic config
-// @Description  set topic config, requesting user must be admin
-// @Tags         topics
+// @Param        message body model.AdminLoadPermSearchRequest true "load configuration"
 // @Accept       json
 // @Produce      json
-// @Security Bearer
-// @Param        id path string true "Topic Id"
-// @Param        message body model.Topic true "Topic"
-// @Success      200 {object}  model.Topic
+// @Success      200 {object}  integer "update count"
 // @Failure      400
 // @Failure      401
 // @Failure      403
-// @Failure      404
 // @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/admin/topics/{id} [put]
-func GeneratedSetTopic(){
+// @Router       /{{.PrefixWithoutSlash}}/admin/load/permission-search [post]
+func GeneratedAdminLoadFromPermissionSearch(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }
 
 
 
-// GeneratedSetTopicByPost godoc
-// @Summary      set topic config
-// @Description  set topic config, requesting user must be admin
-// @Tags         topics
-// @Accept       json
+// GeneratedListComputedPermissions godoc
+// @Summary      list the computed permissions to resources of the given topic and ids
+// @Description  list the computed permissions to resources of the given topic and ids, group and user permissions are merged, unknown ids will get entries in the result
+// @Tags         permissions, check, list
+// @Security Bearer
+// @Param        topic path string true "Topic Id"
+// @Param        ids query string true "Resource Ids, comma seperated"
 // @Produce      json
-// @Security Bearer
-// @Param        message body model.Topic true "Topic"
-// @Success      200 {object}  model.Topic
-// @Success      202 {object}  model.Topic
+// @Success      200 {array} model.ComputedPermissions
 // @Failure      400
 // @Failure      401
-// @Failure      403
-// @Failure      404
 // @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/admin/topics [POST]
-func GeneratedSetTopicByPost(){
+// @Router       /{{.PrefixWithoutSlash}}/permissions/{topic} [get]
+func GeneratedListComputedPermissions(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }
 
 
 
-// GeneratedDeleteTopic godoc
-// @Summary      remove topic config
-// @Description  remove topic config, requesting user must be admin
-// @Tags         topics
+// GeneratedQueryListComputedPermissions godoc
+// @Summary      list the computed permissions to resources of the given topic and ids
+// @Description  list the computed permissions to resources of the given topic and ids, group and user permissions are merged, unknown ids will get entries in the result
+// @Tags         permissions, check, list, query
 // @Security Bearer
-// @Param        id path string true "Topic Id"
-// @Success      200
+// @Param        topic path string true "Topic Id"
+// @Param        ids body []string true "Resource Ids"
+// @Produce      json
+// @Success      200 {array} model.ComputedPermissions
 // @Failure      400
 // @Failure      401
-// @Failure      403
-// @Failure      404
 // @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/admin/topics/{id} [delete]
-func GeneratedDeleteTopic(){
+// @Router       /{{.PrefixWithoutSlash}}/query/permissions/{topic} [post]
+func GeneratedQueryListComputedPermissions(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }
@@ -282,40 +257,108 @@ func GeneratedSetPermission(){
 
 
 
-// GeneratedListComputedPermissions godoc
-// @Summary      list the computed permissions to resources of the given topic and ids
-// @Description  list the computed permissions to resources of the given topic and ids, group and user permissions are merged, unknown ids will get entries in the result
-// @Tags         permissions, check, list
+// GeneratedListTopics godoc
+// @Summary      lists topics with their configuration
+// @Description  lists topics with their configuration, requesting user must be admin
+// @Tags         topics
 // @Security Bearer
-// @Param        topic path string true "Topic Id"
-// @Param        ids query string true "Resource Ids, comma seperated"
+// @Param        limit query integer false "limits size of result; 0 means unlimited"
+// @Param        offset query integer false "offset to be used in combination with limit"
 // @Produce      json
-// @Success      200 {array} model.ComputedPermissions
+// @Success      200 {array}  model.Topic
 // @Failure      400
 // @Failure      401
+// @Failure      403
 // @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/permissions/{topic} [get]
-func GeneratedListComputedPermissions(){
+// @Router       /{{.PrefixWithoutSlash}}/admin/topics [get]
+func GeneratedListTopics(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }
 
 
 
-// GeneratedQueryListComputedPermissions godoc
-// @Summary      list the computed permissions to resources of the given topic and ids
-// @Description  list the computed permissions to resources of the given topic and ids, group and user permissions are merged, unknown ids will get entries in the result
-// @Tags         permissions, check, list, query
+// GeneratedGetTopic godoc
+// @Summary      get topic config
+// @Description  get topic config, requesting user must be admin
+// @Tags         topics
 // @Security Bearer
-// @Param        topic path string true "Topic Id"
-// @Param        ids body []string true "Resource Ids"
+// @Param        id path string true "Topic Id"
 // @Produce      json
-// @Success      200 {array} model.ComputedPermissions
+// @Success      200 {object}  model.Topic
 // @Failure      400
 // @Failure      401
+// @Failure      403
+// @Failure      404
 // @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/query/permissions/{topic} [post]
-func GeneratedQueryListComputedPermissions(){
+// @Router       /{{.PrefixWithoutSlash}}/admin/topics/{id} [get]
+func GeneratedGetTopic(){
+	//this method is only used as anchor for swagger documentation
+	panic("this method is only used as anchor for swagger documentation")
+}
+
+
+
+// GeneratedSetTopic godoc
+// @Summary      set topic config
+// @Description  set topic config, requesting user must be admin
+// @Tags         topics
+// @Accept       json
+// @Produce      json
+// @Security Bearer
+// @Param        id path string true "Topic Id"
+// @Param        message body model.Topic true "Topic"
+// @Success      200 {object}  model.Topic
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Failure      404
+// @Failure      500
+// @Router       /{{.PrefixWithoutSlash}}/admin/topics/{id} [put]
+func GeneratedSetTopic(){
+	//this method is only used as anchor for swagger documentation
+	panic("this method is only used as anchor for swagger documentation")
+}
+
+
+
+// GeneratedSetTopicByPost godoc
+// @Summary      set topic config
+// @Description  set topic config, requesting user must be admin
+// @Tags         topics
+// @Accept       json
+// @Produce      json
+// @Security Bearer
+// @Param        message body model.Topic true "Topic"
+// @Success      200 {object}  model.Topic
+// @Success      202 {object}  model.Topic
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Failure      404
+// @Failure      500
+// @Router       /{{.PrefixWithoutSlash}}/admin/topics [POST]
+func GeneratedSetTopicByPost(){
+	//this method is only used as anchor for swagger documentation
+	panic("this method is only used as anchor for swagger documentation")
+}
+
+
+
+// GeneratedDeleteTopic godoc
+// @Summary      remove topic config
+// @Description  remove topic config, requesting user must be admin
+// @Tags         topics
+// @Security Bearer
+// @Param        id path string true "Topic Id"
+// @Success      200
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Failure      404
+// @Failure      500
+// @Router       /{{.PrefixWithoutSlash}}/admin/topics/{id} [delete]
+func GeneratedDeleteTopic(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }
@@ -324,49 +367,6 @@ func GeneratedQueryListComputedPermissions(){
 
 
 func GeneratedSwagger(){
-	//this method is only used as anchor for swagger documentation
-	panic("this method is only used as anchor for swagger documentation")
-}
-
-
-
-// GeneratedAdminListResourceIds godoc
-// @Summary      lists resource ids in topic
-// @Description  lists resource ids in topic, requesting user must be in admin group
-// @Tags         topics, resources, admin
-// @Security Bearer
-// @Param        topic path string true "Topic Id"
-// @Param        limit query integer false "limits size of result; 0 means unlimited"
-// @Param        offset query integer false "offset to be used in combination with limit"
-// @Produce      json
-// @Success      200 {array}  string
-// @Failure      400
-// @Failure      401
-// @Failure      403
-// @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/admin/resources/{topic} [get]
-func GeneratedAdminListResourceIds(){
-	//this method is only used as anchor for swagger documentation
-	panic("this method is only used as anchor for swagger documentation")
-}
-
-
-
-// GeneratedAdminLoadFromPermissionSearch godoc
-// @Summary      load rights from permission-search
-// @Description  load rights from permission-search, requesting user must have admin right
-// @Tags         admin
-// @Security Bearer
-// @Param        message body model.AdminLoadPermSearchRequest true "load configuration"
-// @Accept       json
-// @Produce      json
-// @Success      200 {object}  integer "update count"
-// @Failure      400
-// @Failure      401
-// @Failure      403
-// @Failure      500
-// @Router       /{{.PrefixWithoutSlash}}/admin/load/permission-search [post]
-func GeneratedAdminLoadFromPermissionSearch(){
 	//this method is only used as anchor for swagger documentation
 	panic("this method is only used as anchor for swagger documentation")
 }

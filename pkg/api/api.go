@@ -57,6 +57,7 @@ func Start(ctx context.Context, config configuration.Config, ctrl Controller) (e
 	return
 }
 
+// GetRouter
 // @title         Permissions API
 // @version       0.1
 // @license.name  Apache 2.0

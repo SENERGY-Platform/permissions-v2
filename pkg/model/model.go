@@ -20,6 +20,7 @@ import (
 	"errors"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -97,4 +98,29 @@ type AdminLoadPermSearchRequest struct {
 	TopicId             string `json:"topic_id"`           //topic as used in permissions-v2
 	OverwriteExisting   bool   `json:"overwrite_existing"` //false -> skip known elements; true -> force state of permission-search
 	DryRun              bool   `json:"dry_run"`            //true -> log changes without executing them
+}
+
+type ImportExportOptions struct {
+	IncludeTopicConfig bool     `json:"include_topic_config"`
+	IncludePermissions bool     `json:"include_permissions"`
+	FilterTopics       []string `json:"filter_topics,omitempty"`      //null->all; []->none
+	FilterResourceId   []string `json:"filter_resource_id,omitempty"` //null->all; []->none
+}
+
+type ImportExport struct {
+	Topics      []Topic    `json:"topics,omitempty"`
+	Permissions []Resource `json:"permissions,omitempty"`
+}
+
+func (this *ImportExport) Sort() {
+	slices.SortFunc(this.Topics, func(a, b Topic) int {
+		return strings.Compare(a.Id, b.Id)
+	})
+	slices.SortFunc(this.Permissions, func(a, b Resource) int {
+		comp := strings.Compare(a.TopicId, b.TopicId)
+		if comp == 0 {
+			comp = strings.Compare(a.Id, b.Id)
+		}
+		return comp
+	})
 }
