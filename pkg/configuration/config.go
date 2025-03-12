@@ -41,6 +41,8 @@ type Config struct {
 	MongoPermissionsCollection string `json:"mongo_permissions_collection"`
 	MongoTopicsCollection      string `json:"mongo_topics_collection"`
 
+	MigrateFromMongoUrl string `json:"migrate_from_mongo_url"`
+
 	SyncCheckInterval Duration `json:"sync_check_interval"`
 	SyncAgeLimit      Duration `json:"sync_age_limit"`
 

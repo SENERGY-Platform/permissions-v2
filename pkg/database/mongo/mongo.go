@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
@@ -53,7 +54,74 @@ func New(conf configuration.Config) (*Database, error) {
 			return nil, err
 		}
 	}
+	if conf.MigrateFromMongoUrl != "" && conf.MigrateFromMongoUrl != "-" {
+		topics, err := db.ListTopics(context.Background(), model.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+		if len(topics) == 0 {
+			err = MigrateDb(db, conf)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 	return db, nil
+}
+
+func MigrateDb(db *Database, origConf configuration.Config) error {
+	log.Println("Migrating database...")
+	ctx, _ := getTimeoutContext()
+	conf := origConf
+	conf.MongoUrl = origConf.MigrateFromMongoUrl
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.MongoUrl))
+	if err != nil {
+		return err
+	}
+
+	source := &Database{config: conf, client: client}
+
+	topics, err := source.ListTopics(context.Background(), model.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, topic := range topics {
+		log.Printf("migrate topic %s\n", topic.Id)
+		ctx, _ := getTimeoutContext()
+		err = db.SetTopic(ctx, topic)
+		if err != nil {
+			return err
+		}
+	}
+
+	cursor, err := source.permissionsCollection().Find(context.Background(), bson.M{})
+	if err != nil {
+		debug.PrintStack()
+		return err
+	}
+	defer cursor.Close(context.Background())
+	for cursor.Next(context.Background()) {
+		element := PermissionsEntry{}
+		err = cursor.Decode(&element)
+		if err != nil {
+			debug.PrintStack()
+			return err
+		}
+		log.Printf("migrate permission entry %s %s\n", element.TopicId, element.Id)
+		ctx, _ := getTimeoutContext()
+		_, err = db.permissionsCollection().ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
+		if err != nil {
+			debug.PrintStack()
+			return err
+		}
+	}
+	err = cursor.Err()
+	if err != nil {
+		debug.PrintStack()
+		return err
+	}
+	return nil
 }
 
 func (this *Database) CreateId() string {

@@ -21,12 +21,12 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/tests/docker"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"reflect"
+	"slices"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 type LegacyPermissionsEntry struct {
@@ -55,6 +55,12 @@ func TestMigration(t *testing.T) {
 		return
 	}
 
+	sourceConfig, err := configuration.Load("../../../config.json")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
 	port, _, err := docker.MongoDB(ctx, wg)
 	if err != nil {
 		t.Error(err)
@@ -62,148 +68,232 @@ func TestMigration(t *testing.T) {
 	}
 	config.MongoUrl = "mongodb://localhost:" + port
 
-	t.Run("create legacy entries", func(t *testing.T) {
-		ctx, _ := getTimeoutContext()
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.MongoUrl))
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		db := &Database{config: config, client: client}
-		collection := db.client.Database(db.config.MongoDatabase).Collection(db.config.MongoPermissionsCollection)
-		err = db.ensureCompoundIndex(collection, "permissionsbytopicandid", true, true, PermissionsEntryBson.TopicId, PermissionsEntryBson.Id)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-
-		list := []LegacyPermissionsEntry{
-			{
-				TopicId:       "foo",
-				Id:            "a",
-				Timestamp:     21,
-				AdminUsers:    []string{"owner"},
-				AdminGroups:   []string{"admin"},
-				ReadUsers:     []string{"owner", "ur"},
-				ReadGroups:    []string{"gr", "admin"},
-				WriteUsers:    []string{"owner", "uw"},
-				WriteGroups:   []string{"gw", "admin"},
-				ExecuteUsers:  []string{"owner", "ux"},
-				ExecuteGroups: []string{"gx", "admin"},
-			},
-			{
-				TopicId:       "foo",
-				Id:            "b",
-				Timestamp:     42,
-				AdminUsers:    []string{"owner"},
-				AdminGroups:   nil,
-				ReadUsers:     nil,
-				ReadGroups:    nil,
-				WriteUsers:    nil,
-				WriteGroups:   nil,
-				ExecuteUsers:  nil,
-				ExecuteGroups: nil,
-			},
-			{
-				TopicId:       "foo",
-				Id:            "c",
-				Timestamp:     42,
-				AdminUsers:    []string{"owner"},
-				AdminGroups:   []string{},
-				ReadUsers:     []string{},
-				ReadGroups:    []string{},
-				WriteUsers:    []string{},
-				WriteGroups:   []string{},
-				ExecuteUsers:  []string{},
-				ExecuteGroups: []string{},
-			},
-		}
-
-		for _, element := range list {
-			_, err = collection.ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
-			if err != nil {
-				t.Error(err)
-			}
-		}
-
-	})
-
-	expected := []model.Resource{
-		{
-			Id:      "a",
-			TopicId: "foo",
-			ResourcePermissions: model.ResourcePermissions{
-				UserPermissions: map[string]model.PermissionsMap{
-					"owner": {Read: true, Write: true, Execute: true, Administrate: true},
-					"ur":    {Read: true, Write: false, Execute: false, Administrate: false},
-					"uw":    {Read: false, Write: true, Execute: false, Administrate: false},
-					"ux":    {Read: false, Write: false, Execute: true, Administrate: false},
-				},
-				GroupPermissions: map[string]model.PermissionsMap{},
-				RolePermissions: map[string]model.PermissionsMap{
-					"admin": {Read: true, Write: true, Execute: true, Administrate: true},
-					"gr":    {Read: true, Write: false, Execute: false, Administrate: false},
-					"gw":    {Read: false, Write: true, Execute: false, Administrate: false},
-					"gx":    {Read: false, Write: false, Execute: true, Administrate: false},
-				},
-			},
-		},
-		{
-			Id:      "b",
-			TopicId: "foo",
-			ResourcePermissions: model.ResourcePermissions{
-				UserPermissions: map[string]model.PermissionsMap{
-					"owner": {Read: false, Write: false, Execute: false, Administrate: true},
-				},
-				GroupPermissions: map[string]model.PermissionsMap{},
-				RolePermissions:  map[string]model.PermissionsMap{},
-			},
-		},
-		{
-			Id:      "c",
-			TopicId: "foo",
-			ResourcePermissions: model.ResourcePermissions{
-				UserPermissions: map[string]model.PermissionsMap{
-					"owner": {Read: false, Write: false, Execute: false, Administrate: true},
-				},
-				GroupPermissions: map[string]model.PermissionsMap{},
-				RolePermissions:  map[string]model.PermissionsMap{},
-			},
-		},
+	port, _, err = docker.MongoDB(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
 	}
+	config.MigrateFromMongoUrl = "mongodb://localhost:" + port
+	sourceConfig.MongoUrl = config.MigrateFromMongoUrl
 
-	t.Run("init", func(t *testing.T) {
-		c, err := New(config)
+	t.Run("create source entries", func(t *testing.T) {
+		source, err := New(sourceConfig)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		ctx, _ := getTimeoutContext()
-		list, err := c.AdminListResources(ctx, "foo", model.ListOptions{})
+
+		err = source.SetTopic(ctx, model.Topic{
+			Id:                  "t1",
+			PublishToKafkaTopic: "t1",
+		})
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		if !reflect.DeepEqual(list, expected) {
-			t.Errorf("\n%#v\n%#v\n", list, expected)
+
+		err = source.SetTopic(ctx, model.Topic{
+			Id: "t2",
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = source.SetPermissions(ctx, "t1", "r1", model.ResourcePermissions{
+			UserPermissions: map[string]model.PermissionsMap{
+				"ut1r1": {Read: true, Write: true, Execute: true, Administrate: true},
+			},
+		}, time.Unix(10, 0), false)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		err = source.SetPermissions(ctx, "t1", "r2", model.ResourcePermissions{
+			UserPermissions: map[string]model.PermissionsMap{
+				"ut1r2": {Read: true, Write: true, Execute: true, Administrate: true},
+			},
+		}, time.Unix(15, 0), true)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = source.SetPermissions(ctx, "t2", "r1", model.ResourcePermissions{
+			UserPermissions: map[string]model.PermissionsMap{
+				"ut2r1": {Read: true, Write: true, Execute: true, Administrate: true},
+			},
+		}, time.Unix(20, 0), true)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = source.SetPermissions(ctx, "t2", "r2", model.ResourcePermissions{
+			UserPermissions: map[string]model.PermissionsMap{
+				"ut2r2": {Read: true, Write: true, Execute: true, Administrate: true},
+			},
+		}, time.Unix(25, 0), false)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+	})
+
+	var db *Database
+	t.Run("migrate", func(t *testing.T) {
+		db, err = New(config)
+		if err != nil {
+			t.Error(err)
 			return
 		}
 	})
 
-	t.Run("re-init", func(t *testing.T) {
-		c, err := New(config)
+	t.Run("check topics", func(t *testing.T) {
+		list, err := db.ListTopics(ctx, model.ListOptions{})
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		ctx, _ := getTimeoutContext()
-		list, err := c.AdminListResources(ctx, "foo", model.ListOptions{})
+		slices.SortFunc(list, func(a, b model.Topic) int {
+			return strings.Compare(a.Id, b.Id)
+		})
+
+		//remove timestamps
+		for i, t := range list {
+			t.LastUpdateUnixTimestamp = 0
+			list[i] = t
+		}
+
+		if !reflect.DeepEqual(list, []model.Topic{
+			{Id: "t1", PublishToKafkaTopic: "t1"},
+			{Id: "t2"},
+		}) {
+			t.Errorf("%#v\n", list)
+			return
+		}
+	})
+
+	t.Run("check resources t1", func(t *testing.T) {
+		list, err := db.AdminListResources(ctx, "t1", model.ListOptions{})
 		if err != nil {
 			t.Error(err)
 			return
 		}
+		slices.SortFunc(list, func(a, b model.Resource) int {
+			return strings.Compare(a.Id, b.Id)
+		})
+
+		expected := []model.Resource{
+			{
+				Id:      "r1",
+				TopicId: "t1",
+				ResourcePermissions: model.ResourcePermissions{
+					RolePermissions:  map[string]model.PermissionsMap{},
+					GroupPermissions: map[string]model.PermissionsMap{},
+					UserPermissions: map[string]model.PermissionsMap{
+						"ut1r1": {Read: true, Write: true, Execute: true, Administrate: true},
+					},
+				},
+			},
+			{
+				Id:      "r2",
+				TopicId: "t1",
+				ResourcePermissions: model.ResourcePermissions{
+					RolePermissions:  map[string]model.PermissionsMap{},
+					GroupPermissions: map[string]model.PermissionsMap{},
+					UserPermissions: map[string]model.PermissionsMap{
+						"ut1r2": {Read: true, Write: true, Execute: true, Administrate: true},
+					},
+				},
+			},
+		}
+
 		if !reflect.DeepEqual(list, expected) {
-			t.Errorf("\n%#v\n%#v\n", list, expected)
+			t.Errorf("\na:%#v\ne:%#v\n", list, expected)
+			return
+		}
+	})
+
+	t.Run("check resources t2", func(t *testing.T) {
+		list, err := db.AdminListResources(ctx, "t2", model.ListOptions{})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		slices.SortFunc(list, func(a, b model.Resource) int {
+			return strings.Compare(a.Id, b.Id)
+		})
+
+		expected := []model.Resource{
+			{
+				Id:      "r1",
+				TopicId: "t2",
+				ResourcePermissions: model.ResourcePermissions{
+					RolePermissions:  map[string]model.PermissionsMap{},
+					GroupPermissions: map[string]model.PermissionsMap{},
+					UserPermissions: map[string]model.PermissionsMap{
+						"ut2r1": {Read: true, Write: true, Execute: true, Administrate: true},
+					},
+				},
+			},
+			{
+				Id:      "r2",
+				TopicId: "t2",
+				ResourcePermissions: model.ResourcePermissions{
+					RolePermissions:  map[string]model.PermissionsMap{},
+					GroupPermissions: map[string]model.PermissionsMap{},
+					UserPermissions: map[string]model.PermissionsMap{
+						"ut2r2": {Read: true, Write: true, Execute: true, Administrate: true},
+					},
+				},
+			},
+		}
+
+		if !reflect.DeepEqual(list, expected) {
+			t.Errorf("\na:%#v\ne:%#v\n", list, expected)
+			return
+		}
+	})
+
+	t.Run("check sync state", func(t *testing.T) {
+		list, err := db.ListUnsyncedResources(ctx)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		slices.SortFunc(list, func(a, b model.Resource) int {
+			return strings.Compare(a.TopicId+a.Id, b.TopicId+b.Id)
+		})
+
+		expected := []model.Resource{
+			{
+				Id:      "r1",
+				TopicId: "t1",
+				ResourcePermissions: model.ResourcePermissions{
+					RolePermissions:  map[string]model.PermissionsMap{},
+					GroupPermissions: map[string]model.PermissionsMap{},
+					UserPermissions: map[string]model.PermissionsMap{
+						"ut1r1": {Read: true, Write: true, Execute: true, Administrate: true},
+					},
+				},
+			},
+			{
+				Id:      "r2",
+				TopicId: "t2",
+				ResourcePermissions: model.ResourcePermissions{
+					RolePermissions:  map[string]model.PermissionsMap{},
+					GroupPermissions: map[string]model.PermissionsMap{},
+					UserPermissions: map[string]model.PermissionsMap{
+						"ut2r2": {Read: true, Write: true, Execute: true, Administrate: true},
+					},
+				},
+			},
+		}
+
+		if !reflect.DeepEqual(list, expected) {
+			t.Errorf("\na:%#v\ne:%#v\n", list, expected)
 			return
 		}
 	})

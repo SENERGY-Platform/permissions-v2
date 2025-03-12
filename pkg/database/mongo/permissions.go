@@ -17,12 +17,8 @@
 package mongo
 
 import (
-	"context"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 var PermissionsEntryBson = getBsonFieldObject[PermissionsEntry]()
@@ -42,48 +38,8 @@ func init() {
 		if err != nil {
 			return err
 		}
-
-		err = migrateOldGroupToRole(db, collection)
-		if err != nil {
-			return err
-		}
 		return nil
 	})
-}
-
-func migrateOldGroupToRole(db *Database, collection *mongo.Collection) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Minute)
-	opt := options.Find()
-	opt.SetSort(bson.D{{PermissionsEntryBson.Id, 1}})
-	cursor, err := collection.Find(ctx, bson.M{PermissionsEntrySyncedBson: bson.M{"$exists": false}}, opt)
-	if err != nil {
-		return err
-	}
-	for cursor.Next(context.Background()) {
-		element := PermissionsEntry{}
-		err = cursor.Decode(&element)
-		if err != nil {
-			return err
-		}
-		element.Timestamp = time.Now().UnixMilli()
-		element.Synced = true
-		element.AdminRoles = element.AdminGroups
-		element.AdminGroups = []string{}
-		element.ReadRoles = element.ReadGroups
-		element.ReadGroups = []string{}
-		element.WriteRoles = element.WriteGroups
-		element.WriteGroups = []string{}
-		element.ExecuteRoles = element.ExecuteGroups
-		element.ExecuteGroups = []string{}
-
-		_, err = collection.ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
-		if err != nil {
-			return err
-		}
-	}
-
-	err = cursor.Err()
-	return err
 }
 
 type PermissionsEntry struct {
