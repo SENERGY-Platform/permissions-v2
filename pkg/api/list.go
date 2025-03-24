@@ -34,7 +34,7 @@ type PermissionsListEndpoints struct{}
 // ListComputedPermissions godoc
 // @Summary      list the computed permissions to resources of the given topic and ids
 // @Description  list the computed permissions to resources of the given topic and ids, group and user permissions are merged, unknown ids will get entries in the result
-// @Tags         permissions, check, list
+// @Tags         permissions
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        ids query string true "Resource Ids, comma seperated"
@@ -75,7 +75,7 @@ func (this *PermissionsListEndpoints) ListComputedPermissions(config configurati
 // QueryListComputedPermissions godoc
 // @Summary      list the computed permissions to resources of the given topic and ids
 // @Description  list the computed permissions to resources of the given topic and ids, group and user permissions are merged, unknown ids will get entries in the result
-// @Tags         permissions, check, list, query
+// @Tags         permissions
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        ids body []string true "Resource Ids"

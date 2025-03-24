@@ -34,7 +34,7 @@ type PermissionsManagementEndpoints struct{}
 // ListResourcesWithAdminPermission godoc
 // @Summary      lists resources the user has admin rights to
 // @Description  lists resources the user has admin rights to
-// @Tags         manage, resource
+// @Tags         manage
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        limit query integer false "limits size of result; 0 means unlimited"
@@ -77,7 +77,7 @@ func (this *PermissionsManagementEndpoints) ListResourcesWithAdminPermission(con
 // GetResource godoc
 // @Summary      get resource
 // @Description  get resource, requesting user must have admin right  on the resource
-// @Tags         manage, resource
+// @Tags         manage
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        id path string true "Resource Id"
@@ -118,7 +118,7 @@ func (this *PermissionsManagementEndpoints) GetResource(config configuration.Con
 // DeleteResource godoc
 // @Summary      delete resource
 // @Description  delete resource, requesting user must have admin right on the resource, topic must have NoCqrs=true
-// @Tags         manage, resource
+// @Tags         manage
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        id path string true "Resource Id"
@@ -154,7 +154,7 @@ func (this *PermissionsManagementEndpoints) DeleteResource(config configuration.
 // SetPermission godoc
 // @Summary      set resource rights
 // @Description  get resource rights, requesting user must have admin right
-// @Tags         manage, resource-rights
+// @Tags         manage
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        id path string true "Resource Id"

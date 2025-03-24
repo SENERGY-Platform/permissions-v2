@@ -34,7 +34,7 @@ type AdminEndpoints struct{}
 // AdminListResourceIds godoc
 // @Summary      lists resource ids in topic
 // @Description  lists resource ids in topic, requesting user must be in admin group
-// @Tags         topics, resources, admin
+// @Tags         admin
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        limit query integer false "limits size of result; 0 means unlimited"

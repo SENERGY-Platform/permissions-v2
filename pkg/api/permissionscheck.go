@@ -138,7 +138,7 @@ func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configura
 // ListAccessibleResourceIds godoc
 // @Summary      list accessible resource ids
 // @Description  list accessible resource ids
-// @Tags         accessible, resource
+// @Tags         resource
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
 // @Param        permissions query string false "checked permissions in the form of 'rwxa', defaults to 'r'"

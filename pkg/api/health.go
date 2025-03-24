@@ -39,7 +39,7 @@ func (this *HealthEndpoints) HealthCheck(config configuration.Config, router *ht
 	})
 }
 
-// HealthCheck godoc
+// HealthCheck2 godoc
 // @Summary      health check
 // @Description  checks health and reachability of the service
 // @Tags         health

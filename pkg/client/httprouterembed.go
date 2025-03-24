@@ -18,14 +18,10 @@ package client
 
 import (
 	_ "embed"
-	"fmt"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/api"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"log"
 	"net/http"
-	"os"
 	"strings"
-	"text/template"
 )
 
 func trimPrefixPath(path string, prefix string) string {
@@ -36,12 +32,12 @@ func trimPrefixPath(path string, prefix string) string {
 	return newPath
 }
 
-func EmbedPermissionsClientIntoRouter(client Client, router http.Handler, prefix string) http.Handler {
+func EmbedPermissionsClientIntoRouter(client Client, router http.Handler, prefix string, pathFilter func(method string, path string) bool) http.Handler {
 	permRouter := api.GetRouterWithoutMiddleware(configuration.Config{
 		EnableSwaggerUi: false,
 	}, client)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, prefix) {
+		if strings.HasPrefix(r.URL.Path, prefix) && (pathFilter == nil || pathFilter(r.Method, r.URL.Path)) {
 			r.URL.Path = trimPrefixPath(r.URL.Path, prefix)
 			r.URL.RawPath = trimPrefixPath(r.URL.RawPath, prefix)
 			r.RequestURI = trimPrefixPath(r.RequestURI, prefix)
@@ -51,34 +47,4 @@ func EmbedPermissionsClientIntoRouter(client Client, router http.Handler, prefix
 			router.ServeHTTP(w, r)
 		}
 	})
-}
-
-//go:embed swaggo_comments_file.tmpl
-var docFileTempl string
-
-func GenerateGoFileWithSwaggoCommentsForEmbededPermissionsClient(packageName string, prefix string, location string) error {
-	log.Println("Generate " + location)
-	t, err := template.New("").Parse(docFileTempl)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.OpenFile(location, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		err := file.Close()
-		if err != nil {
-			panic(fmt.Errorf("unable to close output file %v %w", location, err))
-		}
-	}()
-
-	prefix = strings.Trim(prefix, "/")
-
-	err = t.Execute(file, map[string]interface{}{"PackageName": packageName, "PrefixWithoutSlash": prefix})
-	if err != nil {
-		return err
-	}
-	return nil
 }

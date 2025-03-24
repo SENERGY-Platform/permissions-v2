@@ -76,7 +76,7 @@ func TestEmbed(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	routerWithEmbededClient := EmbedPermissionsClientIntoRouter(c, router, "/permissions/")
+	routerWithEmbededClient := EmbedPermissionsClientIntoRouter(c, router, "/permissions/", nil)
 
 	server := httptest.NewServer(routerWithEmbededClient)
 	defer server.Close()
