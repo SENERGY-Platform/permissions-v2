@@ -167,8 +167,14 @@ func handleTopicList(doc string, name string, list []string) (result []element) 
 	doc = strings.Join(lines, "\n")
 	for _, topic := range list {
 		newDock := strings.ReplaceAll(doc, "{topic}", topic)
+		suffix := topic
+		suffix = strings.ReplaceAll(suffix, "-", "")
+		suffix = strings.ReplaceAll(suffix, "+", "")
+		suffix = strings.ReplaceAll(suffix, "/", "")
+		suffix = strings.ReplaceAll(suffix, ".", "")
+		suffix = strings.ReplaceAll(suffix, ":", "")
 		result = append(result, element{
-			Name: "Generated" + name + "_" + topic,
+			Name: "Generated" + name + "_" + suffix,
 			Doc:  newDock,
 		})
 	}
