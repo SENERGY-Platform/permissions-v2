@@ -153,7 +153,7 @@ func (this *PermissionsManagementEndpoints) DeleteResource(config configuration.
 
 // SetPermission godoc
 // @Summary      set resource rights
-// @Description  get resource rights, requesting user must have admin right
+// @Description  get resource rights, requesting user must have admin right on resource to update, requesting user must have admin rights on topic to create
 // @Tags         manage
 // @Security Bearer
 // @Param        topic path string true "Topic Id"
