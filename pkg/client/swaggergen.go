@@ -186,7 +186,7 @@ func replaceMethodNameInDoc(doc string, oldName string, name string) string {
 	comments := []string{}
 	for _, line := range lines {
 		if strings.TrimSpace(line) != "" {
-			comments = append(comments, "// "+strings.ReplaceAll(line, oldName, name))
+			comments = append(comments, "// "+strings.ReplaceAll(line, oldName+" godoc", name+" godoc"))
 		}
 	}
 	return strings.Join(comments, "\n")
