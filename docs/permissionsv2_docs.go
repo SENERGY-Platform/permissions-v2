@@ -45,7 +45,6 @@ const docTemplatepermissionsv2 = `{
                     "application/json"
                 ],
                 "tags": [
-                    "accessible",
                     "resource"
                 ],
                 "summary": "list accessible resource ids",
@@ -161,8 +160,6 @@ const docTemplatepermissionsv2 = `{
                     "application/json"
                 ],
                 "tags": [
-                    "topics",
-                    "resources",
                     "admin"
                 ],
                 "summary": "lists resource ids in topic",
@@ -588,6 +585,72 @@ const docTemplatepermissionsv2 = `{
                 }
             }
         },
+        "/export": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "export",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "import/export"
+                ],
+                "summary": "export",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "default false; if true, export includes topic configurations",
+                        "name": "include_topic_config",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "default false; if true, export includes resource permissions",
+                        "name": "include_permissions",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "comma separated list of topics; export only topic-configs and resource-permissions with topics that are in this list",
+                        "name": "filter_topics",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "comma separated list of ids; export only resource-permissions for the given ids",
+                        "name": "filter_resource_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ImportExport"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "checks health and reachability of the service",
@@ -598,6 +661,72 @@ const docTemplatepermissionsv2 = `{
                 "responses": {
                     "200": {
                         "description": "OK"
+                    }
+                }
+            }
+        },
+        "/import": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "import",
+                "tags": [
+                    "import/export"
+                ],
+                "summary": "import",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "default false; if true, import handles topic-configurations",
+                        "name": "include_topic_config",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "default false; if true, import handles resource-permissions",
+                        "name": "include_permissions",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "comma separated list of topics; import handles only the given topics; null-\u003eall; []-\u003enone",
+                        "name": "filter_topics",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "comma separated list of ids; import handles only the given resource-permissions ids; null-\u003eall; []-\u003enone",
+                        "name": "filter_resource_id",
+                        "in": "query"
+                    },
+                    {
+                        "description": "import",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ImportExport"
+                        }
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
                     }
                 }
             }
@@ -614,8 +743,7 @@ const docTemplatepermissionsv2 = `{
                     "application/json"
                 ],
                 "tags": [
-                    "manage",
-                    "resource"
+                    "manage"
                 ],
                 "summary": "lists resources the user has admin rights to",
                 "parameters": [
@@ -676,8 +804,7 @@ const docTemplatepermissionsv2 = `{
                     "application/json"
                 ],
                 "tags": [
-                    "manage",
-                    "resource"
+                    "manage"
                 ],
                 "summary": "get resource",
                 "parameters": [
@@ -723,7 +850,7 @@ const docTemplatepermissionsv2 = `{
                         "Bearer": []
                     }
                 ],
-                "description": "get resource rights, requesting user must have admin right",
+                "description": "get resource rights, requesting user must have admin right on resource to update, requesting user must have admin rights on topic to create",
                 "consumes": [
                     "application/json"
                 ],
@@ -731,8 +858,7 @@ const docTemplatepermissionsv2 = `{
                     "application/json"
                 ],
                 "tags": [
-                    "manage",
-                    "resource-rights"
+                    "manage"
                 ],
                 "summary": "set resource rights",
                 "parameters": [
@@ -795,8 +921,7 @@ const docTemplatepermissionsv2 = `{
                 ],
                 "description": "delete resource, requesting user must have admin right on the resource, topic must have NoCqrs=true",
                 "tags": [
-                    "manage",
-                    "resource"
+                    "manage"
                 ],
                 "summary": "delete resource",
                 "parameters": [
@@ -849,9 +974,7 @@ const docTemplatepermissionsv2 = `{
                     "application/json"
                 ],
                 "tags": [
-                    "permissions",
-                    "check",
-                    "list"
+                    "permissions"
                 ],
                 "summary": "list the computed permissions to resources of the given topic and ids",
                 "parameters": [
@@ -904,10 +1027,7 @@ const docTemplatepermissionsv2 = `{
                     "application/json"
                 ],
                 "tags": [
-                    "permissions",
-                    "check",
-                    "list",
-                    "query"
+                    "permissions"
                 ],
                 "summary": "list the computed permissions to resources of the given topic and ids",
                 "parameters": [
@@ -995,6 +1115,23 @@ const docTemplatepermissionsv2 = `{
                 },
                 "write": {
                     "type": "boolean"
+                }
+            }
+        },
+        "model.ImportExport": {
+            "type": "object",
+            "properties": {
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Resource"
+                    }
+                },
+                "topics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Topic"
+                    }
                 }
             }
         },

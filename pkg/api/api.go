@@ -30,6 +30,8 @@ import (
 	"runtime/debug"
 )
 
+//go:generate go tool swag init --instanceName permissionsv2 -o ../../docs --parseDependency -d . -g api.go
+
 type EndpointMethod = func(config configuration.Config, router *http.ServeMux, ctrl Controller)
 
 var endpoints = []interface{}{} //list of objects with EndpointMethod

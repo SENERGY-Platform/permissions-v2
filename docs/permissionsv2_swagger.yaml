@@ -29,6 +29,17 @@ definitions:
       write:
         type: boolean
     type: object
+  model.ImportExport:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/model.Resource'
+        type: array
+      topics:
+        items:
+          $ref: '#/definitions/model.Topic'
+        type: array
+    type: object
   model.PermissionsMap:
     properties:
       administrate:
@@ -147,7 +158,6 @@ paths:
       - Bearer: []
       summary: list accessible resource ids
       tags:
-      - accessible
       - resource
   /admin/load/permission-search:
     post:
@@ -220,8 +230,6 @@ paths:
       - Bearer: []
       summary: lists resource ids in topic
       tags:
-      - topics
-      - resources
       - admin
   /admin/topics:
     get:
@@ -464,6 +472,50 @@ paths:
       summary: check permission
       tags:
       - check
+  /export:
+    get:
+      description: export
+      parameters:
+      - description: default false; if true, export includes topic configurations
+        in: query
+        name: include_topic_config
+        type: boolean
+      - description: default false; if true, export includes resource permissions
+        in: query
+        name: include_permissions
+        type: boolean
+      - description: comma separated list of topics; export only topic-configs and
+          resource-permissions with topics that are in this list
+        in: query
+        name: filter_topics
+        type: string
+      - description: comma separated list of ids; export only resource-permissions
+          for the given ids
+        in: query
+        name: filter_resource_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ImportExport'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: export
+      tags:
+      - import/export
   /health:
     get:
       description: checks health and reachability of the service
@@ -473,6 +525,50 @@ paths:
       summary: health check
       tags:
       - health
+  /import:
+    put:
+      description: import
+      parameters:
+      - description: default false; if true, import handles topic-configurations
+        in: query
+        name: include_topic_config
+        type: boolean
+      - description: default false; if true, import handles resource-permissions
+        in: query
+        name: include_permissions
+        type: boolean
+      - description: comma separated list of topics; import handles only the given
+          topics; null->all; []->none
+        in: query
+        name: filter_topics
+        type: string
+      - description: comma separated list of ids; import handles only the given resource-permissions
+          ids; null->all; []->none
+        in: query
+        name: filter_resource_id
+        type: string
+      - description: import
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/model.ImportExport'
+      responses:
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: import
+      tags:
+      - import/export
   /manage/{topic}:
     get:
       description: lists resources the user has admin rights to
@@ -512,7 +608,6 @@ paths:
       summary: lists resources the user has admin rights to
       tags:
       - manage
-      - resource
   /manage/{topic}/{id}:
     delete:
       description: delete resource, requesting user must have admin right on the resource,
@@ -546,7 +641,6 @@ paths:
       summary: delete resource
       tags:
       - manage
-      - resource
     get:
       description: get resource, requesting user must have admin right  on the resource
       parameters:
@@ -580,11 +674,11 @@ paths:
       summary: get resource
       tags:
       - manage
-      - resource
     put:
       consumes:
       - application/json
-      description: get resource rights, requesting user must have admin right
+      description: get resource rights, requesting user must have admin right on resource
+        to update, requesting user must have admin rights on topic to create
       parameters:
       - description: Topic Id
         in: path
@@ -627,7 +721,6 @@ paths:
       summary: set resource rights
       tags:
       - manage
-      - resource-rights
   /permissions/{topic}:
     get:
       description: list the computed permissions to resources of the given topic and
@@ -664,8 +757,6 @@ paths:
       summary: list the computed permissions to resources of the given topic and ids
       tags:
       - permissions
-      - check
-      - list
   /query/permissions/{topic}:
     post:
       description: list the computed permissions to resources of the given topic and
@@ -705,9 +796,6 @@ paths:
       summary: list the computed permissions to resources of the given topic and ids
       tags:
       - permissions
-      - check
-      - list
-      - query
 securityDefinitions:
   Bearer:
     description: Type "Bearer" followed by a space and JWT token.
