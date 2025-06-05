@@ -13,8 +13,14 @@ github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migc
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/Microsoft/hcsshim v0.12.0 h1:rbICA+XZFwrBef2Odk++0LjFvClNCJGRK+fsrP254Ts=
 github.com/Microsoft/hcsshim v0.12.0/go.mod h1:RZV12pcHCXQ42XnlQ3pz6FZfmrC1C+R4gaOHhRNML1g=
+github.com/SENERGY-Platform/api-docs-provider/lib/client v0.0.3 h1:KutSt9QOpNZGXWfuDB/fy71QBcWiZPvM+UPmJ/YXdDc=
+github.com/SENERGY-Platform/api-docs-provider/lib/client v0.0.3/go.mod h1:SMw5L+EtnuzDkunSYmRbIjLdwB5tEv9/iZ7akt87gIQ=
+github.com/SENERGY-Platform/api-docs-provider/lib/models v0.0.3 h1:bQVD6bTN2EKupprDkWLz1IGuUHayzzlnFKsFgViSlAo=
+github.com/SENERGY-Platform/api-docs-provider/lib/models v0.0.3/go.mod h1:tTT3GhSD1Zue/L+HmHbr9YH+gPKLQVcYcnrbwrPcPFg=
 github.com/SENERGY-Platform/developer-notifications v0.0.4 h1:SmblhfWavNhE1mDxzrkhmWl2AoPPqKD+7YcZCQ7a5Tg=
 github.com/SENERGY-Platform/developer-notifications v0.0.4/go.mod h1:8yJrYnAYMtPEPy89ULw8ivgG8orVhSnaLgyfDt0bdgg=
+github.com/SENERGY-Platform/go-base-http-client v0.1.0 h1:PUiZVEj7/cMSZJ0g5G611tjY9bSh1Eby+tcktrgpiZ0=
+github.com/SENERGY-Platform/go-base-http-client v0.1.0/go.mod h1:NfKW/relIVTkMXhz4OqZlzJXYPQUYEKxwqou8D0B/Kw=
 github.com/SENERGY-Platform/service-commons v0.0.0-20250123095636-6dfc659ee43e h1:JyCPmb5tYkGlET39UG23MMw+CNNKHqoXdYL2oC3ChiI=
 github.com/SENERGY-Platform/service-commons v0.0.0-20250123095636-6dfc659ee43e/go.mod h1:1p2CQPNtler5leXqNgaOfr7DlgZUydrQlQYA97ycm4k=
 github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874 h1:N7oVaKyGp8bttX0bfZGmcGkjz7DLQXhAn3DNd3T0ous=

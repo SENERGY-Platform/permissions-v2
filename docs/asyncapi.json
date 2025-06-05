@@ -1,0 +1,124 @@
+{
+    "asyncapi": "3.0.0",
+    "info": {
+        "title": "Permissions-V2",
+        "version": ""
+    },
+    "servers": {
+        "kafka": {
+            "host": "kafka.kafka:9092",
+            "protocol": "kafka"
+        }
+    },
+    "channels": {
+        "Resource-Topic": {
+            "address": "<Resource-Topic>",
+            "description": "topic of a resource where PublishToKafkaTopic is set to true",
+            "messages": {
+                "PermissionsCommand": {
+                    "$ref": "#/components/messages/PermissionsCommand"
+                }
+            }
+        }
+    },
+    "operations": {
+        "UpdatePermissions": {
+            "action": "send",
+            "description": "notify of the new resource permissions",
+            "channel": {
+                "$ref": "#/channels/Resource-Topic"
+            },
+            "messages": [
+                {
+                    "$ref": "#/channels/Resource-Topic/messages/PermissionsCommand"
+                }
+            ]
+        }
+    },
+    "components": {
+        "schemas": {
+            "PermissionsCommand": {
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "const": "RIGHTS"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "owner": {
+                        "type": "string"
+                    },
+                    "rights": {
+                        "$ref": "#/components/schemas/ResourcePermissions"
+                    }
+                },
+                "type": "object"
+            },
+            "ResourcePermissions": {
+                "properties": {
+                    "group_rights": {
+                        "additionalProperties": {
+                            "description": "key is role-id",
+                            "$ref": "#/components/schemas/Right"
+                        },
+                        "type": [
+                            "object",
+                            "null"
+                        ]
+                    },
+                    "keycloak_groups_rights": {
+                        "additionalProperties": {
+                            "description": "key is group-id",
+                            "$ref": "#/components/schemas/Right"
+                        },
+                        "type": [
+                            "object",
+                            "null"
+                        ]
+                    },
+                    "user_rights": {
+                        "additionalProperties": {
+                            "description": "key is user-id",
+                            "$ref": "#/components/schemas/Right"
+                        },
+                        "type": [
+                            "object",
+                            "null"
+                        ]
+                    }
+                },
+                "type": [
+                    "object",
+                    "null"
+                ]
+            },
+            "Right": {
+                "properties": {
+                    "administrate": {
+                        "type": "boolean"
+                    },
+                    "execute": {
+                        "type": "boolean"
+                    },
+                    "read": {
+                        "type": "boolean"
+                    },
+                    "write": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "messages": {
+            "PermissionsCommand": {
+                "payload": {
+                    "$ref": "#/components/schemas/PermissionsCommand"
+                },
+                "name": "PermissionsCommand",
+                "title": "PermissionsCommand"
+            }
+        }
+    }
+}

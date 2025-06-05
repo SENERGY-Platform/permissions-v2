@@ -19,13 +19,17 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/SENERGY-Platform/api-docs-provider/lib/client"
+	"github.com/SENERGY-Platform/permissions-v2/docs"
 	"github.com/SENERGY-Platform/permissions-v2/pkg"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -45,10 +49,22 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if conf.ApiDocsProviderBaseUrl != "" && conf.ApiDocsProviderBaseUrl != "-" {
+		err = PublishAsyncApiDoc(conf)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	sig := <-shutdown
 	log.Println("received shutdown signal", sig)
 	cancel()
 	wg.Wait() //wait for clean disconnects
+}
+
+func PublishAsyncApiDoc(conf configuration.Config) error {
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	return client.New(http.DefaultClient, conf.ApiDocsProviderBaseUrl).AsyncapiPutDoc(ctx, "github_com_SENERGY-Platform_permissions-v2", docs.AsyncApiDoc)
 }

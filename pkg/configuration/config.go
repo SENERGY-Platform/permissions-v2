@@ -47,6 +47,8 @@ type Config struct {
 	SyncAgeLimit      Duration `json:"sync_age_limit"`
 
 	UserManagementUrl string `json:"user_management_url"`
+
+	ApiDocsProviderBaseUrl string `json:"api_docs_provider_base_url"`
 }
 
 // loads config from json in location and used environment variables (e.g KafkaUrl --> KAFKA_URL)
