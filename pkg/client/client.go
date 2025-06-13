@@ -181,6 +181,8 @@ func (this *ClientImpl) GetResource(token string, topicId string, id string) (re
 	return do[Resource](token, req)
 }
 
+// RemoveResource removes a resource
+// only admins may remove resources
 func (this *ClientImpl) RemoveResource(token string, topicId string, id string) (err error, code int) {
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%v/manage/%v/%v", this.serverUrl, url.PathEscape(topicId), url.PathEscape(id)), nil)
 	if err != nil {

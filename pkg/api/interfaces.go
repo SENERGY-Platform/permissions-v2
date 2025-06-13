@@ -32,6 +32,9 @@ type AdminInterface interface {
 	RemoveTopic(token string, id string) (err error, code int)
 	SetTopic(token string, topic model.Topic) (result model.Topic, err error, code int)
 	AdminListResourceIds(tokenStr string, topicId string, options model.ListOptions) (ids []string, err error, code int)
+
+	// AdminLoadFromPermissionSearch is not supported by the client
+	// because this request should never be automated
 	AdminLoadFromPermissionSearch(req model.AdminLoadPermSearchRequest) (updateCount int, err error, code int)
 
 	Export(token string, options model.ImportExportOptions) (result model.ImportExport, err error, code int)
@@ -48,6 +51,12 @@ type PermissionsCheckInterface interface {
 type PermissionsManagementInterface interface {
 	ListResourcesWithAdminPermission(token string, topicId string, options model.ListOptions) (result []model.Resource, err error, code int)
 	GetResource(token string, topicId string, id string) (result model.Resource, err error, code int)
+
+	// RemoveResource removes a resource
+	// only admins may remove resources
 	RemoveResource(token string, topicId string, id string) (err error, code int)
+
+	// SetPermission sets the permissions of a resource.
+	// resource initialization needs to be done by an admin; user tokens may update their rights but may not create the initial resource
 	SetPermission(token string, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int)
 }
