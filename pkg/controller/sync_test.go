@@ -19,16 +19,17 @@ package controller
 import (
 	"context"
 	"errors"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/kafka"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/tests/docker"
 	"reflect"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/kafka"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/tests/docker"
 )
 
 type MockProducerProvider struct {
@@ -211,15 +212,7 @@ func TestPermissionsSetAndCheck(t *testing.T) {
 	config.Debug = true
 	config.DevNotifierUrl = ""
 
-	_, zkIp, err := docker.Zookeeper(ctx, wg)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	config.KafkaUrl = zkIp + ":2181"
-
-	//kafka
-	config.KafkaUrl, err = docker.Kafka(ctx, wg, config.KafkaUrl)
+	config.KafkaUrl, err = docker.Kafka(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return

@@ -19,6 +19,14 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"reflect"
+	"slices"
+	"strconv"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/client"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
@@ -28,13 +36,6 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/tests/docker"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"github.com/SENERGY-Platform/service-commons/pkg/kafka"
-	"net/http"
-	"reflect"
-	"slices"
-	"strconv"
-	"sync"
-	"testing"
-	"time"
 )
 
 const GroupTestToken = `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjM1MzMzNjMsImlhdCI6MCwianRpIjoiMCIsImlzcyI6InRlc3QiLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiZ3JvdXB1c2VyIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiZnJvbnRlbmQiLCJub25jZSI6IjAiLCJzZXNzaW9uX3N0YXRlIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6W119LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6W119fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInNpZCI6IjAiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsInJvbGVzIjpbXSwiZ3JvdXBzIjpbIi90ZXN0MSIsIi90ZXN0MS90ZXN0MiIsIi90ZXN0MS90ZXN0MyJdLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiIiLCJnaXZlbl9uYW1lIjoiIiwibG9jYWxlIjoiZGUiLCJmYW1pbHlfbmFtZSI6IiJ9.tcuCCDEa0kohl1HN22GQfkaK4zo4vQtz7P0fM_sSLNs`
@@ -189,15 +190,7 @@ func TestOptionalPublish(t *testing.T) {
 	config.Debug = true
 	config.DevNotifierUrl = ""
 
-	_, zkIp, err := docker.Zookeeper(ctx, wg)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	config.KafkaUrl = zkIp + ":2181"
-
-	//kafka
-	config.KafkaUrl, err = docker.Kafka(ctx, wg, config.KafkaUrl)
+	config.KafkaUrl, err = docker.Kafka(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
@@ -368,15 +361,7 @@ func TestIntegration(t *testing.T) {
 	config.Debug = true
 	config.DevNotifierUrl = ""
 
-	_, zkIp, err := docker.Zookeeper(ctx, wg)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	config.KafkaUrl = zkIp + ":2181"
-
-	//kafka
-	config.KafkaUrl, err = docker.Kafka(ctx, wg, config.KafkaUrl)
+	config.KafkaUrl, err = docker.Kafka(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
@@ -440,15 +425,7 @@ func TestForward(t *testing.T) {
 	config.Debug = true
 	config.DevNotifierUrl = ""
 
-	_, zkIp, err := docker.Zookeeper(ctx, wg)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	config.KafkaUrl = zkIp + ":2181"
-
-	//kafka
-	config.KafkaUrl, err = docker.Kafka(ctx, wg, config.KafkaUrl)
+	config.KafkaUrl, err = docker.Kafka(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return

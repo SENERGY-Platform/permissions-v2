@@ -21,12 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/SENERGY-Platform/permissions-v2/pkg"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/client"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/tests/docker"
-	"github.com/SENERGY-Platform/service-commons/pkg/kafka"
 	"net/http"
 	"reflect"
 	"slices"
@@ -35,6 +29,13 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/client"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/tests/docker"
+	"github.com/SENERGY-Platform/service-commons/pkg/kafka"
 )
 
 func TestAdminLoadFromPermissionSearch(t *testing.T) {
@@ -59,15 +60,7 @@ func TestAdminLoadFromPermissionSearch(t *testing.T) {
 		return
 	}
 
-	_, zkIp, err := docker.Zookeeper(ctx, wg)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	config.KafkaUrl = zkIp + ":2181"
-
-	//kafka
-	config.KafkaUrl, err = docker.Kafka(ctx, wg, config.KafkaUrl)
+	config.KafkaUrl, err = docker.Kafka(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
