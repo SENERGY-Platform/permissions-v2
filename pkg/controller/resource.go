@@ -20,14 +20,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/idmodifier"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"io"
-	"log"
 	"net/http"
 	"slices"
 	"time"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/idmodifier"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 )
 
 func (this *Controller) AdminListResourceIds(tokenStr string, topicId string, options model.ListOptions) (ids []string, err error, code int) {
@@ -203,13 +203,13 @@ func (this *Controller) setPermission(topic model.Topic, resource model.Resource
 	if publish {
 		err = this.publishPermission(topic, resource.Id, resource.ResourcePermissions)
 		if err != nil {
-			log.Println("WARNING: unable to publish permissions update to", topic.PublishToKafkaTopic)
+			this.config.GetLogger().Warn("unable to publish permissions update", "topic", topic.PublishToKafkaTopic)
 			this.notifyError(fmt.Errorf("unable to publish permissions update to %v; publish will be retried", topic.PublishToKafkaTopic))
 			return nil
 		} else {
 			err = this.db.MarkResourceAsSynced(this.getTimeoutContext(), topic.Id, resource.Id)
 			if err != nil {
-				log.Println("WARNING: unable to mark resource as synced", topic.Id, resource.Id)
+				this.config.GetLogger().Warn("unable to mark resource as synced", "topicId", topic.Id, "resourceId", resource.Id)
 			}
 		}
 	}

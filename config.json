@@ -1,5 +1,6 @@
 {
     "port": "8080",
+    "log_level": "info",
     "edit_forward": "",
     "debug": false,
     "enable_swagger_ui": false,

@@ -21,7 +21,6 @@ import (
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -78,7 +77,7 @@ func (this *PermissionsCheckEndpoints) CheckPermission(config configuration.Conf
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			log.Println("ERROR: unable to encode response", err)
+			config.GetLogger().Error("unable to encode response", "error", err)
 		}
 	})
 }
@@ -130,7 +129,7 @@ func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configura
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			log.Println("ERROR: unable to encode response", err)
+			config.GetLogger().Error("unable to encode response", "error", err)
 		}
 	})
 }
@@ -183,7 +182,7 @@ func (this *PermissionsCheckEndpoints) ListAccessibleResourceIds(config configur
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			log.Println("ERROR: unable to encode response", err)
+			config.GetLogger().Error("unable to encode response", "error", err)
 		}
 	})
 }

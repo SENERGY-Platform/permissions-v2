@@ -20,9 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/segmentio/kafka-go"
 	"io"
 	"log"
 	"net"
@@ -30,6 +27,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"github.com/segmentio/kafka-go"
 )
 
 func NewKafkaProducerProvider() *KafkaProducerProvider {
@@ -44,11 +45,11 @@ type KafkaProducer struct {
 }
 
 func (this *KafkaProducerProvider) GetProducer(config configuration.Config, topic model.Topic) (result Producer, err error) {
-	log.Println("init new producer", topic.Id)
+	config.GetLogger().Info("init new producer", "topicId", topic.Id)
 	if topic.EnsureKafkaTopicInit {
 		err = InitKafkaTopic(config.KafkaUrl, topic.EnsureKafkaTopicInitPartitionNumber, topic.PublishToKafkaTopic)
 		if err != nil {
-			log.Println("WARNING: unable to create topic", topic.Id, topic.PublishToKafkaTopic, err)
+			config.GetLogger().Warn("unable to create topic", "topicId", topic.Id, "topic", topic.PublishToKafkaTopic, "error", err)
 		}
 	}
 	return &KafkaProducer{config: config, writer: NewKafkaWriter(config, topic)}, nil
@@ -63,7 +64,7 @@ func (this *KafkaProducer) Close() (err error) {
 
 func (this *KafkaProducer) SendPermissions(ctx context.Context, topic model.Topic, id string, permissions model.ResourcePermissions) (err error) {
 	if this.writer == nil {
-		log.Println("WARNING: unable to send message to nil topic kafka writer (topic may be disabled by config.DisabledTopicConsumers)")
+		this.config.GetLogger().Warn("unable to send message to nil topic kafka writer (topic may be disabled by config.DisabledTopicConsumers)")
 		return nil
 	}
 	cmd := Command{
@@ -77,9 +78,7 @@ func (this *KafkaProducer) SendPermissions(ctx context.Context, topic model.Topi
 		return err
 	}
 	key := id + "/rights"
-	if this.config.Debug {
-		log.Println("produce:", id, topic.PublishToKafkaTopic, key, string(temp))
-	}
+	this.config.GetLogger().Debug("produce", "topic", topic.PublishToKafkaTopic, "id", id, "key", key, "message", string(temp))
 	return this.writer.WriteMessages(ctx, kafka.Message{
 		Key:   []byte(key),
 		Value: temp,
@@ -101,6 +100,7 @@ func NewKafkaWriter(config configuration.Config, topic model.Topic) *kafka.Write
 		Logger:      logger,
 		BatchSize:   1,
 		Balancer:    &KeySeparationBalancer{SubBalancer: &kafka.Hash{}, Seperator: "/"},
+		Compression: kafka.Snappy,
 	}
 	return writer
 }

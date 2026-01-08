@@ -18,14 +18,16 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
+	"sync"
+	"time"
+
 	"github.com/SENERGY-Platform/developer-notifications/pkg/client"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/kafka"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/database"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"log"
-	"sync"
-	"time"
 )
 
 type Controller struct {
@@ -39,10 +41,12 @@ type Controller struct {
 
 type DB = database.Database
 
-type LogNotifier struct{}
+type LogNotifier struct {
+	log *slog.Logger
+}
 
 func (this LogNotifier) SendMessage(message client.Message) error {
-	log.Printf("NOTIFIER: %#v\n", message)
+	this.log.Info(fmt.Sprintf("NOTIFIER: %#v\n", message))
 	return nil
 }
 
@@ -54,7 +58,7 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 	if config.DevNotifierUrl != "" {
 		result.notifier = client.New(config.DevNotifierUrl)
 	} else {
-		result.notifier = LogNotifier{}
+		result.notifier = LogNotifier{log: config.GetLogger()}
 	}
 	err := result.RetryPublishOfUnsyncedResources()
 	if err != nil {
@@ -77,7 +81,7 @@ func (this *Controller) notifyError(info error) {
 		Body:   info.Error(),
 	})
 	if err != nil {
-		log.Println("ERROR: unable to send notification", err)
+		this.config.GetLogger().Error("unable to send notification", "error", err)
 	}
 }
 
@@ -120,10 +124,10 @@ func (this *Controller) RetryPublishOfUnsyncedResources() error {
 		return err
 	}
 	for _, e := range list {
-		log.Println("retry to publish resource to kafka", e.TopicId, e.Id)
+		this.config.GetLogger().Info("retry to publish resource to kafka", "topicId", e.TopicId, "id", e.Id)
 		topic, exists, err := this.db.GetTopic(this.getTimeoutContext(), e.TopicId)
 		if err != nil {
-			log.Println("WARNING: RetryPublishOfUnsyncedResources: unable to get topic", e.TopicId, err)
+			this.config.GetLogger().Warn("RetryPublishOfUnsyncedResources: unable to get topic", "topicId", e.TopicId, "error", err)
 			continue
 		}
 		if !exists {
@@ -131,12 +135,12 @@ func (this *Controller) RetryPublishOfUnsyncedResources() error {
 		}
 		err = this.publishPermission(topic, e.Id, e.ResourcePermissions)
 		if err != nil {
-			log.Println("WARNING: RetryPublishOfUnsyncedResources: unable to publishPermission()", e.TopicId, e.Id, err)
+			this.config.GetLogger().Warn("RetryPublishOfUnsyncedResources: unable to publishPermission()", "topicId", e.TopicId, "id", e.Id, "error", err)
 			continue
 		}
 		err = this.db.MarkResourceAsSynced(this.getTimeoutContext(), topic.Id, e.Id)
 		if err != nil {
-			log.Println("WARNING: RetryPublishOfUnsyncedResources: unable to mark resource as synced", topic.Id, e.Id)
+			this.config.GetLogger().Warn("RetryPublishOfUnsyncedResources: unable to mark resource as synced", "topicId", e.TopicId, "id", e.Id, "error", err)
 		}
 	}
 	return nil
@@ -152,7 +156,7 @@ func (this *Controller) StartSyncLoop(ctx context.Context) {
 		for {
 			select {
 			case <-ticker.C:
-				log.Println("refresh unsynced resources:", this.RetryPublishOfUnsyncedResources())
+				this.config.GetLogger().Info(fmt.Sprint("refresh unsynced resources:", this.RetryPublishOfUnsyncedResources()))
 			case <-ctx.Done():
 				ticker.Stop()
 				return

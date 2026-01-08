@@ -19,10 +19,6 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/SENERGY-Platform/api-docs-provider/lib/client"
-	"github.com/SENERGY-Platform/permissions-v2/docs"
-	"github.com/SENERGY-Platform/permissions-v2/pkg"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"log"
 	"net/http"
 	"os"
@@ -30,6 +26,11 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/SENERGY-Platform/api-docs-provider/lib/client"
+	"github.com/SENERGY-Platform/permissions-v2/docs"
+	"github.com/SENERGY-Platform/permissions-v2/pkg"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 )
 
 func main() {
@@ -52,14 +53,14 @@ func main() {
 	if conf.ApiDocsProviderBaseUrl != "" && conf.ApiDocsProviderBaseUrl != "-" {
 		err = PublishAsyncApiDoc(conf)
 		if err != nil {
-			log.Fatal(err)
+			conf.GetLogger().Error("unable to send async api docs", "error", err)
 		}
 	}
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	sig := <-shutdown
-	log.Println("received shutdown signal", sig)
+	conf.GetLogger().Info("received shutdown signal", "signal", sig)
 	cancel()
 	wg.Wait() //wait for clean disconnects
 }

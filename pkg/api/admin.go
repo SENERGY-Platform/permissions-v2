@@ -18,11 +18,11 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
-	"log"
-	"net/http"
 )
 
 func init() {
@@ -67,7 +67,7 @@ func (this *TopicsEndpoints) AdminListResourceIds(config configuration.Config, r
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			log.Println("ERROR: unable to encode response", err)
+			config.GetLogger().Error("unable to encode response", "error", err)
 		}
 	})
 }

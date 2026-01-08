@@ -19,11 +19,11 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/SENERGY-Platform/developer-notifications/pkg/client"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
-	"log"
-	"net/http"
 )
 
 func (this *Controller) ListTopics(tokenStr string, options model.ListOptions) (result []model.Topic, err error, code int) {
@@ -78,7 +78,7 @@ func (this *Controller) RemoveTopic(tokenStr string, id string) (err error, code
 		Body:   fmt.Sprintf("update topic config for %v", id),
 	})
 	if err != nil {
-		log.Println("ERROR: unable to send notification", err)
+		this.config.GetLogger().Error("unable to send notification", "error", err)
 	}
 
 	timeout := this.getTimeoutContext()
@@ -123,7 +123,7 @@ func (this *Controller) SetTopic(tokenStr string, topic model.Topic) (result mod
 		Body:   fmt.Sprintf("update topic config for %v %v", topic.Id, topic.PublishToKafkaTopic),
 	})
 	if err != nil {
-		log.Println("ERROR: unable to send notification", err)
+		this.config.GetLogger().Error("unable to send notification", "error", err)
 	}
 
 	err = this.db.SetTopic(timeout, topic)

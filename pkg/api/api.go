@@ -20,14 +20,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/api/util"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/SENERGY-Platform/service-commons/pkg/accesslog"
 	"log"
 	"net/http"
 	"reflect"
 	"runtime/debug"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/api/util"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"github.com/SENERGY-Platform/service-commons/pkg/accesslog"
 )
 
 //go:generate go tool swag init --instanceName permissionsv2 -o ../../docs --parseDependency -d . -g api.go
@@ -46,7 +47,7 @@ func Start(ctx context.Context, config configuration.Config, ctrl Controller) (e
 
 	server := &http.Server{Addr: ":" + config.Port, Handler: router}
 	go func() {
-		log.Println("listening on ", server.Addr)
+		config.GetLogger().Info("listening on " + server.Addr)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			debug.PrintStack()
 			log.Fatal("FATAL:", err)
@@ -54,7 +55,7 @@ func Start(ctx context.Context, config configuration.Config, ctrl Controller) (e
 	}()
 	go func() {
 		<-ctx.Done()
-		log.Println("api shutdown", server.Shutdown(context.Background()))
+		config.GetLogger().Info("api shutdown", "shutdown_return", server.Shutdown(context.Background()))
 	}()
 	return
 }
@@ -85,7 +86,7 @@ func GetRouterWithoutMiddleware(config configuration.Config, command Controller)
 	router := http.NewServeMux()
 	for _, e := range endpoints {
 		for name, call := range getEndpointMethods(e) {
-			log.Println("add endpoint " + name)
+			config.GetLogger().Info("add endpoint " + name)
 			call(config, router, command)
 		}
 	}

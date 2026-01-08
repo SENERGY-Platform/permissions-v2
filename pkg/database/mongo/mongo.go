@@ -19,6 +19,12 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
+	"reflect"
+	"runtime/debug"
+	"strings"
+	"time"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/google/uuid"
@@ -26,11 +32,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"reflect"
-	"runtime/debug"
-	"strings"
-	"time"
 )
 
 type Database struct {
@@ -70,7 +71,7 @@ func New(conf configuration.Config) (*Database, error) {
 }
 
 func MigrateDb(db *Database, origConf configuration.Config) error {
-	log.Println("Migrating database...")
+	origConf.GetLogger().Info("migrating database...")
 	ctx, _ := getTimeoutContext()
 	conf := origConf
 	conf.MongoUrl = origConf.MigrateFromMongoUrl
@@ -87,7 +88,7 @@ func MigrateDb(db *Database, origConf configuration.Config) error {
 		return err
 	}
 	for _, topic := range topics {
-		log.Printf("migrate topic %s\n", topic.Id)
+		conf.GetLogger().Info("migrating topic", "topicId", topic.Id)
 		ctx, _ := getTimeoutContext()
 		err = db.SetTopic(ctx, topic)
 		if err != nil {
@@ -108,7 +109,7 @@ func MigrateDb(db *Database, origConf configuration.Config) error {
 			debug.PrintStack()
 			return err
 		}
-		log.Printf("migrate permission entry %s %s\n", element.TopicId, element.Id)
+		conf.GetLogger().Info("migrating permission entry", "topicId", element.TopicId, "elementId", element.Id)
 		ctx, _ := getTimeoutContext()
 		_, err = db.permissionsCollection().ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
 		if err != nil {
@@ -176,7 +177,7 @@ func (this *Database) removeIndex(collection *mongo.Collection, indexname string
 
 func (this *Database) Disconnect() {
 	timeout, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	log.Println(this.client.Disconnect(timeout))
+	this.config.GetLogger().Info(fmt.Sprint("disconnect db:", this.client.Disconnect(timeout)))
 }
 
 func getBsonFieldName(obj interface{}, fieldName string) (bsonName string, err error) {

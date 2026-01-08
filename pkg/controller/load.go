@@ -20,11 +20,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 )
 
 type PermissionSearchResponseElementRight struct {
@@ -54,8 +54,8 @@ func (this *Controller) AdminLoadFromPermissionSearch(req model.AdminLoadPermSea
 		return updateCount, errors.New("no topic.publish_to_kafka_topic stored"), http.StatusBadRequest
 	}
 	if req.DryRun {
-		log.Println("AdminLoadFromPermissionSearch Dry-Run Start")
-		defer log.Println("AdminLoadFromPermissionSearch Dry-Run End")
+		this.config.GetLogger().Info("AdminLoadFromPermissionSearch Dry-Run Start")
+		defer this.config.GetLogger().Info("AdminLoadFromPermissionSearch Dry-Run End")
 	}
 	limit := 100
 	offset := 0

@@ -18,11 +18,11 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
-	"log"
 	"net/http"
 	"strings"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 )
 
 func init() {
@@ -67,7 +67,7 @@ func (this *PermissionsListEndpoints) ListComputedPermissions(config configurati
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			log.Println("ERROR: unable to encode response", err)
+			config.GetLogger().Error("unable to encode response", "error", err)
 		}
 	})
 }
@@ -109,7 +109,7 @@ func (this *PermissionsListEndpoints) QueryListComputedPermissions(config config
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			log.Println("ERROR: unable to encode response", err)
+			config.GetLogger().Error("unable to encode response", "error", err)
 		}
 	})
 }
