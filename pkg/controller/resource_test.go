@@ -19,16 +19,17 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/kafka"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/database/mock"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/kafka"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/database/mock"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 )
 
 func TestCheckGroupMembership(t *testing.T) {
@@ -40,7 +41,7 @@ func TestCheckGroupMembership(t *testing.T) {
 	t.Run("no user-management request", func(t *testing.T) {
 		db := mock.New()
 		producer := kafka.NewVoidProducerProvider()
-		ctrl, err := NewWithDependencies(ctx, configuration.Config{}, db, producer)
+		ctrl, err := NewWithDependencies(ctx, configuration.Config{OnlyAdminsMayEditRolePermissions: true}, db, producer)
 		if err != nil {
 			t.Error(err)
 			return
@@ -89,11 +90,43 @@ func TestCheckGroupMembership(t *testing.T) {
 			}
 		})
 
+		t.Run("admin may edit role perm", func(t *testing.T) {
+			_, err, _ := ctrl.checkEditPermission(jwt.Token{
+				Sub:         "requesting-user",
+				Groups:      []string{},
+				RealmAccess: map[string][]string{"roles": {"admin"}},
+			}, "topic", "test-resource-1", model.ResourcePermissions{
+				RolePermissions:  map[string]model.PermissionsMap{"testrole": {Read: true, Write: true, Execute: true, Administrate: true}},
+				UserPermissions:  initialResourcePermissions.UserPermissions,
+				GroupPermissions: initialResourcePermissions.GroupPermissions,
+			})
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		})
+
+		t.Run("none admin may not edit role perm", func(t *testing.T) {
+			_, err, _ := ctrl.checkEditPermission(jwt.Token{
+				Sub:         "requesting-user",
+				Groups:      []string{},
+				RealmAccess: map[string][]string{"roles": {"user"}},
+			}, "topic", "test-resource-1", model.ResourcePermissions{
+				RolePermissions:  map[string]model.PermissionsMap{"testrole": {Read: true, Write: true, Execute: true, Administrate: true}},
+				UserPermissions:  initialResourcePermissions.UserPermissions,
+				GroupPermissions: initialResourcePermissions.GroupPermissions,
+			})
+			if err == nil {
+				t.Error("expected error")
+				return
+			}
+		})
+
 		t.Run("unchanged is ok", func(t *testing.T) {
-			err, _ := ctrl.checkGroupMembership(jwt.Token{
+			_, err, _ := ctrl.checkEditPermission(jwt.Token{
 				Sub:    "requesting-user",
 				Groups: []string{},
-			}, "topic", "test-resource-1", initialResourcePermissions)
+			}, "topic", "test-resource-1", model.ResourcePermissions{})
 			if err != nil {
 				t.Error(err)
 				return
@@ -101,7 +134,7 @@ func TestCheckGroupMembership(t *testing.T) {
 		})
 
 		t.Run("remove is ok", func(t *testing.T) {
-			err, _ := ctrl.checkGroupMembership(jwt.Token{
+			_, err, _ := ctrl.checkEditPermission(jwt.Token{
 				Sub:    "requesting-user",
 				Groups: []string{},
 			}, "topic", "test-resource-1", model.ResourcePermissions{})
@@ -124,7 +157,7 @@ func TestCheckGroupMembership(t *testing.T) {
 				Execute:      true,
 				Administrate: true,
 			}
-			err, _ := ctrl.checkGroupMembership(jwt.Token{
+			_, err, _ := ctrl.checkEditPermission(jwt.Token{
 				Sub:    "requesting-user",
 				Groups: []string{},
 			}, "topic", "test-resource-1", initialResourcePermissions)
@@ -135,7 +168,7 @@ func TestCheckGroupMembership(t *testing.T) {
 		})
 
 		t.Run("adding group is ok if in same group", func(t *testing.T) {
-			err, _ := ctrl.checkGroupMembership(jwt.Token{
+			_, err, _ := ctrl.checkEditPermission(jwt.Token{
 				Sub:    "requesting-user",
 				Groups: []string{"new-group-1"},
 			}, "topic", "test-resource-1", model.ResourcePermissions{GroupPermissions: map[string]model.PermissionsMap{
@@ -153,7 +186,7 @@ func TestCheckGroupMembership(t *testing.T) {
 		})
 
 		t.Run("adding group fails if not in same group", func(t *testing.T) {
-			err, _ := ctrl.checkGroupMembership(jwt.Token{
+			_, err, _ := ctrl.checkEditPermission(jwt.Token{
 				Sub:    "requesting-user",
 				Groups: []string{"new-group-2"},
 			}, "topic", "test-resource-1", model.ResourcePermissions{GroupPermissions: map[string]model.PermissionsMap{
@@ -172,7 +205,7 @@ func TestCheckGroupMembership(t *testing.T) {
 
 		t.Run("new resource will be checked", func(t *testing.T) {
 			t.Run("adding group is ok if in same group", func(t *testing.T) {
-				err, _ := ctrl.checkGroupMembership(jwt.Token{
+				_, err, _ := ctrl.checkEditPermission(jwt.Token{
 					Sub:    "requesting-user",
 					Groups: []string{"new-group-1"},
 				}, "topic", "test-resource-2", model.ResourcePermissions{GroupPermissions: map[string]model.PermissionsMap{
@@ -190,7 +223,7 @@ func TestCheckGroupMembership(t *testing.T) {
 			})
 
 			t.Run("adding group fails if not in same group", func(t *testing.T) {
-				err, _ := ctrl.checkGroupMembership(jwt.Token{
+				_, err, _ := ctrl.checkEditPermission(jwt.Token{
 					Sub:    "requesting-user",
 					Groups: []string{"new-group-2"},
 				}, "topic", "test-resource-2", model.ResourcePermissions{GroupPermissions: map[string]model.PermissionsMap{
@@ -288,7 +321,7 @@ func TestCheckGroupMembership(t *testing.T) {
 		})
 
 		t.Run("adding user is ok if in same group", func(t *testing.T) {
-			err, _ := ctrl.checkGroupMembership(jwt.Token{
+			_, err, _ := ctrl.checkEditPermission(jwt.Token{
 				Token:  "testtoken",
 				Sub:    "requesting-user",
 				Groups: []string{"group-1"},
@@ -307,7 +340,7 @@ func TestCheckGroupMembership(t *testing.T) {
 		})
 
 		t.Run("adding user fails if not in same group", func(t *testing.T) {
-			err, _ := ctrl.checkGroupMembership(jwt.Token{
+			_, err, _ := ctrl.checkEditPermission(jwt.Token{
 				Token:  "testtoken",
 				Sub:    "requesting-user",
 				Groups: []string{"group-1"},
@@ -327,7 +360,7 @@ func TestCheckGroupMembership(t *testing.T) {
 
 		t.Run("new resource will be checked", func(t *testing.T) {
 			t.Run("adding user is ok if in same group", func(t *testing.T) {
-				err, _ := ctrl.checkGroupMembership(jwt.Token{
+				_, err, _ := ctrl.checkEditPermission(jwt.Token{
 					Token:  "testtoken",
 					Sub:    "requesting-user",
 					Groups: []string{"group-1"},
@@ -346,7 +379,7 @@ func TestCheckGroupMembership(t *testing.T) {
 			})
 
 			t.Run("adding user fails if not in same group", func(t *testing.T) {
-				err, _ := ctrl.checkGroupMembership(jwt.Token{
+				_, err, _ := ctrl.checkEditPermission(jwt.Token{
 					Token:  "testtoken",
 					Sub:    "requesting-user",
 					Groups: []string{"group-1"},

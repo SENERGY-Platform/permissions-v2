@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"slices"
 	"time"
 
@@ -176,7 +177,7 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	if !permissions.Valid() {
 		return result, errors.New("invalid permissions"), http.StatusBadRequest
 	}
-	err, code = this.checkGroupMembership(token, topic.Id, id, permissions)
+	permissions, err, code = this.checkEditPermission(token, topic.Id, id, permissions)
 	if err != nil {
 		return result, err, code
 	}
@@ -216,14 +217,30 @@ func (this *Controller) setPermission(topic model.Topic, resource model.Resource
 	return err
 }
 
-func (this *Controller) checkGroupMembership(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (error, int) {
+func (this *Controller) checkEditPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (permissionsWithMissingApplied model.ResourcePermissions, err error, code int) {
 	if token.IsAdmin() {
-		return nil, http.StatusOK
+		return permissions, nil, http.StatusOK
 	}
 	current, err := this.db.GetResource(this.getTimeoutContext(), topicId, id, model.GetOptions{})
 	if err != nil && !errors.Is(err, model.ErrNotFound) {
-		return err, http.StatusInternalServerError
+		return permissions, err, http.StatusInternalServerError
 	}
+
+	if permissions.RolePermissions == nil && current.RolePermissions != nil {
+		permissions.RolePermissions = current.RolePermissions
+	}
+
+	if current.RolePermissions == nil {
+		current.RolePermissions = map[string]model.PermissionsMap{}
+	}
+	if permissions.RolePermissions == nil {
+		permissions.RolePermissions = map[string]model.PermissionsMap{}
+	}
+
+	if this.config.OnlyAdminsMayEditRolePermissions && !token.IsAdmin() && !reflect.DeepEqual(current.RolePermissions, permissions.RolePermissions) {
+		return permissions, errors.New("only admins may edit role permissions"), http.StatusForbidden
+	}
+
 	if current.UserPermissions == nil {
 		current.UserPermissions = map[string]model.PermissionsMap{}
 	}
@@ -244,24 +261,24 @@ func (this *Controller) checkGroupMembership(token jwt.Token, topicId string, id
 	}
 	for _, group := range addedGroups {
 		if !token.HasGroup(group) {
-			return fmt.Errorf("requesting user not in added group '%v'", group), http.StatusBadRequest
+			return permissions, fmt.Errorf("requesting user not in added group '%v'", group), http.StatusBadRequest
 		}
 	}
 	if len(addedUsers) > 0 && this.config.UserManagementUrl != "" && this.config.UserManagementUrl != "-" {
 		usersInSameGroup, err := this.getUsersInSameGroup(token)
 		if err != nil {
-			return err, http.StatusInternalServerError
+			return permissions, err, http.StatusInternalServerError
 		}
 		for _, addedUser := range addedUsers {
 			if !slices.ContainsFunc(usersInSameGroup, func(user User) bool {
 				return user.Id == addedUser
 			}) {
-				return fmt.Errorf("added user '%v' not in the same group as the requesting user", addedUser), http.StatusBadRequest
+				return permissions, fmt.Errorf("added user '%v' not in the same group as the requesting user", addedUser), http.StatusBadRequest
 			}
 		}
 	}
 
-	return nil, http.StatusOK
+	return permissions, nil, http.StatusOK
 }
 
 type User struct {

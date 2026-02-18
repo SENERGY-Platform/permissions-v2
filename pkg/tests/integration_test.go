@@ -360,6 +360,7 @@ func TestIntegration(t *testing.T) {
 
 	config.Debug = true
 	config.DevNotifierUrl = ""
+	config.OnlyAdminsMayEditRolePermissions = false
 
 	config.KafkaUrl, err = docker.Kafka(ctx, wg)
 	if err != nil {
@@ -424,6 +425,7 @@ func TestForward(t *testing.T) {
 
 	config.Debug = true
 	config.DevNotifierUrl = ""
+	config.OnlyAdminsMayEditRolePermissions = false
 
 	config.KafkaUrl, err = docker.Kafka(ctx, wg)
 	if err != nil {

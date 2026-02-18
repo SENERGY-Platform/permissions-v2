@@ -50,6 +50,8 @@ type Config struct {
 	SyncCheckInterval Duration `json:"sync_check_interval"`
 	SyncAgeLimit      Duration `json:"sync_age_limit"`
 
+	OnlyAdminsMayEditRolePermissions bool `json:"only_admins_may_edit_role_permissions"`
+
 	UserManagementUrl string `json:"user_management_url"`
 
 	ApiDocsProviderBaseUrl string `json:"api_docs_provider_base_url"`

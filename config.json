@@ -14,5 +14,7 @@
     "mongo_topics_collection": "topics",
 
     "sync_check_interval": "10m",
-    "sync_age_limit": "5m"
+    "sync_age_limit": "5m",
+
+    "only_admins_may_edit_role_permissions": true
 }
