@@ -20,10 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
-	"log"
+	"log/slog"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -87,12 +85,8 @@ func (this *KafkaProducer) SendPermissions(ctx context.Context, topic model.Topi
 }
 
 func NewKafkaWriter(config configuration.Config, topic model.Topic) *kafka.Writer {
-	var logger *log.Logger
-	if config.Debug {
-		logger = log.New(os.Stdout, "[KAFKA-PRODUCER] ", 0)
-	} else {
-		logger = log.New(io.Discard, "", 0)
-	}
+	logger := slog.NewLogLogger(config.GetLogger().Handler(), slog.LevelDebug)
+	logger.SetPrefix("KAFKA-PRODUCER] ")
 	writer := &kafka.Writer{
 		Addr:        kafka.TCP(config.KafkaUrl),
 		Topic:       topic.PublishToKafkaTopic,

@@ -22,7 +22,7 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
-	"log"
+	"log/slog"
 	"os"
 	"regexp"
 	"slices"
@@ -43,7 +43,7 @@ import (
 //   - no guarantee if the input path contains placeholders like {topic} and {id}, or if the placeholder is replaced
 //   - the input path contains the prefix parameter to ensure compatibility with EmbedPermissionsClientIntoRouter
 func GenerateGoFileWithSwaggoCommentsForEmbeddedPermissionsClient(packageName string, prefix string, location string, topicList []string, pathFilter func(method string, path string) bool) error {
-	log.Println("Generate " + location)
+	slog.Info("Generate " + location)
 
 	p, err := build.Import("github.com/SENERGY-Platform/permissions-v2/pkg/api", ".", build.ImportComment)
 	if err != nil {
