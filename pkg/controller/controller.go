@@ -132,10 +132,10 @@ func (this *Controller) RetryPublishOfUnsyncedResourcesContext(ctx context.Conte
 		return err
 	}
 	for _, e := range list {
-		this.config.GetLogger().Info("retry to publish resource to kafka", "topicId", e.TopicId, "id", e.Id)
+		this.config.GetLogger().InfoContext(ctx, "retry to publish resource to kafka", "topicId", e.TopicId, "id", e.Id)
 		topic, exists, err := this.db.GetTopic(this.getTimeoutContext(ctx), e.TopicId)
 		if err != nil {
-			this.config.GetLogger().Warn("RetryPublishOfUnsyncedResources: unable to get topic", "topicId", e.TopicId, "error", err)
+			this.config.GetLogger().WarnContext(ctx, "RetryPublishOfUnsyncedResources: unable to get topic", "topicId", e.TopicId, "error", err)
 			continue
 		}
 		if !exists {
@@ -143,12 +143,12 @@ func (this *Controller) RetryPublishOfUnsyncedResourcesContext(ctx context.Conte
 		}
 		err = this.publishPermission(ctx, topic, e.Id, e.ResourcePermissions)
 		if err != nil {
-			this.config.GetLogger().Warn("RetryPublishOfUnsyncedResources: unable to publishPermission()", "topicId", e.TopicId, "id", e.Id, "error", err)
+			this.config.GetLogger().WarnContext(ctx, "RetryPublishOfUnsyncedResources: unable to publishPermission()", "topicId", e.TopicId, "id", e.Id, "error", err)
 			continue
 		}
 		err = this.db.MarkResourceAsSynced(this.getTimeoutContext(ctx), topic.Id, e.Id)
 		if err != nil {
-			this.config.GetLogger().Warn("RetryPublishOfUnsyncedResources: unable to mark resource as synced", "topicId", e.TopicId, "id", e.Id, "error", err)
+			this.config.GetLogger().WarnContext(ctx, "RetryPublishOfUnsyncedResources: unable to mark resource as synced", "topicId", e.TopicId, "id", e.Id, "error", err)
 		}
 	}
 	return nil
@@ -164,7 +164,7 @@ func (this *Controller) StartSyncLoop(ctx context.Context) {
 		for {
 			select {
 			case <-ticker.C:
-				this.config.GetLogger().Info(fmt.Sprint("refresh unsynced resources:", this.RetryPublishOfUnsyncedResourcesContext(ctx)))
+				this.config.GetLogger().InfoContext(ctx, fmt.Sprint("refresh unsynced resources:", this.RetryPublishOfUnsyncedResourcesContext(ctx)))
 			case <-ctx.Done():
 				ticker.Stop()
 				return

@@ -67,7 +67,7 @@ func (this *TopicsEndpoints) AdminListResourceIds(config configuration.Config, r
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }

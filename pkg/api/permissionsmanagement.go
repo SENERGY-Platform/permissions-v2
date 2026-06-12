@@ -69,7 +69,7 @@ func (this *PermissionsManagementEndpoints) ListResourcesWithAdminPermission(con
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }
@@ -110,7 +110,7 @@ func (this *PermissionsManagementEndpoints) GetResource(config configuration.Con
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }
@@ -198,7 +198,7 @@ func (this *PermissionsManagementEndpoints) SetPermission(config configuration.C
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }

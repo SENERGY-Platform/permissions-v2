@@ -61,7 +61,7 @@ func (this *TopicsEndpoints) ListTopics(config configuration.Config, router *htt
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }
@@ -96,7 +96,7 @@ func (this *TopicsEndpoints) GetTopic(config configuration.Config, router *http.
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }
@@ -150,7 +150,7 @@ func (this *TopicsEndpoints) SetTopic(config configuration.Config, router *http.
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }
@@ -190,7 +190,7 @@ func (this *TopicsEndpoints) SetTopicByPost(config configuration.Config, router 
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }

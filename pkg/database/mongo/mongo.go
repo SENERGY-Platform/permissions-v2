@@ -75,8 +75,8 @@ func New(conf configuration.Config) (*Database, error) {
 }
 
 func MigrateDb(db *Database, origConf configuration.Config) error {
-	origConf.GetLogger().Info("migrating database...")
 	ctx, _ := getTimeoutContext()
+	origConf.GetLogger().InfoContext(ctx, "migrating database...")
 	conf := origConf
 	conf.MongoUrl = origConf.MigrateFromMongoUrl
 
@@ -92,7 +92,7 @@ func MigrateDb(db *Database, origConf configuration.Config) error {
 		return err
 	}
 	for _, topic := range topics {
-		conf.GetLogger().Info("migrating topic", "topicId", topic.Id)
+		conf.GetLogger().InfoContext(ctx, "migrating topic", "topicId", topic.Id)
 		timeout, _ := getTimeoutContext(ctx)
 		err = db.SetTopic(timeout, topic)
 		if err != nil {
@@ -113,7 +113,7 @@ func MigrateDb(db *Database, origConf configuration.Config) error {
 			debug.PrintStack()
 			return err
 		}
-		conf.GetLogger().Info("migrating permission entry", "topicId", element.TopicId, "elementId", element.Id)
+		conf.GetLogger().InfoContext(ctx, "migrating permission entry", "topicId", element.TopicId, "elementId", element.Id)
 		timeout, _ := getTimeoutContext(ctx)
 		_, err = db.permissionsCollection().ReplaceOne(timeout, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
 		if err != nil {
@@ -182,7 +182,7 @@ func (this *Database) removeIndex(collection *mongo.Collection, indexname string
 
 func (this *Database) Disconnect() {
 	timeout, _ := getTimeoutContext()
-	this.config.GetLogger().Info(fmt.Sprint("disconnect db:", this.client.Disconnect(timeout)))
+	this.config.GetLogger().InfoContext(timeout, fmt.Sprint("disconnect db:", this.client.Disconnect(timeout)))
 }
 
 func getBsonFieldName(obj interface{}, fieldName string) (bsonName string, err error) {

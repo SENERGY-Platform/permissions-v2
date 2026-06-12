@@ -91,7 +91,7 @@ func (this *Controller) RemoveTopicContext(ctx context.Context, tokenStr string,
 		Body:   fmt.Sprintf("update topic config for %v", id),
 	})
 	if err != nil {
-		this.config.GetLogger().Error("unable to send notification", "error", err)
+		this.config.GetLogger().ErrorContext(ctx, "unable to send notification", "error", err)
 	}
 
 	timeout := this.getTimeoutContext(ctx)
@@ -140,7 +140,7 @@ func (this *Controller) SetTopicContext(ctx context.Context, tokenStr string, to
 		Body:   fmt.Sprintf("update topic config for %v %v", topic.Id, topic.PublishToKafkaTopic),
 	})
 	if err != nil {
-		this.config.GetLogger().Error("unable to send notification", "error", err)
+		this.config.GetLogger().ErrorContext(ctx, "unable to send notification", "error", err)
 	}
 
 	err = this.db.SetTopic(timeout, topic)

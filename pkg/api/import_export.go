@@ -75,7 +75,7 @@ func (this *ImportExportEndpoints) Export(config configuration.Config, router *h
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
 		err = json.NewEncoder(writer).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(request.Context(), "unable to encode response", "error", err)
 		}
 		return
 	})

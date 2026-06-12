@@ -53,14 +53,14 @@ func main() {
 	if conf.ApiDocsProviderBaseUrl != "" && conf.ApiDocsProviderBaseUrl != "-" {
 		err = PublishAsyncApiDoc(conf)
 		if err != nil {
-			conf.GetLogger().Error("unable to send async api docs", "error", err)
+			conf.GetLogger().ErrorContext(ctx, "unable to send async api docs", "error", err)
 		}
 	}
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	sig := <-shutdown
-	conf.GetLogger().Info("received shutdown signal", "signal", sig)
+	conf.GetLogger().InfoContext(ctx, "received shutdown signal", "signal", sig)
 	cancel()
 	wg.Wait() //wait for clean disconnects
 }

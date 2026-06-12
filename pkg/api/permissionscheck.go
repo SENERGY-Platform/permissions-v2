@@ -78,7 +78,7 @@ func (this *PermissionsCheckEndpoints) CheckPermission(config configuration.Conf
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }
@@ -130,7 +130,7 @@ func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configura
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }
@@ -183,7 +183,7 @@ func (this *PermissionsCheckEndpoints) ListAccessibleResourceIds(config configur
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(result)
 		if err != nil {
-			config.GetLogger().Error("unable to encode response", "error", err)
+			config.GetLogger().ErrorContext(req.Context(), "unable to encode response", "error", err)
 		}
 	})
 }

@@ -62,7 +62,7 @@ func (this *KafkaProducer) Close() (err error) {
 
 func (this *KafkaProducer) SendPermissions(ctx context.Context, topic model.Topic, id string, permissions model.ResourcePermissions) (err error) {
 	if this.writer == nil {
-		this.config.GetLogger().Warn("unable to send message to nil topic kafka writer (topic may be disabled by config.DisabledTopicConsumers)")
+		this.config.GetLogger().WarnContext(ctx, "unable to send message to nil topic kafka writer (topic may be disabled by config.DisabledTopicConsumers)")
 		return nil
 	}
 	cmd := Command{
@@ -76,7 +76,7 @@ func (this *KafkaProducer) SendPermissions(ctx context.Context, topic model.Topi
 		return err
 	}
 	key := id + "/rights"
-	this.config.GetLogger().Debug("produce", "topic", topic.PublishToKafkaTopic, "id", id, "key", key, "message", string(temp))
+	this.config.GetLogger().DebugContext(ctx, "produce", "topic", topic.PublishToKafkaTopic, "id", id, "key", key, "message", string(temp))
 	return this.writer.WriteMessages(ctx, kafka.Message{
 		Key:   []byte(key),
 		Value: temp,

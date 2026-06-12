@@ -48,7 +48,7 @@ func Start(ctx context.Context, config configuration.Config, ctrl Controller) (e
 
 	server := &http.Server{Addr: ":" + config.Port, Handler: router}
 	go func() {
-		config.GetLogger().Info("listening on " + server.Addr)
+		config.GetLogger().InfoContext(ctx, "listening on "+server.Addr)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			debug.PrintStack()
 			log.Fatal("FATAL:", err)
@@ -56,7 +56,7 @@ func Start(ctx context.Context, config configuration.Config, ctrl Controller) (e
 	}()
 	go func() {
 		<-ctx.Done()
-		config.GetLogger().Info("api shutdown", "shutdown_return", server.Shutdown(context.Background()))
+		config.GetLogger().InfoContext(ctx, "api shutdown", "shutdown_return", server.Shutdown(context.Background()))
 	}()
 	return
 }

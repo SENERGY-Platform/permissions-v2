@@ -229,13 +229,13 @@ func (this *Controller) setPermission(ctx context.Context, topic model.Topic, re
 	if publish {
 		err = this.publishPermission(ctx, topic, resource.Id, resource.ResourcePermissions)
 		if err != nil {
-			this.config.GetLogger().Warn("unable to publish permissions update", "topic", topic.PublishToKafkaTopic)
+			this.config.GetLogger().WarnContext(ctx, "unable to publish permissions update", "topic", topic.PublishToKafkaTopic)
 			this.notifyError(fmt.Errorf("unable to publish permissions update to %v; publish will be retried", topic.PublishToKafkaTopic))
 			return nil
 		} else {
 			err = this.db.MarkResourceAsSynced(this.getTimeoutContext(ctx), topic.Id, resource.Id)
 			if err != nil {
-				this.config.GetLogger().Warn("unable to mark resource as synced", "topicId", topic.Id, "resourceId", resource.Id)
+				this.config.GetLogger().WarnContext(ctx, "unable to mark resource as synced", "topicId", topic.Id, "resourceId", resource.Id)
 			}
 		}
 	}

@@ -59,8 +59,8 @@ func (this *Controller) AdminLoadFromPermissionSearchContext(ctx context.Context
 		return updateCount, errors.New("no topic.publish_to_kafka_topic stored"), http.StatusBadRequest
 	}
 	if req.DryRun {
-		this.config.GetLogger().Info("AdminLoadFromPermissionSearch Dry-Run Start")
-		defer this.config.GetLogger().Info("AdminLoadFromPermissionSearch Dry-Run End")
+		this.config.GetLogger().InfoContext(ctx, "AdminLoadFromPermissionSearch Dry-Run Start")
+		defer this.config.GetLogger().InfoContext(ctx, "AdminLoadFromPermissionSearch Dry-Run End")
 	}
 	limit := 100
 	offset := 0
