@@ -17,24 +17,30 @@
 package controller
 
 import (
+	"context"
 	"errors"
+	"net/http"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/controller/idmodifier"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"golang.org/x/exp/slices"
-	"net/http"
 )
 
 func (this *Controller) CheckPermission(tokenStr string, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int) {
+	return this.CheckPermissionContext(context.TODO(), tokenStr, topicId, id, permissions...)
+}
+
+func (this *Controller) CheckPermissionContext(ctx context.Context, tokenStr string, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return false, err, http.StatusUnauthorized
 	}
-	return this.checkPermission(token, topicId, id, permissions...)
+	return this.checkPermission(token, ctx, topicId, id, permissions...)
 }
 
-func (this *Controller) checkPermission(token jwt.Token, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int) {
-	access, err, code = this.CheckTopicDefaultPermission(token, topicId, permissions)
+func (this *Controller) checkPermission(token jwt.Token, ctx context.Context, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int) {
+	access, err, code = this.CheckTopicDefaultPermissionContext(ctx, token, topicId, permissions)
 	if err != nil {
 		if code >= 500 {
 			return access, err, code
@@ -48,7 +54,7 @@ func (this *Controller) checkPermission(token jwt.Token, topicId string, id stri
 	}
 
 	pureId, _ := idmodifier.SplitModifier(id)
-	access, err = this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), token.GetGroups(), permissions...)
+	access, err = this.db.CheckResourcePermissions(this.getTimeoutContext(ctx), topicId, pureId, token.GetUserId(), token.GetRoles(), token.GetGroups(), permissions...)
 	if err != nil {
 		return access, err, http.StatusInternalServerError
 	}
@@ -56,6 +62,10 @@ func (this *Controller) checkPermission(token jwt.Token, topicId string, id stri
 }
 
 func (this *Controller) CheckMultiplePermissions(tokenStr string, topicId string, ids []string, permissions ...model.Permission) (accessMap map[string]bool, err error, code int) {
+	return this.CheckMultiplePermissionsContext(context.TODO(), tokenStr, topicId, ids, permissions...)
+}
+
+func (this *Controller) CheckMultiplePermissionsContext(ctx context.Context, tokenStr string, topicId string, ids []string, permissions ...model.Permission) (accessMap map[string]bool, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return accessMap, err, http.StatusUnauthorized
@@ -69,14 +79,14 @@ func (this *Controller) CheckMultiplePermissions(tokenStr string, topicId string
 	}
 	var pureAccess map[string]bool
 
-	access, err, code := this.CheckTopicDefaultPermission(token, topicId, permissions)
+	access, err, code := this.CheckTopicDefaultPermissionContext(ctx, token, topicId, permissions)
 	if err != nil {
 		return accessMap, err, code
 	}
 	if access {
-		pureAccess, err = this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, pureIdList, token.GetUserId(), token.GetRoles(), token.GetGroups())
+		pureAccess, err = this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(ctx), topicId, pureIdList, token.GetUserId(), token.GetRoles(), token.GetGroups())
 	} else {
-		pureAccess, err = this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(), topicId, pureIdList, token.GetUserId(), token.GetRoles(), token.GetGroups(), permissions...)
+		pureAccess, err = this.db.CheckMultipleResourcePermissions(this.getTimeoutContext(ctx), topicId, pureIdList, token.GetUserId(), token.GetRoles(), token.GetGroups(), permissions...)
 	}
 	if err != nil {
 		return accessMap, err, http.StatusInternalServerError
@@ -91,6 +101,10 @@ func (this *Controller) CheckMultiplePermissions(tokenStr string, topicId string
 }
 
 func (this *Controller) ListComputedPermissions(tokenStr string, topicId string, ids []string) (result []model.ComputedPermissions, err error, code int) {
+	return this.ListComputedPermissionsContext(context.TODO(), tokenStr, topicId, ids)
+}
+
+func (this *Controller) ListComputedPermissionsContext(ctx context.Context, tokenStr string, topicId string, ids []string) (result []model.ComputedPermissions, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return result, err, http.StatusUnauthorized
@@ -100,7 +114,7 @@ func (this *Controller) ListComputedPermissions(tokenStr string, topicId string,
 		ids = []string{}
 	}
 
-	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(), topicId)
+	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(ctx), topicId)
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
@@ -108,7 +122,7 @@ func (this *Controller) ListComputedPermissions(tokenStr string, topicId string,
 		return result, errors.New("unknown topic"), http.StatusNotFound
 	}
 
-	resources, err := this.db.AdminListResources(this.getTimeoutContext(), topicId, model.ListOptions{
+	resources, err := this.db.AdminListResources(this.getTimeoutContext(ctx), topicId, model.ListOptions{
 		Ids: ids,
 	})
 	if err != nil {
@@ -236,11 +250,15 @@ func ComputePermissionsMap(token jwt.Token, resource model.Resource, defaultPerm
 }
 
 func (this *Controller) CheckTopicDefaultPermission(token jwt.Token, topicId string, permissions model.PermissionList) (access bool, err error, code int) {
+	return this.CheckTopicDefaultPermissionContext(context.TODO(), token, topicId, permissions)
+}
+
+func (this *Controller) CheckTopicDefaultPermissionContext(ctx context.Context, token jwt.Token, topicId string, permissions model.PermissionList) (access bool, err error, code int) {
 	access = token.IsAdmin()
 	if access {
 		return true, nil, http.StatusOK
 	}
-	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(), topicId)
+	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(ctx), topicId)
 	if err != nil {
 		return access, err, http.StatusInternalServerError
 	}

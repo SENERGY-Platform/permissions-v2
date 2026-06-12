@@ -29,6 +29,8 @@ import (
 	"time"
 
 	struct_logger "github.com/SENERGY-Platform/go-service-base/struct-logger"
+	"github.com/SENERGY-Platform/go-service-base/struct-logger/attributes"
+	"github.com/SENERGY-Platform/go-service-base/struct-logger/handlers"
 )
 
 type Config struct {
@@ -55,6 +57,8 @@ type Config struct {
 	UserManagementUrl string `json:"user_management_url"`
 
 	ApiDocsProviderBaseUrl string `json:"api_docs_provider_base_url"`
+
+	OtelEndpoint string `json:"otel_endpoint"`
 
 	LogLevel string       `json:"log_level"`
 	logger   *slog.Logger `json:"-"`
@@ -88,18 +92,23 @@ func (this *Config) GetLogger() *slog.Logger {
 				org = strings.Join(parts[:2], "/")
 			}
 		}
-		this.logger = struct_logger.New(
-			struct_logger.Config{
-				Handler:    struct_logger.JsonHandlerSelector,
-				Level:      this.LogLevel,
-				TimeFormat: time.RFC3339Nano,
-				TimeUtc:    true,
-				AddMeta:    true,
-			},
-			os.Stdout,
-			org,
-			project,
-		)
+		level := slog.Level(slog.LevelDebug)
+		err := level.UnmarshalText([]byte(this.LogLevel))
+		if err != nil {
+			fmt.Println("invalid log level in config: ", this.LogLevel, ", defaulting to debug")
+			level = slog.LevelDebug
+		}
+		options := &slog.HandlerOptions{
+			AddSource: false,
+			Level:     level,
+		}
+
+		logger := handlers.NewOpenTelemetryHandler(struct_logger.GetHandler(struct_logger.JsonHandlerSelector, os.Stdout, options, slog.Default().Handler()))
+		logger = logger.WithAttrs([]slog.Attr{
+			slog.String(attributes.ProjectKey, project),
+			slog.String(attributes.OrganizationKey, org),
+		})
+		this.logger = slog.New(logger)
 		slog.SetDefault(this.logger)
 		slog.SetLogLoggerLevel(slog.LevelInfo)
 	}

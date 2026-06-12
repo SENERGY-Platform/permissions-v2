@@ -18,11 +18,12 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
+	"strings"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
-	"net/http"
-	"strings"
 )
 
 func init() {
@@ -69,7 +70,7 @@ func (this *PermissionsCheckEndpoints) CheckPermission(config configuration.Conf
 			return
 		}
 
-		result, err, code := ctrl.CheckPermission(token, topic, id, permissions...)
+		result, err, code := ctrl.CheckPermissionContext(req.Context(), token, topic, id, permissions...)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -121,7 +122,7 @@ func (this *PermissionsCheckEndpoints) CheckMultiplePermissions(config configura
 			return
 		}
 
-		result, err, code := ctrl.CheckMultiplePermissions(token, topic, idList, permissions...)
+		result, err, code := ctrl.CheckMultiplePermissionsContext(req.Context(), token, topic, idList, permissions...)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -174,7 +175,7 @@ func (this *PermissionsCheckEndpoints) ListAccessibleResourceIds(config configur
 			return
 		}
 
-		result, err, code := ctrl.ListAccessibleResourceIds(token, topic, listOptions, permissions...)
+		result, err, code := ctrl.ListAccessibleResourceIdsContext(req.Context(), token, topic, listOptions, permissions...)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return

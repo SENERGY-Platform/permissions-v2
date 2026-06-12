@@ -19,11 +19,12 @@ package mongo
 import (
 	"context"
 	"errors"
+	"runtime/debug"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"runtime/debug"
 )
 
 func (this *Database) GetResource(ctx context.Context, topicId string, id string, options model.GetOptions) (resource model.Resource, err error) {
@@ -74,8 +75,8 @@ func (this *Database) AdminListResourceIds(ctx context.Context, topicId string, 
 	if err != nil {
 		return result, err
 	}
-	defer cursor.Close(context.Background())
-	for cursor.Next(context.Background()) {
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)
 		if err != nil {
@@ -112,8 +113,8 @@ func (this *Database) AdminListResources(ctx context.Context, topicId string, li
 		debug.PrintStack()
 		return result, err
 	}
-	defer cursor.Close(context.Background())
-	for cursor.Next(context.Background()) {
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)
 		if err != nil {
@@ -183,8 +184,8 @@ func (this *Database) ListResourcesByPermissions(ctx context.Context, topicId st
 	if err != nil {
 		return result, err
 	}
-	defer cursor.Close(context.Background())
-	for cursor.Next(context.Background()) {
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)
 		if err != nil {

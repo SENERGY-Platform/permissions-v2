@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"runtime/debug"
 
+	"github.com/SENERGY-Platform/gin-middleware/otelx"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/api/util"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
@@ -78,7 +79,12 @@ func GetRouter(config configuration.Config, command Controller) http.Handler {
 		})
 	}
 
-	handler = accesslog.New(util.NewVersionCheck(util.NewCors(handler), model.ClientVersion))
+	otel, err := otelx.HTTPOpenTelemetry(context.Background(), config.OtelEndpoint, "permissions-v2", handler)
+	if err != nil {
+		log.Fatal("FATAL: failed to setup OpenTelemetry: ", err)
+	}
+
+	handler = accesslog.New(util.NewVersionCheck(util.NewCors(otel), model.ClientVersion))
 	return handler
 }
 

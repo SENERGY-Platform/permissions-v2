@@ -18,10 +18,11 @@ package mongo
 
 import (
 	"context"
+	"time"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 func (this *Database) SetResource(ctx context.Context, r model.Resource, t time.Time, synced bool) (err error) {
@@ -63,8 +64,8 @@ func (this *Database) ListUnsyncedResources(ctx context.Context) (result []model
 	if err != nil {
 		return result, err
 	}
-	defer cursor.Close(context.Background())
-	for cursor.Next(context.Background()) {
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)
 		if err != nil {

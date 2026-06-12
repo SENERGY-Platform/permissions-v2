@@ -60,7 +60,7 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 	} else {
 		result.notifier = LogNotifier{log: config.GetLogger()}
 	}
-	err := result.RetryPublishOfUnsyncedResources()
+	err := result.RetryPublishOfUnsyncedResourcesContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +68,12 @@ func NewWithDependencies(ctx context.Context, config configuration.Config, db DB
 	return result, nil
 }
 
-func (this *Controller) getTimeoutContext() context.Context {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+func (this *Controller) getTimeoutContext(parent ...context.Context) context.Context {
+	ctxParent := context.TODO()
+	if len(parent) > 0 && parent[0] != nil {
+		ctxParent = parent[0]
+	}
+	ctx, _ := context.WithTimeout(ctxParent, 10*time.Second)
 	return ctx
 }
 
@@ -85,7 +89,7 @@ func (this *Controller) notifyError(info error) {
 	}
 }
 
-func (this *Controller) publishPermission(topic model.Topic, id string, permissions model.ResourcePermissions) error {
+func (this *Controller) publishPermission(ctx context.Context, topic model.Topic, id string, permissions model.ResourcePermissions) error {
 	if topic.PublishToKafkaTopic == "" || topic.PublishToKafkaTopic == "-" {
 		return nil
 	}
@@ -93,7 +97,7 @@ func (this *Controller) publishPermission(topic model.Topic, id string, permissi
 	if err != nil {
 		return err
 	}
-	err = producer.SendPermissions(this.getTimeoutContext(), topic, id, permissions)
+	err = producer.SendPermissions(this.getTimeoutContext(ctx), topic, id, permissions)
 	if err != nil {
 		return err
 	}
@@ -119,13 +123,17 @@ func (this *Controller) getProducer(topic model.Topic) (producer kafka.Producer,
 }
 
 func (this *Controller) RetryPublishOfUnsyncedResources() error {
-	list, err := this.db.ListUnsyncedResources(this.getTimeoutContext())
+	return this.RetryPublishOfUnsyncedResourcesContext(context.TODO())
+}
+
+func (this *Controller) RetryPublishOfUnsyncedResourcesContext(ctx context.Context) error {
+	list, err := this.db.ListUnsyncedResources(this.getTimeoutContext(ctx))
 	if err != nil {
 		return err
 	}
 	for _, e := range list {
 		this.config.GetLogger().Info("retry to publish resource to kafka", "topicId", e.TopicId, "id", e.Id)
-		topic, exists, err := this.db.GetTopic(this.getTimeoutContext(), e.TopicId)
+		topic, exists, err := this.db.GetTopic(this.getTimeoutContext(ctx), e.TopicId)
 		if err != nil {
 			this.config.GetLogger().Warn("RetryPublishOfUnsyncedResources: unable to get topic", "topicId", e.TopicId, "error", err)
 			continue
@@ -133,12 +141,12 @@ func (this *Controller) RetryPublishOfUnsyncedResources() error {
 		if !exists {
 			continue
 		}
-		err = this.publishPermission(topic, e.Id, e.ResourcePermissions)
+		err = this.publishPermission(ctx, topic, e.Id, e.ResourcePermissions)
 		if err != nil {
 			this.config.GetLogger().Warn("RetryPublishOfUnsyncedResources: unable to publishPermission()", "topicId", e.TopicId, "id", e.Id, "error", err)
 			continue
 		}
-		err = this.db.MarkResourceAsSynced(this.getTimeoutContext(), topic.Id, e.Id)
+		err = this.db.MarkResourceAsSynced(this.getTimeoutContext(ctx), topic.Id, e.Id)
 		if err != nil {
 			this.config.GetLogger().Warn("RetryPublishOfUnsyncedResources: unable to mark resource as synced", "topicId", e.TopicId, "id", e.Id, "error", err)
 		}
@@ -156,7 +164,7 @@ func (this *Controller) StartSyncLoop(ctx context.Context) {
 		for {
 			select {
 			case <-ticker.C:
-				this.config.GetLogger().Info(fmt.Sprint("refresh unsynced resources:", this.RetryPublishOfUnsyncedResources()))
+				this.config.GetLogger().Info(fmt.Sprint("refresh unsynced resources:", this.RetryPublishOfUnsyncedResourcesContext(ctx)))
 			case <-ctx.Done():
 				ticker.Stop()
 				return

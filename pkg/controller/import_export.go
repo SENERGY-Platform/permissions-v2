@@ -17,15 +17,21 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"net/http"
 	"slices"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 )
 
 func (this *Controller) Export(token string, options model.ImportExportOptions) (result model.ImportExport, err error, code int) {
+	return this.ExportContext(context.TODO(), token, options)
+}
+
+func (this *Controller) ExportContext(ctx context.Context, token string, options model.ImportExportOptions) (result model.ImportExport, err error, code int) {
 	jwtToken, err := jwt.Parse(token)
 	if err != nil {
 		return result, err, http.StatusBadRequest
@@ -36,19 +42,18 @@ func (this *Controller) Export(token string, options model.ImportExportOptions) 
 	result = model.ImportExport{}
 
 	if options.IncludeTopicConfig {
-		result.Topics, err = this.db.ListTopics(this.getTimeoutContext(), model.ListOptions{Ids: options.FilterTopics})
+		result.Topics, err = this.db.ListTopics(this.getTimeoutContext(ctx), model.ListOptions{Ids: options.FilterTopics})
 		if err != nil {
 			return result, err, http.StatusInternalServerError
 		}
 	}
 
 	if options.IncludePermissions {
-		//for which topics should we export the permissions?
-		topics := options.FilterTopics //use the filter
+		topics := options.FilterTopics
 		if topics == nil {
-			list := result.Topics            //if no filter is given, use the IncludeTopicConfig result
-			if !options.IncludeTopicConfig { //if IncludeTopicConfig==false, request list from db
-				list, err = this.db.ListTopics(this.getTimeoutContext(), model.ListOptions{Ids: options.FilterTopics})
+			list := result.Topics
+			if !options.IncludeTopicConfig {
+				list, err = this.db.ListTopics(this.getTimeoutContext(ctx), model.ListOptions{Ids: options.FilterTopics})
 				if err != nil {
 					return result, err, http.StatusInternalServerError
 				}
@@ -57,9 +62,8 @@ func (this *Controller) Export(token string, options model.ImportExportOptions) 
 				topics = append(topics, topic.Id)
 			}
 		}
-		//get the permissions
 		for _, topic := range topics {
-			list, err := this.db.AdminListResources(this.getTimeoutContext(), topic, model.ListOptions{Ids: options.FilterResourceId})
+			list, err := this.db.AdminListResources(this.getTimeoutContext(ctx), topic, model.ListOptions{Ids: options.FilterResourceId})
 			if err != nil {
 				return result, err, http.StatusInternalServerError
 			}
@@ -74,6 +78,10 @@ func (this *Controller) Export(token string, options model.ImportExportOptions) 
 }
 
 func (this *Controller) Import(token string, importModel model.ImportExport, options model.ImportExportOptions) (err error, code int) {
+	return this.ImportContext(context.TODO(), token, importModel, options)
+}
+
+func (this *Controller) ImportContext(ctx context.Context, token string, importModel model.ImportExport, options model.ImportExportOptions) (err error, code int) {
 	jwtToken, err := jwt.Parse(token)
 	if err != nil {
 		return err, http.StatusBadRequest
@@ -85,7 +93,7 @@ func (this *Controller) Import(token string, importModel model.ImportExport, opt
 	if options.IncludeTopicConfig {
 		for _, topic := range importModel.Topics {
 			if options.FilterTopics == nil || slices.Contains(options.FilterTopics, topic.Id) {
-				_, err, code = this.SetTopic(token, topic)
+				_, err, code = this.SetTopicContext(ctx, token, topic)
 				if err != nil {
 					return err, code
 				}
@@ -94,7 +102,6 @@ func (this *Controller) Import(token string, importModel model.ImportExport, opt
 	}
 
 	if options.IncludePermissions {
-
 		topicCache := map[string]model.Topic{}
 
 		for _, resource := range importModel.Permissions {
@@ -106,7 +113,7 @@ func (this *Controller) Import(token string, importModel model.ImportExport, opt
 				topic, ok := topicCache[resource.TopicId]
 				if !ok {
 					var exists bool
-					topic, exists, err = this.db.GetTopic(this.getTimeoutContext(), resource.TopicId)
+					topic, exists, err = this.db.GetTopic(this.getTimeoutContext(ctx), resource.TopicId)
 					if err != nil {
 						return err, http.StatusInternalServerError
 					}
@@ -116,7 +123,7 @@ func (this *Controller) Import(token string, importModel model.ImportExport, opt
 					topicCache[resource.TopicId] = topic
 				}
 
-				err = this.setPermission(topic, resource)
+				err = this.setPermission(ctx, topic, resource)
 				if err != nil {
 					return err, http.StatusInternalServerError
 				}

@@ -18,10 +18,11 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
-	"net/http"
 )
 
 func init() {
@@ -60,7 +61,7 @@ func (this *PermissionsManagementEndpoints) ListResourcesWithAdminPermission(con
 			return
 		}
 
-		result, err, code := ctrl.ListResourcesWithAdminPermission(token, topic, listOptions)
+		result, err, code := ctrl.ListResourcesWithAdminPermissionContext(req.Context(), token, topic, listOptions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -101,7 +102,7 @@ func (this *PermissionsManagementEndpoints) GetResource(config configuration.Con
 			return
 		}
 
-		result, err, code := ctrl.GetResource(token, topic, id)
+		result, err, code := ctrl.GetResourceContext(req.Context(), token, topic, id)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -141,7 +142,7 @@ func (this *PermissionsManagementEndpoints) DeleteResource(config configuration.
 			return
 		}
 
-		err, code := ctrl.RemoveResource(token, topic, id)
+		err, code := ctrl.RemoveResourceContext(req.Context(), token, topic, id)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -189,7 +190,7 @@ func (this *PermissionsManagementEndpoints) SetPermission(config configuration.C
 			return
 		}
 
-		result, err, code := ctrl.SetPermission(token, topic, id, permissions)
+		result, err, code := ctrl.SetPermissionContext(req.Context(), token, topic, id, permissions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return

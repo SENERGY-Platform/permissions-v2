@@ -18,17 +18,23 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 )
 
 type ImportExportOptions = model.ImportExportOptions
 type ImportExport = model.ImportExport
 
 func (this *ClientImpl) Export(token string, options model.ImportExportOptions) (result model.ImportExport, err error, code int) {
+	return this.ExportContext(context.TODO(), token, options)
+}
+
+func (this *ClientImpl) ExportContext(ctx context.Context, token string, options model.ImportExportOptions) (result model.ImportExport, err error, code int) {
 	queryString := ""
 	query := url.Values{}
 	if options.IncludeTopicConfig {
@@ -51,10 +57,14 @@ func (this *ClientImpl) Export(token string, options model.ImportExportOptions) 
 		return result, err, http.StatusInternalServerError
 	}
 	req.Header.Set("Authorization", token)
-	return do[model.ImportExport](token, req)
+	return doWithContext[model.ImportExport](ctx, token, req)
 }
 
 func (this *ClientImpl) Import(token string, importModel model.ImportExport, options model.ImportExportOptions) (err error, code int) {
+	return this.ImportContext(context.TODO(), token, importModel, options)
+}
+
+func (this *ClientImpl) ImportContext(ctx context.Context, token string, importModel model.ImportExport, options model.ImportExportOptions) (err error, code int) {
 	queryString := ""
 	query := url.Values{}
 	if options.IncludeTopicConfig {
@@ -81,5 +91,5 @@ func (this *ClientImpl) Import(token string, importModel model.ImportExport, opt
 		return err, http.StatusInternalServerError
 	}
 	req.Header.Set("Authorization", token)
-	return doVoid(token, req)
+	return doVoidWithContext(ctx, token, req)
 }

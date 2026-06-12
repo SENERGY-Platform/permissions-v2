@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SENERGY-Platform/gin-middleware/otelx"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/google/uuid"
@@ -32,6 +33,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 )
 
 type Database struct {
@@ -43,7 +45,8 @@ var CreateCollections = []func(db *Database) error{}
 
 func New(conf configuration.Config) (*Database, error) {
 	ctx, _ := getTimeoutContext()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.MongoUrl))
+	otelx.GinOpenTelemetry(ctx, "permissions-v2", conf.OtelEndpoint) // Initialize OpenTelemetry with default settings. Required for otelmongo
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.MongoUrl).SetMonitor(otelmongo.NewMonitor()))
 	if err != nil {
 		return nil, err
 	}
@@ -51,12 +54,13 @@ func New(conf configuration.Config) (*Database, error) {
 	for _, creators := range CreateCollections {
 		err = creators(db)
 		if err != nil {
-			client.Disconnect(context.Background())
+			disconnectCtx, _ := getTimeoutContext(ctx)
+			client.Disconnect(disconnectCtx)
 			return nil, err
 		}
 	}
 	if conf.MigrateFromMongoUrl != "" && conf.MigrateFromMongoUrl != "-" {
-		topics, err := db.ListTopics(context.Background(), model.ListOptions{})
+		topics, err := db.ListTopics(ctx, model.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -76,33 +80,33 @@ func MigrateDb(db *Database, origConf configuration.Config) error {
 	conf := origConf
 	conf.MongoUrl = origConf.MigrateFromMongoUrl
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.MongoUrl))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.MongoUrl).SetMonitor(otelmongo.NewMonitor()))
 	if err != nil {
 		return err
 	}
 
 	source := &Database{config: conf, client: client}
 
-	topics, err := source.ListTopics(context.Background(), model.ListOptions{})
+	topics, err := source.ListTopics(ctx, model.ListOptions{})
 	if err != nil {
 		return err
 	}
 	for _, topic := range topics {
 		conf.GetLogger().Info("migrating topic", "topicId", topic.Id)
-		ctx, _ := getTimeoutContext()
-		err = db.SetTopic(ctx, topic)
+		timeout, _ := getTimeoutContext(ctx)
+		err = db.SetTopic(timeout, topic)
 		if err != nil {
 			return err
 		}
 	}
 
-	cursor, err := source.permissionsCollection().Find(context.Background(), bson.M{})
+	cursor, err := source.permissionsCollection().Find(ctx, bson.M{})
 	if err != nil {
 		debug.PrintStack()
 		return err
 	}
-	defer cursor.Close(context.Background())
-	for cursor.Next(context.Background()) {
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)
 		if err != nil {
@@ -110,8 +114,8 @@ func MigrateDb(db *Database, origConf configuration.Config) error {
 			return err
 		}
 		conf.GetLogger().Info("migrating permission entry", "topicId", element.TopicId, "elementId", element.Id)
-		ctx, _ := getTimeoutContext()
-		_, err = db.permissionsCollection().ReplaceOne(ctx, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
+		timeout, _ := getTimeoutContext(ctx)
+		_, err = db.permissionsCollection().ReplaceOne(timeout, bson.M{PermissionsEntryBson.TopicId: element.TopicId, PermissionsEntryBson.Id: element.Id}, element, options.Replace().SetUpsert(true))
 		if err != nil {
 			debug.PrintStack()
 			return err
@@ -163,7 +167,8 @@ func (this *Database) ensureCompoundIndex(collection *mongo.Collection, indexnam
 }
 
 func (this *Database) removeIndex(collection *mongo.Collection, indexname string) error {
-	_, err := collection.Indexes().DropOne(context.Background(), indexname)
+	ctx, _ := getTimeoutContext()
+	_, err := collection.Indexes().DropOne(ctx, indexname)
 	if err != nil {
 		if strings.Contains(err.Error(), "IndexNotFound") {
 			return nil
@@ -176,7 +181,7 @@ func (this *Database) removeIndex(collection *mongo.Collection, indexname string
 }
 
 func (this *Database) Disconnect() {
-	timeout, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	timeout, _ := getTimeoutContext()
 	this.config.GetLogger().Info(fmt.Sprint("disconnect db:", this.client.Disconnect(timeout)))
 }
 
@@ -189,8 +194,12 @@ func getBsonFieldName(obj interface{}, fieldName string) (bsonName string, err e
 	return tags.Name, err
 }
 
-func getTimeoutContext() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), 10*time.Second)
+func getTimeoutContext(parent ...context.Context) (context.Context, context.CancelFunc) {
+	ctxParent := context.TODO()
+	if len(parent) > 0 && parent[0] != nil {
+		ctxParent = parent[0]
+	}
+	return context.WithTimeout(ctxParent, 10*time.Second)
 }
 
 func getBsonFieldObject[T any]() T {

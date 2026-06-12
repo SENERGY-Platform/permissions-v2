@@ -59,7 +59,7 @@ func (this *PermissionsListEndpoints) ListComputedPermissions(config configurati
 			idList = append(idList, strings.TrimSpace(id))
 		}
 
-		result, err, code := ctrl.ListComputedPermissions(token, topic, idList)
+		result, err, code := ctrl.ListComputedPermissionsContext(req.Context(), token, topic, idList)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -101,7 +101,7 @@ func (this *PermissionsListEndpoints) QueryListComputedPermissions(config config
 			return
 		}
 
-		result, err, code := ctrl.ListComputedPermissions(token, topic, idList)
+		result, err, code := ctrl.ListComputedPermissionsContext(req.Context(), token, topic, idList)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return

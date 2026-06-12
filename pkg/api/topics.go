@@ -53,7 +53,7 @@ func (this *TopicsEndpoints) ListTopics(config configuration.Config, router *htt
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		result, err, code := ctrl.ListTopics(token, listOptions)
+		result, err, code := ctrl.ListTopicsContext(req.Context(), token, listOptions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -88,7 +88,7 @@ func (this *TopicsEndpoints) GetTopic(config configuration.Config, router *http.
 			http.Error(w, "missing id", http.StatusBadRequest)
 			return
 		}
-		result, err, code := ctrl.GetTopic(token, id)
+		result, err, code := ctrl.GetTopicContext(req.Context(), token, id)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -141,7 +141,7 @@ func (this *TopicsEndpoints) SetTopic(config configuration.Config, router *http.
 			return
 		}
 
-		result, err, code := ctrl.SetTopic(token, topic)
+		result, err, code := ctrl.SetTopicContext(req.Context(), token, topic)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -181,7 +181,7 @@ func (this *TopicsEndpoints) SetTopicByPost(config configuration.Config, router 
 			return
 		}
 
-		result, err, code := ctrl.SetTopic(token, topic)
+		result, err, code := ctrl.SetTopicContext(req.Context(), token, topic)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -216,7 +216,7 @@ func (this *TopicsEndpoints) DeleteTopic(config configuration.Config, router *ht
 			http.Error(w, "missing id", http.StatusBadRequest)
 			return
 		}
-		err, code := ctrl.RemoveTopic(token, id)
+		err, code := ctrl.RemoveTopicContext(req.Context(), token, id)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return

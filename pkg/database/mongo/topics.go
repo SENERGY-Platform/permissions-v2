@@ -19,11 +19,12 @@ package mongo
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 var TopicBson = getBsonFieldObject[model.Topic]()
@@ -94,8 +95,8 @@ func (this *Database) ListTopics(ctx context.Context, listOptions model.ListOpti
 	if err != nil {
 		return result, err
 	}
-	defer cursor.Close(context.Background())
-	for cursor.Next(context.Background()) {
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
 		element := model.Topic{}
 		err = cursor.Decode(&element)
 		if err != nil {

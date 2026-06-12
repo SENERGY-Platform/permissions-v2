@@ -17,6 +17,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,8 +43,12 @@ type PermissionSearchResponseElement struct {
 }
 
 func (this *Controller) AdminLoadFromPermissionSearch(req model.AdminLoadPermSearchRequest) (updateCount int, err error, code int) {
+	return this.AdminLoadFromPermissionSearchContext(context.TODO(), req)
+}
+
+func (this *Controller) AdminLoadFromPermissionSearchContext(ctx context.Context, req model.AdminLoadPermSearchRequest) (updateCount int, err error, code int) {
 	updateCount = 0
-	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(), req.TopicId)
+	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(ctx), req.TopicId)
 	if err != nil {
 		return updateCount, err, http.StatusInternalServerError
 	}
@@ -76,7 +81,7 @@ func (this *Controller) AdminLoadFromPermissionSearch(req model.AdminLoadPermSea
 			return updateCount, err, http.StatusInternalServerError
 		}
 		for _, element := range list {
-			updated, err := this.handlePermissionSearchExport(req, topic, element)
+			updated, err := this.handlePermissionSearchExport(ctx, req, topic, element)
 			if err != nil {
 				return updateCount, err, http.StatusInternalServerError
 			}
@@ -91,9 +96,9 @@ func (this *Controller) AdminLoadFromPermissionSearch(req model.AdminLoadPermSea
 	}
 }
 
-func (this *Controller) handlePermissionSearchExport(req model.AdminLoadPermSearchRequest, topic model.Topic, element PermissionSearchResponseElement) (updated bool, err error) {
-	ctx := this.getTimeoutContext()
-	resource, err := this.db.GetResource(ctx, req.TopicId, element.ResourceId, model.GetOptions{})
+func (this *Controller) handlePermissionSearchExport(ctx context.Context, req model.AdminLoadPermSearchRequest, topic model.Topic, element PermissionSearchResponseElement) (updated bool, err error) {
+	timeout := this.getTimeoutContext(ctx)
+	resource, err := this.db.GetResource(timeout, req.TopicId, element.ResourceId, model.GetOptions{})
 	if err != nil && !errors.Is(err, model.ErrNotFound) {
 		return false, err
 	}
@@ -133,7 +138,7 @@ func (this *Controller) handlePermissionSearchExport(req model.AdminLoadPermSear
 			fmt.Println(string(buf))
 			return true, nil //dry run is counted
 		} else {
-			err = this.setPermission(topic, resource)
+			err = this.setPermission(ctx, topic, resource)
 			if err != nil {
 				return true, err
 			}

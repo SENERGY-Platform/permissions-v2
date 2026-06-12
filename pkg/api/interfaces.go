@@ -17,6 +17,8 @@
 package api
 
 import (
+	"context"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 )
 
@@ -28,35 +30,51 @@ type Controller interface {
 
 type AdminInterface interface {
 	ListTopics(token string, options model.ListOptions) (result []model.Topic, err error, code int)
+	ListTopicsContext(ctx context.Context, token string, options model.ListOptions) (result []model.Topic, err error, code int)
 	GetTopic(token string, id string) (result model.Topic, err error, code int)
+	GetTopicContext(ctx context.Context, token string, id string) (result model.Topic, err error, code int)
 	RemoveTopic(token string, id string) (err error, code int)
+	RemoveTopicContext(ctx context.Context, token string, id string) (err error, code int)
 	SetTopic(token string, topic model.Topic) (result model.Topic, err error, code int)
+	SetTopicContext(ctx context.Context, token string, topic model.Topic) (result model.Topic, err error, code int)
 	AdminListResourceIds(tokenStr string, topicId string, options model.ListOptions) (ids []string, err error, code int)
+	AdminListResourceIdsContext(ctx context.Context, tokenStr string, topicId string, options model.ListOptions) (ids []string, err error, code int)
 
 	// AdminLoadFromPermissionSearch is not supported by the client
 	// because this request should never be automated
 	AdminLoadFromPermissionSearch(req model.AdminLoadPermSearchRequest) (updateCount int, err error, code int)
+	AdminLoadFromPermissionSearchContext(ctx context.Context, req model.AdminLoadPermSearchRequest) (updateCount int, err error, code int)
 
 	Export(token string, options model.ImportExportOptions) (result model.ImportExport, err error, code int)
+	ExportContext(ctx context.Context, token string, options model.ImportExportOptions) (result model.ImportExport, err error, code int)
 	Import(token string, importModel model.ImportExport, options model.ImportExportOptions) (err error, code int)
+	ImportContext(ctx context.Context, token string, importModel model.ImportExport, options model.ImportExportOptions) (err error, code int)
 }
 
 type PermissionsCheckInterface interface {
 	CheckPermission(token string, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int)
+	CheckPermissionContext(ctx context.Context, token string, topicId string, id string, permissions ...model.Permission) (access bool, err error, code int)
 	CheckMultiplePermissions(token string, topicId string, ids []string, permissions ...model.Permission) (access map[string]bool, err error, code int)
+	CheckMultiplePermissionsContext(ctx context.Context, token string, topicId string, ids []string, permissions ...model.Permission) (access map[string]bool, err error, code int)
 	ListAccessibleResourceIds(token string, topicId string, options model.ListOptions, permissions ...model.Permission) (ids []string, err error, code int)
+	ListAccessibleResourceIdsContext(ctx context.Context, token string, topicId string, options model.ListOptions, permissions ...model.Permission) (ids []string, err error, code int)
 	ListComputedPermissions(token string, topic string, ids []string) (result []model.ComputedPermissions, err error, code int)
+	ListComputedPermissionsContext(ctx context.Context, token string, topic string, ids []string) (result []model.ComputedPermissions, err error, code int)
 }
 
 type PermissionsManagementInterface interface {
 	ListResourcesWithAdminPermission(token string, topicId string, options model.ListOptions) (result []model.Resource, err error, code int)
+	ListResourcesWithAdminPermissionContext(ctx context.Context, token string, topicId string, options model.ListOptions) (result []model.Resource, err error, code int)
 	GetResource(token string, topicId string, id string) (result model.Resource, err error, code int)
+	GetResourceContext(ctx context.Context, token string, topicId string, id string) (result model.Resource, err error, code int)
 
 	// RemoveResource removes a resource
 	// only admins may remove resources
 	RemoveResource(token string, topicId string, id string) (err error, code int)
+	RemoveResourceContext(ctx context.Context, token string, topicId string, id string) (err error, code int)
 
 	// SetPermission sets the permissions of a resource.
 	// resource initialization needs to be done by an admin; user tokens may update their rights but may not create the initial resource
 	SetPermission(token string, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int)
+	SetPermissionContext(ctx context.Context, token string, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int)
 }

@@ -17,6 +17,7 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -27,6 +28,10 @@ import (
 )
 
 func (this *Controller) ListTopics(tokenStr string, options model.ListOptions) (result []model.Topic, err error, code int) {
+	return this.ListTopicsContext(context.TODO(), tokenStr, options)
+}
+
+func (this *Controller) ListTopicsContext(ctx context.Context, tokenStr string, options model.ListOptions) (result []model.Topic, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return result, err, http.StatusUnauthorized
@@ -34,7 +39,7 @@ func (this *Controller) ListTopics(tokenStr string, options model.ListOptions) (
 	if !token.IsAdmin() {
 		return result, errors.New("only admins may manage topics"), http.StatusUnauthorized
 	}
-	timeout := this.getTimeoutContext()
+	timeout := this.getTimeoutContext(ctx)
 	result, err = this.db.ListTopics(timeout, options)
 	if err != nil {
 		return result, err, http.StatusInternalServerError
@@ -43,6 +48,10 @@ func (this *Controller) ListTopics(tokenStr string, options model.ListOptions) (
 }
 
 func (this *Controller) GetTopic(tokenStr string, id string) (result model.Topic, err error, code int) {
+	return this.GetTopicContext(context.TODO(), tokenStr, id)
+}
+
+func (this *Controller) GetTopicContext(ctx context.Context, tokenStr string, id string) (result model.Topic, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return result, err, http.StatusUnauthorized
@@ -50,7 +59,7 @@ func (this *Controller) GetTopic(tokenStr string, id string) (result model.Topic
 	if !token.IsAdmin() {
 		return result, errors.New("only admins may manage topics"), http.StatusUnauthorized
 	}
-	timeout := this.getTimeoutContext()
+	timeout := this.getTimeoutContext(ctx)
 	var exists bool
 	result, exists, err = this.db.GetTopic(timeout, id)
 	if err != nil {
@@ -63,6 +72,10 @@ func (this *Controller) GetTopic(tokenStr string, id string) (result model.Topic
 }
 
 func (this *Controller) RemoveTopic(tokenStr string, id string) (err error, code int) {
+	return this.RemoveTopicContext(context.TODO(), tokenStr, id)
+}
+
+func (this *Controller) RemoveTopicContext(ctx context.Context, tokenStr string, id string) (err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return err, http.StatusUnauthorized
@@ -81,7 +94,7 @@ func (this *Controller) RemoveTopic(tokenStr string, id string) (err error, code
 		this.config.GetLogger().Error("unable to send notification", "error", err)
 	}
 
-	timeout := this.getTimeoutContext()
+	timeout := this.getTimeoutContext(ctx)
 	err = this.db.DeleteTopic(timeout, id)
 	if err != nil {
 		return err, http.StatusInternalServerError
@@ -90,6 +103,10 @@ func (this *Controller) RemoveTopic(tokenStr string, id string) (err error, code
 }
 
 func (this *Controller) SetTopic(tokenStr string, topic model.Topic) (result model.Topic, err error, code int) {
+	return this.SetTopicContext(context.TODO(), tokenStr, topic)
+}
+
+func (this *Controller) SetTopicContext(ctx context.Context, tokenStr string, topic model.Topic) (result model.Topic, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return result, err, http.StatusUnauthorized
@@ -107,7 +124,7 @@ func (this *Controller) SetTopic(tokenStr string, topic model.Topic) (result mod
 		return result, fmt.Errorf("invalid topic: %w", err), http.StatusBadRequest
 	}
 
-	timeout := this.getTimeoutContext()
+	timeout := this.getTimeoutContext(ctx)
 	old, exists, err := this.db.GetTopic(timeout, topic.Id)
 	if err != nil {
 		return result, err, http.StatusInternalServerError

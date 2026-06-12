@@ -17,6 +17,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,6 +33,10 @@ import (
 )
 
 func (this *Controller) AdminListResourceIds(tokenStr string, topicId string, options model.ListOptions) (ids []string, err error, code int) {
+	return this.AdminListResourceIdsContext(context.TODO(), tokenStr, topicId, options)
+}
+
+func (this *Controller) AdminListResourceIdsContext(ctx context.Context, tokenStr string, topicId string, options model.ListOptions) (ids []string, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return ids, err, http.StatusUnauthorized
@@ -39,7 +44,7 @@ func (this *Controller) AdminListResourceIds(tokenStr string, topicId string, op
 	if !token.IsAdmin() {
 		return ids, errors.New("only admins may use this method"), http.StatusUnauthorized
 	}
-	ids, err = this.db.AdminListResourceIds(this.getTimeoutContext(), topicId, options)
+	ids, err = this.db.AdminListResourceIds(this.getTimeoutContext(ctx), topicId, options)
 	if err != nil {
 		code = http.StatusInternalServerError
 	} else {
@@ -49,18 +54,22 @@ func (this *Controller) AdminListResourceIds(tokenStr string, topicId string, op
 }
 
 func (this *Controller) ListAccessibleResourceIds(tokenStr string, topicId string, options model.ListOptions, permission ...model.Permission) (ids []string, err error, code int) {
+	return this.ListAccessibleResourceIdsContext(context.TODO(), tokenStr, topicId, options, permission...)
+}
+
+func (this *Controller) ListAccessibleResourceIdsContext(ctx context.Context, tokenStr string, topicId string, options model.ListOptions, permission ...model.Permission) (ids []string, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return ids, err, http.StatusUnauthorized
 	}
-	access, err, code := this.CheckTopicDefaultPermission(token, topicId, permission)
+	access, err, code := this.CheckTopicDefaultPermissionContext(ctx, token, topicId, permission)
 	if err != nil {
 		return ids, err, code
 	}
 	if access {
-		ids, err = this.db.AdminListResourceIds(this.getTimeoutContext(), topicId, options)
+		ids, err = this.db.AdminListResourceIds(this.getTimeoutContext(ctx), topicId, options)
 	} else {
-		ids, err = this.db.ListResourceIdsByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, permission...)
+		ids, err = this.db.ListResourceIdsByPermissions(this.getTimeoutContext(ctx), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, permission...)
 	}
 	if err != nil {
 		code = http.StatusInternalServerError
@@ -71,19 +80,23 @@ func (this *Controller) ListAccessibleResourceIds(tokenStr string, topicId strin
 }
 
 func (this *Controller) ListResourcesWithAdminPermission(tokenStr string, topicId string, options model.ListOptions) (result []model.Resource, err error, code int) {
+	return this.ListResourcesWithAdminPermissionContext(context.TODO(), tokenStr, topicId, options)
+}
+
+func (this *Controller) ListResourcesWithAdminPermissionContext(ctx context.Context, tokenStr string, topicId string, options model.ListOptions) (result []model.Resource, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return result, err, http.StatusUnauthorized
 	}
 
-	access, err, code := this.CheckTopicDefaultPermission(token, topicId, model.PermissionList{model.Administrate})
+	access, err, code := this.CheckTopicDefaultPermissionContext(ctx, token, topicId, model.PermissionList{model.Administrate})
 	if err != nil {
 		return result, err, code
 	}
 	if access {
-		result, err = this.db.AdminListResources(this.getTimeoutContext(), topicId, options)
+		result, err = this.db.AdminListResources(this.getTimeoutContext(ctx), topicId, options)
 	} else {
-		result, err = this.db.ListResourcesByPermissions(this.getTimeoutContext(), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, model.Administrate)
+		result, err = this.db.ListResourcesByPermissions(this.getTimeoutContext(ctx), topicId, token.GetUserId(), token.GetRoles(), token.GetGroups(), options, model.Administrate)
 	}
 
 	if err != nil {
@@ -95,6 +108,10 @@ func (this *Controller) ListResourcesWithAdminPermission(tokenStr string, topicI
 }
 
 func (this *Controller) RemoveResource(tokenStr string, topicId string, id string) (err error, code int) {
+	return this.RemoveResourceContext(context.TODO(), tokenStr, topicId, id)
+}
+
+func (this *Controller) RemoveResourceContext(ctx context.Context, tokenStr string, topicId string, id string) (err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return err, http.StatusUnauthorized
@@ -105,7 +122,7 @@ func (this *Controller) RemoveResource(tokenStr string, topicId string, id strin
 		return errors.New("access denied: only admin roles may delete resources"), http.StatusForbidden
 	}
 
-	err = this.db.DeleteResource(this.getTimeoutContext(), topicId, id)
+	err = this.db.DeleteResource(this.getTimeoutContext(ctx), topicId, id)
 	if err != nil {
 		return err, http.StatusInternalServerError
 	}
@@ -113,18 +130,22 @@ func (this *Controller) RemoveResource(tokenStr string, topicId string, id strin
 }
 
 func (this *Controller) GetResource(tokenStr string, topicId string, id string) (result model.Resource, err error, code int) {
+	return this.GetResourceContext(context.TODO(), tokenStr, topicId, id)
+}
+
+func (this *Controller) GetResourceContext(ctx context.Context, tokenStr string, topicId string, id string) (result model.Resource, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return result, err, http.StatusUnauthorized
 	}
 	pureId, _ := idmodifier.SplitModifier(id)
 
-	access, err, code := this.CheckTopicDefaultPermission(token, topicId, model.PermissionList{model.Administrate})
+	access, err, code := this.CheckTopicDefaultPermissionContext(ctx, token, topicId, model.PermissionList{model.Administrate})
 	if err != nil {
 		return result, err, code
 	}
 
-	result, err = this.db.GetResource(this.getTimeoutContext(), topicId, pureId, model.GetOptions{
+	result, err = this.db.GetResource(this.getTimeoutContext(ctx), topicId, pureId, model.GetOptions{
 		CheckPermission: !access, //admins may access without stored permission
 		UserId:          token.GetUserId(),
 		RoleIds:         token.GetRoles(),
@@ -145,12 +166,16 @@ func (this *Controller) GetResource(tokenStr string, topicId string, id string) 
 }
 
 func (this *Controller) SetPermission(tokenStr string, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int) {
+	return this.SetPermissionContext(context.TODO(), tokenStr, topicId, id, permissions)
+}
+
+func (this *Controller) SetPermissionContext(ctx context.Context, tokenStr string, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int) {
 	token, err := jwt.Parse(tokenStr)
 	if err != nil {
 		return result, err, http.StatusUnauthorized
 	}
 
-	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(), topicId)
+	topic, exists, err := this.db.GetTopic(this.getTimeoutContext(ctx), topicId)
 	if err != nil {
 		return result, err, http.StatusInternalServerError
 	}
@@ -165,7 +190,7 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 
 	pureId, _ := idmodifier.SplitModifier(id)
 	if !access {
-		access, err := this.db.CheckResourcePermissions(this.getTimeoutContext(), topicId, pureId, token.GetUserId(), token.GetRoles(), token.GetGroups(), model.Administrate)
+		access, err := this.db.CheckResourcePermissions(this.getTimeoutContext(ctx), topicId, pureId, token.GetUserId(), token.GetRoles(), token.GetGroups(), model.Administrate)
 		if err != nil {
 			return result, err, http.StatusInternalServerError
 		}
@@ -177,12 +202,12 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	if !permissions.Valid() {
 		return result, errors.New("invalid permissions"), http.StatusBadRequest
 	}
-	permissions, err, code = this.checkEditPermission(token, topic.Id, id, permissions)
+	permissions, err, code = this.checkEditPermissionWithContext(ctx, token, topic.Id, id, permissions)
 	if err != nil {
 		return result, err, code
 	}
 
-	err = this.setPermission(topic, model.Resource{
+	err = this.setPermission(ctx, topic, model.Resource{
 		Id:                  pureId,
 		TopicId:             topic.Id,
 		ResourcePermissions: permissions,
@@ -193,22 +218,22 @@ func (this *Controller) SetPermission(tokenStr string, topicId string, id string
 	return permissions, nil, http.StatusOK
 }
 
-func (this *Controller) setPermission(topic model.Topic, resource model.Resource) (err error) {
+func (this *Controller) setPermission(ctx context.Context, topic model.Topic, resource model.Resource) (err error) {
 	publish := topic.PublishToKafkaTopic != "" && topic.PublishToKafkaTopic != "-"
 
-	err = this.db.SetResource(this.getTimeoutContext(), resource, time.Now(), !publish)
+	err = this.db.SetResource(this.getTimeoutContext(ctx), resource, time.Now(), !publish)
 	if err != nil {
 		return err
 	}
 
 	if publish {
-		err = this.publishPermission(topic, resource.Id, resource.ResourcePermissions)
+		err = this.publishPermission(ctx, topic, resource.Id, resource.ResourcePermissions)
 		if err != nil {
 			this.config.GetLogger().Warn("unable to publish permissions update", "topic", topic.PublishToKafkaTopic)
 			this.notifyError(fmt.Errorf("unable to publish permissions update to %v; publish will be retried", topic.PublishToKafkaTopic))
 			return nil
 		} else {
-			err = this.db.MarkResourceAsSynced(this.getTimeoutContext(), topic.Id, resource.Id)
+			err = this.db.MarkResourceAsSynced(this.getTimeoutContext(ctx), topic.Id, resource.Id)
 			if err != nil {
 				this.config.GetLogger().Warn("unable to mark resource as synced", "topicId", topic.Id, "resourceId", resource.Id)
 			}
@@ -218,10 +243,14 @@ func (this *Controller) setPermission(topic model.Topic, resource model.Resource
 }
 
 func (this *Controller) checkEditPermission(token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (permissionsWithMissingApplied model.ResourcePermissions, err error, code int) {
+	return this.checkEditPermissionWithContext(context.TODO(), token, topicId, id, permissions)
+}
+
+func (this *Controller) checkEditPermissionWithContext(ctx context.Context, token jwt.Token, topicId string, id string, permissions model.ResourcePermissions) (permissionsWithMissingApplied model.ResourcePermissions, err error, code int) {
 	if token.IsAdmin() {
 		return permissions, nil, http.StatusOK
 	}
-	current, err := this.db.GetResource(this.getTimeoutContext(), topicId, id, model.GetOptions{})
+	current, err := this.db.GetResource(this.getTimeoutContext(ctx), topicId, id, model.GetOptions{})
 	if err != nil && !errors.Is(err, model.ErrNotFound) {
 		return permissions, err, http.StatusInternalServerError
 	}

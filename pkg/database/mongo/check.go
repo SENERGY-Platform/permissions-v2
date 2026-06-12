@@ -18,9 +18,10 @@ package mongo
 
 import (
 	"context"
+	"slices"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"go.mongodb.org/mongo-driver/bson"
-	"slices"
 )
 
 func (this *Database) CheckResourcePermissions(ctx context.Context, topicId string, id string, userId string, roleIds []string, groupIds []string, permissions ...model.Permission) (bool, error) {
@@ -39,9 +40,9 @@ func (this *Database) CheckMultipleResourcePermissions(ctx context.Context, topi
 	if err != nil {
 		return result, err
 	}
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 	result = map[string]bool{}
-	for cursor.Next(context.Background()) {
+	for cursor.Next(ctx) {
 		element := PermissionsEntry{}
 		err = cursor.Decode(&element)
 		if err != nil {

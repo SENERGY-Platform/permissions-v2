@@ -1,2 +1,4 @@
 .idea
 permissions-v2
+.vscode
+__debug*

@@ -18,11 +18,12 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
+	"strings"
+
 	"github.com/SENERGY-Platform/permissions-v2/pkg/configuration"
 	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
-	"net/http"
-	"strings"
 )
 
 func init() {
@@ -66,7 +67,7 @@ func (this *ImportExportEndpoints) Export(config configuration.Config, router *h
 			options.FilterResourceId = strings.Split(request.URL.Query().Get("filter_resource_id"), ",")
 		}
 
-		result, err, code := control.Export(token, options)
+		result, err, code := control.ExportContext(request.Context(), token, options)
 		if err != nil {
 			http.Error(writer, err.Error(), code)
 			return
@@ -120,7 +121,7 @@ func (this *ImportExportEndpoints) Import(config configuration.Config, router *h
 			options.FilterResourceId = strings.Split(request.URL.Query().Get("filter_resource_id"), ",")
 		}
 
-		err, code := control.Import(token, importModel, options)
+		err, code := control.ImportContext(request.Context(), token, importModel, options)
 		if err != nil {
 			http.Error(writer, err.Error(), code)
 			return

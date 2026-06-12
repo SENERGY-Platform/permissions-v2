@@ -59,7 +59,7 @@ func (this *TopicsEndpoints) AdminListResourceIds(config configuration.Config, r
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		result, err, code := ctrl.AdminListResourceIds(token, topic, listOptions)
+		result, err, code := ctrl.AdminListResourceIdsContext(req.Context(), token, topic, listOptions)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
@@ -114,7 +114,7 @@ func (this *TopicsEndpoints) AdminLoadFromPermissionSearch(config configuration.
 			http.Error(w, "missing topic_id", http.StatusBadRequest)
 			return
 		}
-		updateCount, err, code := ctrl.AdminLoadFromPermissionSearch(loadReq)
+		updateCount, err, code := ctrl.AdminLoadFromPermissionSearchContext(req.Context(), loadReq)
 		if err != nil {
 			http.Error(w, err.Error(), code)
 			return
