@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/SENERGY-Platform/api-docs-provider/lib/client v0.0.3
-	github.com/SENERGY-Platform/developer-notifications v0.0.5
+	github.com/SENERGY-Platform/developer-notifications v0.0.6
 	github.com/SENERGY-Platform/gin-middleware v0.14.1
 	github.com/SENERGY-Platform/go-service-base/struct-logger v0.8.0
 	github.com/SENERGY-Platform/service-commons v0.0.0-20260821114734-3e4578ac2358
