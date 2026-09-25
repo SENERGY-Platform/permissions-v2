@@ -9,6 +9,9 @@
     "kafka_url": "",
 
     "mongo_url": "mongodb://localhost:27017",
+    "mongo_user": "",
+    "mongo_password": "",
+    "mongo_auth_source": "admin",
     "mongo_database": "permissions",
     "mongo_permissions_collection": "permissions",
     "mongo_topics_collection": "topics",
