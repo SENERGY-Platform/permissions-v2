@@ -7,7 +7,7 @@ require (
 	github.com/SENERGY-Platform/developer-notifications v0.0.6
 	github.com/SENERGY-Platform/gin-middleware v0.14.1
 	github.com/SENERGY-Platform/go-service-base/struct-logger v0.8.0
-	github.com/SENERGY-Platform/service-commons v0.0.0-20260821114734-3e4578ac2358
+	github.com/SENERGY-Platform/service-commons v0.0.0-20261016083822-dec36fce00ad
 	github.com/google/uuid v1.6.0
 	github.com/segmentio/kafka-go v0.4.49
 	github.com/swaggo/http-swagger v1.3.4
