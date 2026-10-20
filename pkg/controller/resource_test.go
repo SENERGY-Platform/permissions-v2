@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -404,4 +405,147 @@ func TestCheckGroupMembership(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestRestrictedGroupGranters(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	const protected = "/shared-resources"
+	owner := map[string]model.PermissionsMap{"owner": {Read: true, Write: true, Execute: true, Administrate: true}}
+	stored := map[string]model.PermissionsMap{
+		protected:     {Read: true, Execute: true},
+		"other-group": {Read: true},
+	}
+	with := func(changes map[string]*model.PermissionsMap) map[string]model.PermissionsMap {
+		result := map[string]model.PermissionsMap{}
+		for k, v := range stored {
+			result[k] = v
+		}
+		for k, v := range changes {
+			if v == nil {
+				delete(result, k)
+			} else {
+				result[k] = *v
+			}
+		}
+		return result
+	}
+
+	newCtrl := func(t *testing.T, config configuration.Config) *Controller {
+		db := mock.New()
+		for id, groups := range map[string]map[string]model.PermissionsMap{
+			"with-protected":    stored,
+			"without-protected": {"other-group": {Read: true}},
+		} {
+			err := db.SetResource(ctx, model.Resource{Id: id, TopicId: "topic", ResourcePermissions: model.ResourcePermissions{UserPermissions: owner, GroupPermissions: groups}}, time.Now(), true)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		ctrl, err := NewWithDependencies(ctx, config, db, kafka.NewVoidProducerProvider())
+		if err != nil {
+			t.Fatal(err)
+		}
+		return ctrl
+	}
+
+	member := jwt.Token{Sub: "member", Groups: []string{protected, "other-group"}, RealmAccess: map[string][]string{"roles": {"user"}}}
+	granter := jwt.Token{Sub: "granter", Groups: []string{protected, "other-group"}, RealmAccess: map[string][]string{"roles": {"user"}}}
+	otherGranter := jwt.Token{Sub: "other-granter", Groups: []string{protected, "other-group"}, RealmAccess: map[string][]string{"roles": {"user"}}}
+	noSub := jwt.Token{Sub: "", Groups: []string{protected, "other-group"}, RealmAccess: map[string][]string{"roles": {"user"}}}
+	admin := jwt.Token{Sub: "admin-user", RealmAccess: map[string][]string{"roles": {"admin"}}}
+
+	type testCase struct {
+		name   string
+		token  jwt.Token
+		id     string
+		groups map[string]model.PermissionsMap
+		want   int
+	}
+	run := func(t *testing.T, ctrl *Controller, cases []testCase) {
+		for _, c := range cases {
+			t.Run(c.name, func(t *testing.T) {
+				_, err, code := ctrl.checkEditPermission(c.token, "topic", c.id, model.ResourcePermissions{UserPermissions: owner, GroupPermissions: c.groups})
+				if code != c.want {
+					t.Errorf("code = %v, want %v (err: %v)", code, c.want, err)
+				}
+				if (err == nil) != (c.want == http.StatusOK) {
+					t.Errorf("err = %v with code %v", err, code)
+				}
+			})
+		}
+	}
+
+	t.Run("restricted", func(t *testing.T) {
+		ctrl := newCtrl(t, configuration.Config{RestrictedGroupGranters: configuration.GroupGranters{Granters: map[string][]string{
+			protected:       {"granter"},
+			"/other-locked": {"other-granter"},
+			"/admins-only":  {},
+		}}})
+		changed := model.PermissionsMap{Read: true, Write: true, Execute: true}
+		otherChanged := model.PermissionsMap{Read: true, Write: true}
+		run(t, ctrl, []testCase{
+			{"member adds protected group", member, "without-protected", map[string]model.PermissionsMap{"other-group": {Read: true}, protected: {Read: true}}, http.StatusForbidden},
+			{"member adds protected group to new resource", member, "new-resource", map[string]model.PermissionsMap{protected: {Read: true}}, http.StatusForbidden},
+			{"member changes protected entry", member, "with-protected", with(map[string]*model.PermissionsMap{protected: &changed}), http.StatusForbidden},
+			{"member removes protected entry", member, "with-protected", with(map[string]*model.PermissionsMap{protected: nil}), http.StatusForbidden},
+			{"member sends nil group permissions", member, "with-protected", nil, http.StatusForbidden},
+			{"member sets protected entry all false", member, "with-protected", with(map[string]*model.PermissionsMap{protected: {}}), http.StatusForbidden},
+			{"member removes protected entry via modified id", member, "with-protected$foo=bar", with(map[string]*model.PermissionsMap{protected: nil}), http.StatusForbidden},
+			{"user without id removes protected entry", noSub, "with-protected", with(map[string]*model.PermissionsMap{protected: nil}), http.StatusForbidden},
+			{"granter of another group changes protected entry", otherGranter, "with-protected", with(map[string]*model.PermissionsMap{protected: &changed}), http.StatusForbidden},
+			{"granter adds admins-only group", granter, "with-protected", with(map[string]*model.PermissionsMap{"/admins-only": {Read: true}}), http.StatusForbidden},
+
+			{"member changes only other entries", member, "with-protected", with(map[string]*model.PermissionsMap{"other-group": &otherChanged}), http.StatusOK},
+			{"member removes other entry", member, "with-protected", with(map[string]*model.PermissionsMap{"other-group": nil}), http.StatusOK},
+			{"member keeps protected entry via modified id", member, "with-protected$foo=bar", stored, http.StatusOK},
+			{"member sends all-false entry for absent protected group", member, "without-protected", map[string]model.PermissionsMap{"other-group": {Read: true}, protected: {}}, http.StatusOK},
+			{"member sends nil group permissions without protected group", member, "without-protected", nil, http.StatusOK},
+			{"granter adds protected group", granter, "without-protected", map[string]model.PermissionsMap{"other-group": {Read: true}, protected: {Read: true}}, http.StatusOK},
+			{"granter changes protected entry", granter, "with-protected", with(map[string]*model.PermissionsMap{protected: &changed}), http.StatusOK},
+			{"granter removes protected entry", granter, "with-protected", with(map[string]*model.PermissionsMap{protected: nil}), http.StatusOK},
+			{"admin changes protected entry", admin, "with-protected", with(map[string]*model.PermissionsMap{protected: &changed}), http.StatusOK},
+			{"admin removes protected entry", admin, "with-protected", nil, http.StatusOK},
+			{"admin adds admins-only group", admin, "with-protected", with(map[string]*model.PermissionsMap{"/admins-only": {Read: true}}), http.StatusOK},
+		})
+	})
+
+	t.Run("feature off", func(t *testing.T) {
+		ctrl := newCtrl(t, configuration.Config{})
+		changed := model.PermissionsMap{Read: true, Write: true, Execute: true}
+		run(t, ctrl, []testCase{
+			{"member adds protected group", member, "without-protected", map[string]model.PermissionsMap{"other-group": {Read: true}, protected: {Read: true}}, http.StatusOK},
+			{"member changes protected entry", member, "with-protected", with(map[string]*model.PermissionsMap{protected: &changed}), http.StatusOK},
+			{"member removes protected entry", member, "with-protected", with(map[string]*model.PermissionsMap{protected: nil}), http.StatusOK},
+			{"non-member still may not add a group", jwt.Token{Sub: "outsider", RealmAccess: map[string][]string{"roles": {"user"}}}, "without-protected", map[string]model.PermissionsMap{protected: {Read: true}}, http.StatusBadRequest},
+		})
+	})
+}
+
+func TestCheckEditPermissionReadsStoredResourceForModifiedId(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	db := mock.New()
+	roles := map[string]model.PermissionsMap{"role": {Read: true}}
+	owner := map[string]model.PermissionsMap{"owner": {Read: true, Write: true, Execute: true, Administrate: true}}
+	err := db.SetResource(ctx, model.Resource{Id: "resource", TopicId: "topic", ResourcePermissions: model.ResourcePermissions{UserPermissions: owner, RolePermissions: roles}}, time.Now(), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctrl, err := NewWithDependencies(ctx, configuration.Config{OnlyAdminsMayEditRolePermissions: true}, db, kafka.NewVoidProducerProvider())
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err, _ := ctrl.checkEditPermission(jwt.Token{Sub: "owner"}, "topic", "resource$foo=bar", model.ResourcePermissions{UserPermissions: owner})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(result.RolePermissions, roles) {
+		t.Errorf("missing role permissions must be taken from the stored resource, got %#v", result.RolePermissions)
+	}
+	_, err, code := ctrl.checkEditPermission(jwt.Token{Sub: "owner"}, "topic", "resource$foo=bar", model.ResourcePermissions{UserPermissions: owner, RolePermissions: map[string]model.PermissionsMap{}})
+	if code != http.StatusForbidden {
+		t.Errorf("removing role permissions via a modified id: code = %v, err = %v", code, err)
+	}
 }

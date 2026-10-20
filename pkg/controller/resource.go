@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"reflect"
 	"slices"
@@ -250,9 +251,19 @@ func (this *Controller) checkEditPermissionWithContext(ctx context.Context, toke
 	if token.IsAdmin() {
 		return permissions, nil, http.StatusOK
 	}
-	current, err := this.db.GetResource(this.getTimeoutContext(ctx), topicId, id, model.GetOptions{})
+	// the resource is stored under its id without modifier, see SetPermissionContext
+	pureId, _ := idmodifier.SplitModifier(id)
+	current, err := this.db.GetResource(this.getTimeoutContext(ctx), topicId, pureId, model.GetOptions{})
 	if err != nil && !errors.Is(err, model.ErrNotFound) {
 		return permissions, err, http.StatusInternalServerError
+	}
+
+	// The stored entry is replaced by the requested one: a nil map removes every group, and a missing entry stores
+	// the same as an all-false one, so comparing the zero-defaulted lookups matches what will be stored.
+	for _, group := range slices.Sorted(maps.Keys(this.config.RestrictedGroupGranters.Granters)) {
+		if current.GroupPermissions[group] != permissions.GroupPermissions[group] && !slices.Contains(this.config.RestrictedGroupGranters.Granters[group], token.GetUserId()) {
+			return permissions, fmt.Errorf("access denied: only configured users may add, change or remove the permissions of group '%v'", group), http.StatusForbidden
+		}
 	}
 
 	if permissions.RolePermissions == nil && current.RolePermissions != nil {

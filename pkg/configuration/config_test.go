@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -257,4 +258,107 @@ func captureStdout(t *testing.T, f func()) string {
 	f()
 	_ = w.Close()
 	return <-done
+}
+
+func TestGroupGrantersSetString(t *testing.T) {
+	cases := []struct {
+		in   string
+		want map[string][]string
+	}{
+		{"/shared-resources:user-1", map[string][]string{"/shared-resources": {"user-1"}}},
+		{" /shared-resources : user-1 , /shared-resources:user-2,/shared-resources:user-1,/other:user-3", map[string][]string{"/shared-resources": {"user-1", "user-2"}, "/other": {"user-3"}}},
+		{"/admins-only:", map[string][]string{"/admins-only": {}}},
+		{"/a:b:user-1", map[string][]string{"/a:b": {"user-1"}}},
+	}
+	for _, c := range cases {
+		g := GroupGranters{}
+		if err := g.SetString(c.in); err != nil {
+			t.Errorf("%q: %v", c.in, err)
+			continue
+		}
+		if !reflect.DeepEqual(g.Granters, c.want) {
+			t.Errorf("%q: got %#v, want %#v", c.in, g.Granters, c.want)
+		}
+	}
+	for _, in := range []string{"", "/shared-resources", ":user-1", " :user-1", "/shared-resources:user-1,", "/shared-resources:user-1,,/other:user-2"} {
+		g := GroupGranters{Granters: map[string][]string{"/keep": {"user-1"}}}
+		if err := g.SetString(in); err == nil {
+			t.Errorf("%q: expected error, got %#v", in, g.Granters)
+		}
+		if !reflect.DeepEqual(g.Granters, map[string][]string{"/keep": {"user-1"}}) {
+			t.Errorf("%q: a rejected value changed the granters to %#v", in, g.Granters)
+		}
+	}
+}
+
+func TestGroupGrantersJson(t *testing.T) {
+	cfg := Config{}
+	err := json.Unmarshal([]byte(`{"restricted_group_granters": {"/shared-resources": ["user-1", " user-2 ", "user-1"], "/admins-only": null, "/empty": []}}`), &cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string][]string{"/shared-resources": {"user-1", "user-2"}, "/admins-only": {}, "/empty": {}}
+	if !reflect.DeepEqual(cfg.RestrictedGroupGranters.Granters, want) {
+		t.Errorf("got %#v, want %#v", cfg.RestrictedGroupGranters.Granters, want)
+	}
+	b, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"restricted_group_granters":{"/admins-only":[],"/empty":[],"/shared-resources":["user-1","user-2"]}`) {
+		t.Errorf("config json does not show the granters as map: %s", b)
+	}
+	roundTrip := GroupGranters{}
+	b, err = json.Marshal(cfg.RestrictedGroupGranters)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = json.Unmarshal(b, &roundTrip); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(roundTrip.Granters, want) {
+		t.Errorf("round trip through %s gave %#v", b, roundTrip.Granters)
+	}
+
+	for _, in := range []string{`{"": ["user-1"]}`, `{"/g": [""]}`, `{"/g": [" "]}`, `{"/g": "user-1"}`, `["/g"]`} {
+		g := GroupGranters{}
+		if err := json.Unmarshal([]byte(in), &g); err == nil {
+			t.Errorf("%s: expected error, got %#v", in, g.Granters)
+		}
+	}
+}
+
+func TestLoad_RestrictedGroupGranters(t *testing.T) {
+	clearMongoEnv(t)
+	t.Setenv("RESTRICTED_GROUP_GRANTERS", "")
+	cfg, err := Load("../../config.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.RestrictedGroupGranters.Granters) != 0 {
+		t.Errorf("repo config must leave the restriction off, got %#v", cfg.RestrictedGroupGranters.Granters)
+	}
+
+	if name := fieldNameToEnvName("RestrictedGroupGranters"); name != "RESTRICTED_GROUP_GRANTERS" {
+		t.Errorf("env name = %v", name)
+	}
+	t.Setenv("RESTRICTED_GROUP_GRANTERS", "/shared-resources:user-1,/shared-resources:user-2")
+	captureStdout(t, func() {
+		cfg, err = Load(writeConfig(t, `{"restricted_group_granters": {"/from-file": ["user-3"]}}`))
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string][]string{"/shared-resources": {"user-1", "user-2"}}
+	if !reflect.DeepEqual(cfg.RestrictedGroupGranters.Granters, want) {
+		t.Errorf("env should replace the file value: got %#v, want %#v", cfg.RestrictedGroupGranters.Granters, want)
+	}
+
+	t.Setenv("RESTRICTED_GROUP_GRANTERS", "/shared-resources")
+	captureStdout(t, func() {
+		_, err = Load("../../config.json")
+	})
+	if err == nil {
+		t.Error("expected an invalid env value to fail loading")
+	}
 }

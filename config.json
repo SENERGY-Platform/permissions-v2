@@ -21,5 +21,6 @@
 
     "otel_endpoint": "jaeger.logging.svc.cluster.local:4317",
 
-    "only_admins_may_edit_role_permissions": true
+    "only_admins_may_edit_role_permissions": true,
+    "restricted_group_granters": {}
 }

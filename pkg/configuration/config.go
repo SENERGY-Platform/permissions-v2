@@ -18,12 +18,14 @@ package configuration
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"reflect"
 	"regexp"
 	"runtime/debug"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -56,6 +58,10 @@ type Config struct {
 	SyncAgeLimit      Duration `json:"sync_age_limit"`
 
 	OnlyAdminsMayEditRolePermissions bool `json:"only_admins_may_edit_role_permissions"`
+
+	// RestrictedGroupGranters lists groups whose entry in resource permissions only the listed user ids (and admins) may add, change or remove; empty disables it.
+	// JSON: {"/shared-resources": ["<user-id>"]}; env: comma separated group:user-id pairs, one pair per user, e.g. "/shared-resources:<id-1>,/shared-resources:<id-2>"; "group:" alone restricts the group to admins.
+	RestrictedGroupGranters GroupGranters `json:"restricted_group_granters"`
 
 	UserManagementUrl string `json:"user_management_url"`
 
@@ -239,6 +245,70 @@ func handleEnvironmentVars(config *Config, getEnv func(key string) string) (err 
 				configValue.FieldByName(fieldName).Set(reflect.ValueOf(value))
 			}
 		}
+	}
+	return nil
+}
+
+// GroupGranters maps a group to the user ids that may change its entry in resource permissions.
+type GroupGranters struct {
+	Granters map[string][]string
+}
+
+// SetString parses the env form; the env value replaces the whole map from the config file.
+func (this *GroupGranters) SetString(str string) error {
+	result := map[string][]string{}
+	for _, element := range strings.Split(str, ",") {
+		// split at the last colon: user ids contain none, group names might
+		index := strings.LastIndex(element, ":")
+		if index < 0 {
+			return fmt.Errorf("restricted group granters: invalid entry %q, expected group:user-id", element)
+		}
+		if err := addGranter(result, element[:index], element[index+1:], true); err != nil {
+			return err
+		}
+	}
+	this.Granters = result
+	return nil
+}
+
+func (this *GroupGranters) UnmarshalJSON(bytes []byte) error {
+	raw := map[string][]string{}
+	if err := json.Unmarshal(bytes, &raw); err != nil {
+		return err
+	}
+	result := map[string][]string{}
+	for group, users := range raw {
+		if err := addGranter(result, group, "", true); err != nil {
+			return err
+		}
+		for _, user := range users {
+			if err := addGranter(result, group, user, false); err != nil {
+				return err
+			}
+		}
+	}
+	this.Granters = result
+	return nil
+}
+
+func (this GroupGranters) MarshalJSON() ([]byte, error) {
+	return json.Marshal(this.Granters)
+}
+
+// addGranter registers group in m and adds user to it; an empty user is only accepted where it means "admins only".
+func addGranter(m map[string][]string, group string, user string, allowEmptyUser bool) error {
+	group, user = strings.TrimSpace(group), strings.TrimSpace(user)
+	if group == "" {
+		return errors.New("restricted group granters: empty group name")
+	}
+	if user == "" && !allowEmptyUser {
+		return fmt.Errorf("restricted group granters: empty user id for group %q", group)
+	}
+	if _, ok := m[group]; !ok {
+		m[group] = []string{}
+	}
+	if user != "" && !slices.Contains(m[group], user) {
+		m[group] = append(m[group], user)
 	}
 	return nil
 }
