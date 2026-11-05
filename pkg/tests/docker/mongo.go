@@ -28,7 +28,7 @@ func MongoDB(ctx context.Context, wg *sync.WaitGroup) (hostport string, containe
 	log.Println("start mongo")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "mongo:8.0",
+			Image:        "mongo:7.0",
 			ExposedPorts: []string{"27017/tcp"},
 			WaitingFor: wait.ForAll(
 				wait.ForLog("Waiting for connections"),
