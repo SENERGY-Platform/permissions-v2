@@ -130,6 +130,28 @@ func (this *Controller) RemoveResourceContext(ctx context.Context, tokenStr stri
 	return nil, http.StatusOK
 }
 
+func (this *Controller) RemoveResources(tokenStr string, topicId string, ids []string) (err error, code int) {
+	return this.RemoveResourcesContext(context.TODO(), tokenStr, topicId, ids)
+}
+
+func (this *Controller) RemoveResourcesContext(ctx context.Context, tokenStr string, topicId string, ids []string) (err error, code int) {
+	token, err := jwt.Parse(tokenStr)
+	if err != nil {
+		return err, http.StatusUnauthorized
+	}
+
+	access := token.IsAdmin()
+	if !access {
+		return errors.New("access denied: only admin roles may delete resources"), http.StatusForbidden
+	}
+
+	err = this.db.DeleteResources(this.getTimeoutContext(ctx), topicId, ids)
+	if err != nil {
+		return err, http.StatusInternalServerError
+	}
+	return nil, http.StatusOK
+}
+
 func (this *Controller) GetResource(tokenStr string, topicId string, id string) (result model.Resource, err error, code int) {
 	return this.GetResourceContext(context.TODO(), tokenStr, topicId, id)
 }

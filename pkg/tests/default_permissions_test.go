@@ -1813,5 +1813,41 @@ func TestDefaultPermissions(t *testing.T) {
 				}
 			})
 		})
+		t.Run("batch", func(t *testing.T) {
+			t.Run("user", func(t *testing.T) {
+				err, code := c.RemoveResources(TestToken, "partial", []string{"a", "b"})
+				if err == nil {
+					t.Error("expected error")
+					return
+				}
+				if code != http.StatusForbidden {
+					t.Errorf("expected status code %d, got %d", http.StatusForbidden, code)
+				}
+			})
+			t.Run("group", func(t *testing.T) {
+				err, code := c.RemoveResources(GroupTestToken, "partial", []string{"a", "b"})
+				if err == nil {
+					t.Error("expected error")
+					return
+				}
+				if code != http.StatusForbidden {
+					t.Errorf("expected status code %d, got %d", http.StatusForbidden, code)
+				}
+			})
+			t.Run("admin", func(t *testing.T) {
+				err, _ = c.RemoveResources(client.InternalAdminToken, "partial", []string{"a", "b"})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+			})
+			t.Run("admin empty", func(t *testing.T) {
+				err, _ = c.RemoveResources(client.InternalAdminToken, "partial", []string{})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+			})
+		})
 	})
 }

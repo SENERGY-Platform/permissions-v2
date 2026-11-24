@@ -29,6 +29,7 @@ type Database interface {
 	SetResource(ctx context.Context, r model.Resource, t time.Time, synced bool) (err error)
 	GetResource(ctx context.Context, topicId string, id string, options model.GetOptions) (resource model.Resource, err error)
 	DeleteResource(ctx context.Context, topicId string, id string) error
+	DeleteResources(ctx context.Context, topicId string, ids []string) error
 
 	ListUnsyncedResources(ctx context.Context) ([]model.Resource, error)
 

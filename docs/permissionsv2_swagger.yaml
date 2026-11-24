@@ -570,6 +570,42 @@ paths:
       tags:
       - import/export
   /manage/{topic}:
+    delete:
+      consumes:
+      - application/json
+      description: delete many resources of one topic, requesting user must be admin.
+        Unknown ids are ignored. There is no limit on the number of ids; callers should
+        batch their requests.
+      parameters:
+      - description: Topic Id
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: Resource Ids
+        in: body
+        name: message
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: delete resources
+      tags:
+      - manage
     get:
       description: lists resources the user has admin rights to
       parameters:

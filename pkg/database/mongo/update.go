@@ -40,6 +40,20 @@ func (this *Database) DeleteResource(ctx context.Context, topicId string, id str
 	return err
 }
 
+func (this *Database) DeleteResources(ctx context.Context, topicId string, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	if ctx == nil {
+		ctx, _ = getTimeoutContext()
+	}
+	_, err := this.permissionsCollection().DeleteMany(ctx, bson.M{
+		PermissionsEntryBson.TopicId: topicId,
+		PermissionsEntryBson.Id:      bson.M{"$in": ids},
+	})
+	return err
+}
+
 func (this *Database) MarkResourceAsSynced(ctx context.Context, topicId string, id string) error {
 	if ctx == nil {
 		ctx, _ = getTimeoutContext()

@@ -73,6 +73,11 @@ type PermissionsManagementInterface interface {
 	RemoveResource(token string, topicId string, id string) (err error, code int)
 	RemoveResourceContext(ctx context.Context, token string, topicId string, id string) (err error, code int)
 
+	// RemoveResources removes many resources of one topic
+	// only admins may remove resources; unknown ids are ignored
+	RemoveResources(token string, topicId string, ids []string) (err error, code int)
+	RemoveResourcesContext(ctx context.Context, token string, topicId string, ids []string) (err error, code int)
+
 	// SetPermission sets the permissions of a resource.
 	// resource initialization needs to be done by an admin; user tokens may update their rights but may not create the initial resource
 	SetPermission(token string, topicId string, id string, permissions model.ResourcePermissions) (result model.ResourcePermissions, err error, code int)

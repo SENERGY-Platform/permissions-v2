@@ -790,6 +790,59 @@ const docTemplatepermissionsv2 = `{
                         "description": "Internal Server Error"
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "delete many resources of one topic, requesting user must be admin. Unknown ids are ignored. There is no limit on the number of ids; callers should batch their requests.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "manage"
+                ],
+                "summary": "delete resources",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Topic Id",
+                        "name": "topic",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Resource Ids",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
             }
         },
         "/manage/{topic}/{id}": {

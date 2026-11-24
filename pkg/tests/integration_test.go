@@ -1287,6 +1287,31 @@ func RunTestsWithTopic(config configuration.Config, c client.Client, topicId str
 				}
 			})
 
+			t.Run("check after batch resource delete", func(t *testing.T) {
+				// "survivor" is not in the batch and must remain
+				_, err, _ := c.SetPermission(client.InternalAdminToken, topicId, "survivor", model.ResourcePermissions{
+					UserPermissions: map[string]model.PermissionsMap{TestTokenUser: {true, true, true, true}},
+				})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				err, _ = c.RemoveResources(client.InternalAdminToken, topicId, []string{"2", "3", "unknown"})
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				access, err, _ := c.CheckMultiplePermissions(TestToken, topicId, []string{"1", "2", "3", "4", "survivor"}, model.Read)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(access, map[string]bool{"survivor": true}) {
+					t.Errorf("%#v\n", access)
+					return
+				}
+			})
+
 			t.Run("check after topic delete", func(t *testing.T) {
 				err, _ := c.RemoveTopic(client.InternalAdminToken, topicId)
 				if err != nil {

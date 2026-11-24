@@ -151,6 +151,45 @@ func (this *PermissionsManagementEndpoints) DeleteResource(config configuration.
 	})
 }
 
+// DeleteResources godoc
+// @Summary      delete resources
+// @Description  delete many resources of one topic, requesting user must be admin. Unknown ids are ignored. There is no limit on the number of ids; callers should batch their requests.
+// @Tags         manage
+// @Security Bearer
+// @Param        topic path string true "Topic Id"
+// @Param        message body []string true "Resource Ids"
+// @Accept       json
+// @Success      200
+// @Failure      400
+// @Failure      401
+// @Failure      403
+// @Failure      500
+// @Router       /manage/{topic} [delete]
+func (this *PermissionsManagementEndpoints) DeleteResources(config configuration.Config, router *http.ServeMux, ctrl Controller) {
+	router.HandleFunc("DELETE /manage/{topic}", func(w http.ResponseWriter, req *http.Request) {
+		token := jwt.GetAuthToken(req)
+		topic := req.PathValue("topic")
+		if topic == "" {
+			http.Error(w, "missing topic", http.StatusBadRequest)
+			return
+		}
+
+		ids := []string{}
+		err := json.NewDecoder(req.Body).Decode(&ids)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		err, code := ctrl.RemoveResourcesContext(req.Context(), token, topic, ids)
+		if err != nil {
+			http.Error(w, err.Error(), code)
+			return
+		}
+		w.WriteHeader(code)
+	})
+}
+
 // SetPermission godoc
 // @Summary      set resource rights
 // @Description  get resource rights, requesting user must have admin right on resource to update, requesting user must have admin rights on topic to create

@@ -241,6 +241,24 @@ func (this *ClientImpl) RemoveResourceContext(ctx context.Context, token string,
 	return doVoidWithContext(ctx, token, req)
 }
 
+// RemoveResources removes many resources of one topic
+// only admins may remove resources; unknown ids are ignored
+func (this *ClientImpl) RemoveResources(token string, topicId string, ids []string) (err error, code int) {
+	return this.RemoveResourcesContext(context.TODO(), token, topicId, ids)
+}
+
+func (this *ClientImpl) RemoveResourcesContext(ctx context.Context, token string, topicId string, ids []string) (err error, code int) {
+	body, err := json.Marshal(ids)
+	if err != nil {
+		return err, 0
+	}
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%v/manage/%v", this.serverUrl, url.PathEscape(topicId)), bytes.NewReader(body))
+	if err != nil {
+		return err, 0
+	}
+	return doVoidWithContext(ctx, token, req)
+}
+
 // SetPermission sets the permissions of a resource.
 // resource initialization needs to be done by an admin; user tokens may update their rights but may not create the initial resource
 func (this *ClientImpl) SetPermission(token string, topicId string, id string, permissions ResourcePermissions) (result ResourcePermissions, err error, code int) {

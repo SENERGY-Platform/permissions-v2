@@ -59,6 +59,15 @@ func (this *Mock) DeleteResource(ctx context.Context, topicId string, id string)
 	return nil
 }
 
+func (this *Mock) DeleteResources(ctx context.Context, topicId string, ids []string) error {
+	this.mux.Lock()
+	defer this.mux.Unlock()
+	this.resources = slices.DeleteFunc(this.resources, func(element ResourceWithTime) bool {
+		return element.TopicId == topicId && slices.Contains(ids, element.Id)
+	})
+	return nil
+}
+
 func (this *Mock) SetResource(ctx context.Context, r model.Resource, t time.Time, synced bool) (err error) {
 	this.mux.Lock()
 	defer this.mux.Unlock()
